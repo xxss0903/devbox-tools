@@ -6,6 +6,8 @@ import PngToIco from './components/PngToIco.vue'
 import ColorTools from './components/ColorTools.vue'
 import TransparencyConverter from './components/TransparencyConverter.vue'
 import CodeConverter from './components/CodeConverter.vue'
+import AndroidTools from './components/AndroidTools.vue'
+import SignatureInfo from './components/SignatureInfo.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -15,6 +17,8 @@ const routes = [
   { path: '/color-tools', name: 'ColorTools', component: ColorTools },
   { path: '/transparency-converter', name: 'TransparencyConverter', component: TransparencyConverter },
   { path: '/code-converter', name: 'CodeConverter', component: CodeConverter },
+  { path: '/android-tools', name: 'AndroidTools', component: AndroidTools },
+  { path: '/signature-info', name: 'SignatureInfo', component: SignatureInfo },
 ]
 
 const router = createRouter({

@@ -11,6 +11,7 @@ const titles = ref([
   { title: 'PDF工具', value: 'Home' }, // 暂时导航到Home
   { title: '常用组件', value: 'Home' }, // 暂时导航到Home
   { title: '颜色工具', value: 'ColorTools' },
+  { title: 'Android工具', value: 'AndroidTools' }
 ])
 
 const activeIndex = ref(0)
