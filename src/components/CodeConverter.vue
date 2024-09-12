@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { MD5 } from 'crypto-js'
 
 const router = useRouter()
 
@@ -11,8 +12,11 @@ const codeType = ref('base64')
 const codeTypes = [
   { value: 'base64', label: 'Base64' },
   { value: 'url', label: 'URL' },
-  { value: 'html', label: 'HTML实体' }
+  { value: 'html', label: 'HTML实体' },
+  { value: 'md5', label: 'MD5' }
 ]
+
+const isDecodeDisabled = computed(() => codeType.value === 'md5')
 
 const encode = () => {
   try {
@@ -25,6 +29,9 @@ const encode = () => {
         break
       case 'html':
         output.value = input.value.split('').map(char => `&#${char.charCodeAt(0)};`).join('')
+        break
+      case 'md5':
+        output.value = MD5(input.value).toString()
         break
       default:
         output.value = 'Unsupported encode type'
@@ -45,6 +52,9 @@ const decode = () => {
         break
       case 'html':
         output.value = input.value.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+        break
+      case 'md5':
+        output.value = 'MD5 is a one-way hash function and cannot be decoded.'
         break
       default:
         output.value = 'Unsupported decode type'
@@ -80,7 +90,7 @@ const goBack = () => {
         </div>
         <div class="button-group">
           <button @click="encode">编码</button>
-          <button @click="decode">解码</button>
+          <button @click="decode" :disabled="isDecodeDisabled">解码</button>
         </div>
       </div>
       <div class="result">
@@ -183,5 +193,10 @@ button:hover {
   background-color: #f8f9fa;
   padding: 20px;
   border-radius: 4px;
+}
+
+.button-group button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 </style>
