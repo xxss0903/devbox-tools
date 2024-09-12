@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
 const titles = ref([
   { title: '常用工具', value: 'Home' },
@@ -10,12 +11,29 @@ const titles = ref([
   { title: 'PDF工具', value: 'Home' }, // 暂时导航到Home
   { title: '常用组件', value: 'Home' }, // 暂时导航到Home
   { title: '颜色工具', value: 'ColorTools' },
-  { title: 'JavaScript工具类', value: 'Home' } // 暂时导航到Home
 ])
 
-const navigateTo = (routeName: string) => {
-  router.push({ name: routeName })
+const activeIndex = ref(0)
+
+const navigateTo = (index: number) => {
+  activeIndex.value = index
+  router.push({ name: titles.value[index].value })
 }
+
+// 根据当前路由更新activeIndex
+const updateActiveIndex = () => {
+  const currentRouteName = route.name as string
+  const index = titles.value.findIndex(title => title.value === currentRouteName)
+  if (index !== -1) {
+    activeIndex.value = index
+  }
+}
+
+// 监听路由变化
+router.afterEach(updateActiveIndex)
+
+// 初始化activeIndex
+updateActiveIndex()
 </script>
 
 <template>
@@ -23,8 +41,13 @@ const navigateTo = (routeName: string) => {
     <div class="container">
       <div class="title-list">
         <ul>
-          <li v-for="item in titles" :key="item.value" @click="navigateTo(item.value)">
-            {{ item.title }}
+          <li
+            v-for="(title, index) in titles"
+            :key="index"
+            @click="navigateTo(index)"
+            :class="{ active: index === activeIndex }"
+          >
+            {{ title.title }}
           </li>
         </ul>
       </div>
@@ -83,6 +106,11 @@ const navigateTo = (routeName: string) => {
 .title-list li:hover {
   background-color: #e9ecef;
   color: #3498db;
+}
+
+.title-list li.active {
+  background-color: #3498db;
+  color: #ffffff;
 }
 
 .content-area {
