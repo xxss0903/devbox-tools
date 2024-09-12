@@ -1,109 +1,78 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ToolItem from './ToolItem.vue'
 
 const router = useRouter()
 
-const imageTools = ref([
-  { 
-    id: 1, 
-    title: '图片压缩', 
-    icon: 'https://img.icons8.com/?size=100&id=USMo5UMGEvMw&format=png&color=000000', 
-    route: 'ImageCompressor' 
-  },
-  { 
-    id: 2, 
-    title: '图片转ICO', 
-    icon: 'https://img.icons8.com/?size=100&id=H6SA7amfKduZ&format=png&color=000000', 
-    route: 'PngToIco' 
-  },
-  // 可以在这里添加更多图片工具
-])
+const imageTools = [
+  { name: '图片压缩', route: 'ImageCompressor', image: 'https://img.icons8.com/?size=100&id=USMo5UMGEvMw&format=png&color=000000' },
+  { name: 'PNG转ICO', route: 'PngToIco', image: 'https://img.icons8.com/?size=100&id=H6SA7amfKduZ&format=png&color=000000' },
+  // 添加更多图片工具...
+]
 
-const navigateToTool = (route: string) => {
-  router.push({ name: route })
+const navigateTo = (routeName: string) => {
+  router.push({ name: routeName })
+}
+
+const goBack = () => {
+  router.push({ name: 'Home' })
 }
 </script>
 
 <template>
-  <div class="content-wrapper">
-    <div class="content-grid">
-      <div v-for="tool in imageTools" :key="tool.id" class="grid-item" @click="navigateToTool(tool.route)">
-        <div class="icon-wrapper">
-          <img :src="tool.icon" :alt="tool.title" class="tool-icon">
-        </div>
-        <div class="item-title-wrapper">
-          <span class="item-title" :title="tool.title">{{ tool.title }}</span>
-        </div>
-      </div>
+  <div class="image-tools">
+    <div class="tools-grid">
+      <ToolItem
+        v-for="tool in imageTools"
+        :key="tool.name"
+        :title="tool.name"
+        :imageSrc="tool.image"
+        :onClick="() => navigateTo(tool.route)"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.content-wrapper {
-  height: 100%;
-  overflow-y: auto;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 20px;
-  padding-bottom: 20px;
-}
-
-.grid-item {
-  aspect-ratio: 1 / 1;
-  background-color: #ffffff;
-  border-radius: 8px;
+.image-tools {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  height: 100%;
+}
+
+.navigation-bar {
+  display: flex;
   align-items: center;
-  padding: 15px;
-  box-sizing: border-box;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
 }
 
-.grid-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+.back-button:hover {
+  background-color: #2980b9;
 }
 
-.icon-wrapper {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tool-icon {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-}
-
-.item-title-wrapper {
-  width: 100%;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.item-title {
-  font-size: 14px;
+.page-title {
+  margin-left: 20px;
+  font-size: 1.5em;
   color: #2c3e50;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  padding: 0 5px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
 }
 </style>

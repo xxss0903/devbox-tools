@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import ToolItem from './ToolItem.vue'
 
 const router = useRouter()
 
 const colorTools = [
-  { name: '透明度颜色转换工具', route: 'TransparencyConverter' },
+  { name: '透明度颜色转换工具', route: 'TransparencyConverter', image: 'https://img.icons8.com/?size=100&id=24C4lD5fvL8K&format=png&color=000000' },
   // 在这里添加更多颜色工具
 ]
 
@@ -12,21 +13,19 @@ const navigateTo = (routeName: string) => {
   router.push({ name: routeName })
 }
 
-const goBack = () => {
-  router.push({ name: 'Home' })
-}
+
 </script>
 
 <template>
   <div class="color-tools">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="page-title">颜色工具</h2>
-    </div>
     <div class="tools-grid">
-      <div v-for="tool in colorTools" :key="tool.name" class="tool-item" @click="navigateTo(tool.route)">
-        <h3>{{ tool.name }}</h3>
-      </div>
+      <ToolItem
+        v-for="tool in colorTools"
+        :key="tool.name"
+        :title="tool.name"
+        :imageSrc="tool.image"
+        :onClick="() => navigateTo(tool.route)"
+      />
     </div>
   </div>
 </template>
@@ -72,25 +71,13 @@ const goBack = () => {
   gap: 20px;
   padding: 20px;
   overflow-y: auto;
+  max-width: 880px; /* 设置最大宽度为 4 * 200px + 3 * 20px(间隔) + 40px(左右内边距) */
+  margin: 0 auto; /* 居中显示 */
 }
 
-.tool-item {
-  background-color: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: box-shadow 0.3s ease;
-}
-
-.tool-item:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.tool-item h3 {
-  margin: 0;
-  font-size: 1.2em;
-  color: #2c3e50;
+@media (min-width: 880px) {
+  .tools-grid {
+    grid-template-columns: repeat(4, 1fr); /* 在宽度足够时,固定为4列 */
+  }
 }
 </style>
