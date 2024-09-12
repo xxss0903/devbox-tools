@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
 const color = ref('#000000')
 const opacity = ref(100)
+const copyMessage = ref('')
 
 const rgba = computed(() => {
   const r = parseInt(color.value.slice(1, 3), 16)
@@ -15,9 +16,49 @@ const rgba = computed(() => {
   return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`
 })
 
+const hex = computed(() => {
+  const alpha = Math.round(opacity.value * 255 / 100).toString(16).padStart(2, '0')
+  return `${color.value}${alpha}`
+})
+
+const copyToClipboard = (text: string) => {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  document.body.appendChild(textArea)
+  textArea.select()
+  
+  try {
+    document.execCommand('copy')
+    copyMessage.value = '已复制到剪贴板'
+  } catch (err) {
+    copyMessage.value = '复制失败，请手动复制'
+    console.error('复制失败:', err)
+  }
+
+  document.body.removeChild(textArea)
+  
+  setTimeout(() => {
+    copyMessage.value = ''
+  }, 2000)
+}
+
 const goBack = () => {
   router.push({ name: 'ColorTools' })
 }
+
+// 添加这个函数来更新颜色值
+const updateColor = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  color.value = input.value
+}
+
+// 监听颜色变化，更新预览
+watch(color, (newColor) => {
+  const colorPreview = document.querySelector('.color-preview') as HTMLElement
+  if (colorPreview) {
+    colorPreview.style.backgroundColor = newColor
+  }
+})
 </script>
 
 <template>
@@ -30,7 +71,8 @@ const goBack = () => {
       <div class="control-panel">
         <div>
           <label for="color">颜色：</label>
-          <input type="color" id="color" v-model="color" />
+          <input type="color" id="color" :value="color" @input="updateColor" />
+          <input type="text" :value="color" @input="updateColor" />
         </div>
         <div>
           <label for="opacity">不透明度：</label>
@@ -41,7 +83,15 @@ const goBack = () => {
       <div class="result">
         <h3>转换结果：</h3>
         <div class="color-preview" :style="{ backgroundColor: rgba }"></div>
-        <p>RGBA值：{{ rgba }}</p>
+        <p>
+          RGBA值：{{ rgba }}
+          <button @click="copyToClipboard(rgba)">复制</button>
+        </p>
+        <p>
+          HEX值：{{ hex }}
+          <button @click="copyToClipboard(hex)">复制</button>
+        </p>
+        <p v-if="copyMessage" class="copy-message">{{ copyMessage }}</p>
       </div>
     </div>
   </div>
@@ -113,5 +163,26 @@ const goBack = () => {
   height: 100px;
   border: 1px solid #ddd;
   margin-bottom: 10px;
+}
+
+button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+.copy-message {
+  margin-top: 10px;
+  color: #2ecc71;
+  font-weight: bold;
 }
 </style>

@@ -6,6 +6,7 @@ const router = useRouter()
 
 const colorTools = [
   { name: '透明度颜色转换工具', route: 'TransparencyConverter', image: 'https://img.icons8.com/?size=100&id=24C4lD5fvL8K&format=png&color=000000' },
+  { name: '16进制颜色值', route: 'HexColorConverter', image: 'https://img.icons8.com/?size=100&id=12784&format=png&color=000000' },
   // 在这里添加更多颜色工具
 ]
 
