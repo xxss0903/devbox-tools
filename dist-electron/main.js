@@ -1,15 +1,32 @@
-import { app, BrowserWindow } from 'electron';
-import path from 'path';
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+"use strict";
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const { execFile } = require('child_process');
+console.log('__dirname:', __dirname);
+console.log('Preload path:', path.join(__dirname, 'preload.js'));
+// ADB 可执行文件的路径
+const adbPath = path.join(app.getAppPath(), 'resources', 'adb', process.platform === 'win32' ? 'adb.exe' : 'adb');
+// 添加执行 ADB 命令的方法
+ipcMain.handle('execute-adb', async (event, command) => {
+    return new Promise((resolve, reject) => {
+        execFile(adbPath, command.split(' '), (error, stdout, stderr) => {
+            if (error) {
+                reject(error.message);
+            }
+            else {
+                resolve(stdout);
+            }
+        });
+    });
+});
 function createWindow() {
     const win = new BrowserWindow({
         width: 1200,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false
         },
         resizable: false,
         maximizable: false

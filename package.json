@@ -2,14 +2,14 @@
   "name": "devbox-tools",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
-    "electron:serve": "concurrently \"vite dev\" \"wait-on http://localhost:5173 && tsc -p electron && electron .\"",
-    "electron:build": "vue-tsc && vite build && tsc -p electron && electron-builder"
+    "electron:serve": "npm run compile:electron && concurrently \"vite dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vue-tsc && vite build && npm run compile:electron && electron-builder",
+    "compile:electron": "tsc -p electron"
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
