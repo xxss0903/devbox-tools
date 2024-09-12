@@ -5,22 +5,16 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const titles = ref([
-  'JavaScript开发工具',
-  '图片工具',
-  'PDF工具',
-  '常用组件',
-  '颜色工具',
-  'JavaScript工具类'
+  { title: 'JavaScript开发工具', value: 'Home' },
+  { title: '图片工具', value: 'ImageTools' },
+  { title: 'PDF工具', value: 'Home' }, // 暂时导航到Home
+  { title: '常用组件', value: 'Home' }, // 暂时导航到Home
+  { title: '颜色工具', value: 'ColorTools' },
+  { title: 'JavaScript工具类', value: 'Home' } // 暂时导航到Home
 ])
 
-const navigateTo = (index: number) => {
-  if (index === 0) {
-    router.push({ name: 'Home' })
-  } else if (index === 1) {
-    router.push({ name: 'ImageTools' })
-  } else {
-    // 处理其他导航
-  }
+const navigateTo = (routeName: string) => {
+  router.push({ name: routeName })
 }
 </script>
 
@@ -29,7 +23,9 @@ const navigateTo = (index: number) => {
     <div class="container">
       <div class="title-list">
         <ul>
-          <li v-for="(title, index) in titles" :key="index" @click="navigateTo(index)">{{ title }}</li>
+          <li v-for="item in titles" :key="item.value" @click="navigateTo(item.value)">
+            {{ item.title }}
+          </li>
         </ul>
       </div>
       <div class="content-area">
