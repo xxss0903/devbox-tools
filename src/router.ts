@@ -9,6 +9,7 @@ import CodeConverter from './components/CodeConverter.vue'
 import AndroidTools from './components/AndroidTools.vue'
 import SignatureInfo from './components/SignatureInfo.vue'
 import ImageBase64Converter from './components/ImageBase64Converter.vue'
+import ImageCropper from './components/ImageCropper.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -21,6 +22,7 @@ const routes = [
   { path: '/android-tools', name: 'AndroidTools', component: AndroidTools },
   { path: '/signature-info', name: 'SignatureInfo', component: SignatureInfo },
   { path: '/image-base64-converter', name: 'ImageBase64Converter', component: ImageBase64Converter },
+  { path: '/image-cropper', name: 'ImageCropper', component: ImageCropper },
 ]
 
 const router = createRouter({

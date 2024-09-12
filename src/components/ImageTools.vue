@@ -9,6 +9,8 @@ const imageTools = [
   { name: '图片压缩', route: 'ImageCompressor', image: 'https://img.icons8.com/?size=100&id=USMo5UMGEvMw&format=png&color=000000' },
   { name: 'PNG转ICO', route: 'PngToIco', image: 'https://img.icons8.com/?size=100&id=H6SA7amfKduZ&format=png&color=000000' },
   { name: '图片Base64转换', route: 'ImageBase64Converter', image: 'https://img.icons8.com/?size=100&id=12776&format=png&color=000000' },
+  // 添加图像裁剪工具
+  { name: '图像裁剪', route: 'ImageCropper', image: 'https://img.icons8.com/?size=100&id=23232&format=png&color=000000' },
   // 添加更多图片工具...
 ]
 
