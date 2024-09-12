@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const titles = ref([
-  { title: 'JavaScript开发工具', value: 'Home' },
+  { title: '常用工具', value: 'Home' },
   { title: '图片工具', value: 'ImageTools' },
   { title: 'PDF工具', value: 'Home' }, // 暂时导航到Home
   { title: '常用组件', value: 'Home' }, // 暂时导航到Home
