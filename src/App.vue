@@ -9,6 +9,7 @@ const titles = ref([
   '图片工具',
   'PDF工具',
   '常用组件',
+  '颜色工具',
   'JavaScript工具类'
 ])
 

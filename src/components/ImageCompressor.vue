@@ -11,6 +11,8 @@ const originalWidth = ref(0)
 const originalHeight = ref(0)
 const compressedWidth = ref(0)
 const compressedHeight = ref(0)
+const originalSize = ref<number | null>(null)
+const compressedSize = ref<number | null>(null)
 
 const aspectRatio = computed(() => {
   return originalWidth.value / originalHeight.value
@@ -21,6 +23,7 @@ const handleFileChange = (event: Event) => {
   if (target.files) {
     selectedFile.value = target.files[0]
     originalImage.value = URL.createObjectURL(selectedFile.value)
+    originalSize.value = selectedFile.value.size
     
     const img = new Image()
     img.onload = () => {
@@ -53,6 +56,10 @@ const compressImage = () => {
       canvas.width = compressedWidth.value
       canvas.height = compressedHeight.value
 
+      // 设置白色背景
+      ctx!.fillStyle = '#FFFFFF'
+      ctx!.fillRect(0, 0, canvas.width, canvas.height)
+
       ctx!.imageSmoothingEnabled = true
       ctx!.imageSmoothingQuality = 'high'
       ctx?.drawImage(img, 0, 0, compressedWidth.value, compressedHeight.value)
@@ -61,6 +68,7 @@ const compressImage = () => {
         (blob) => {
           if (blob) {
             compressedImage.value = URL.createObjectURL(blob)
+            compressedSize.value = blob.size
           }
         },
         'image/jpeg',
@@ -74,6 +82,24 @@ const compressImage = () => {
 
 const goBack = () => {
   router.push({ name: 'ImageTools' })
+}
+
+// 添加一个函数来格式化文件大小
+const formatFileSize = (bytes: number | null): string => {
+  if (bytes === null) return '未知'
+  const kb = bytes / 1024
+  return `${kb.toFixed(2)} KB`
+}
+
+const downloadCompressedImage = () => {
+  if (compressedImage.value) {
+    const link = document.createElement('a')
+    link.href = compressedImage.value
+    link.download = 'compressed_image.jpg'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 }
 </script>
 
@@ -96,15 +122,24 @@ const goBack = () => {
       <div class="image-comparison">
         <div class="image-container">
           <h3>原图：</h3>
-          <img v-if="originalImage" :src="originalImage" alt="Original Image" />
           <div v-if="originalImage" class="image-info">
-            <span>宽度：{{ originalWidth }}px</span>
-            <span>高度：{{ originalHeight }}px</span>
+            <div>
+              <label>宽度：</label>
+              <span>{{ originalWidth }}px</span>
+            </div>
+            <div>
+              <label>高度：</label>
+              <span>{{ originalHeight }}px</span>
+            </div>
+            <div>
+              <label>大小：</label>
+              <span>{{ formatFileSize(originalSize) }}</span>
+            </div>
           </div>
+          <img v-if="originalImage" :src="originalImage" alt="Original Image" />
         </div>
         <div class="image-container">
-          <h3>压缩后的图片：</h3>
-          <img v-if="compressedImage" :src="compressedImage" alt="Compressed Image" />
+          <h3>压缩后的图片（点击下载）：</h3>
           <div v-if="originalImage" class="image-info">
             <div>
               <label for="compressedWidth">宽度：</label>
@@ -114,8 +149,12 @@ const goBack = () => {
               <label for="compressedHeight">高度：</label>
               <input type="number" id="compressedHeight" v-model="compressedHeight" @input="updateWidth" min="1" :max="originalHeight" />px
             </div>
+            <div>
+              <label>大小：</label>
+              <span>{{ formatFileSize(compressedSize) }}</span>
+            </div>
           </div>
-          <a v-if="compressedImage" :href="compressedImage" download="compressed_image.jpg">下载压缩后的图片</a>
+          <img v-if="compressedImage" :src="compressedImage" alt="Compressed Image" @click="downloadCompressedImage" class="clickable-image" />
         </div>
       </div>
     </div>
@@ -175,19 +214,39 @@ const goBack = () => {
 
 .image-container {
   width: 48%;
+  display: flex;
+  flex-direction: column;
 }
 
 .image-info {
-  margin-top: 10px;
+  margin-bottom: 10px;
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
 }
 
-.image-info span, .image-info div {
-  display: block;
+.image-info div {
   margin-bottom: 5px;
 }
 
-input, button {
-  margin: 10px 0;
+.image-info label {
+  display: inline-block;
+  width: 50px;
+  font-weight: bold;
+}
+
+.image-info input[type="number"] {
+  width: 60px;
+  margin-right: 5px;
+}
+
+.clickable-image {
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.clickable-image:hover {
+  opacity: 0.8;
 }
 
 img {
@@ -195,6 +254,8 @@ img {
   height: auto;
   border: 1px solid #ddd;
   border-radius: 4px;
+  margin-top: 10px;
+  background-color: #FFFFFF; /* 添加白色背景 */
 }
 
 a {
