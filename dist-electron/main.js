@@ -10,7 +10,9 @@ function createWindow() {
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
-        }
+        },
+        resizable: false,
+        maximizable: false
     });
     if (process.env.NODE_ENV !== 'production') {
         win.loadURL('http://localhost:5173');
