@@ -8,6 +8,7 @@ import TransparencyConverter from './components/TransparencyConverter.vue'
 import CodeConverter from './components/CodeConverter.vue'
 import AndroidTools from './components/AndroidTools.vue'
 import SignatureInfo from './components/SignatureInfo.vue'
+import ImageBase64Converter from './components/ImageBase64Converter.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -19,6 +20,7 @@ const routes = [
   { path: '/code-converter', name: 'CodeConverter', component: CodeConverter },
   { path: '/android-tools', name: 'AndroidTools', component: AndroidTools },
   { path: '/signature-info', name: 'SignatureInfo', component: SignatureInfo },
+  { path: '/image-base64-converter', name: 'ImageBase64Converter', component: ImageBase64Converter },
 ]
 
 const router = createRouter({
