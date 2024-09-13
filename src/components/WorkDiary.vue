@@ -98,8 +98,14 @@ const editorOptions = {
 }
 
 const saveDiary = async () => {
-  await window.electronAPI.saveDiaryEntry(date.value, content.value, todos.value)
-  await loadDiaryEntries()
+  try {
+    const serializedTodos = JSON.stringify(todos.value)
+    await window.electronAPI.saveDiaryEntry(date.value, content.value, serializedTodos)
+    await loadDiaryEntries()
+  } catch (error) {
+    console.error('保存日记时出错:', error)
+    // 这里可以添加一些用户友好的错误处理，比如显示一个错误提示
+  }
 }
 
 const loadDiary = async (entry: DiaryEntry) => {
@@ -107,7 +113,7 @@ const loadDiary = async (entry: DiaryEntry) => {
   if (diaryEntry) {
     date.value = diaryEntry.date
     content.value = diaryEntry.content
-    todos.value = diaryEntry.todos || []
+    todos.value = JSON.parse(diaryEntry.todos || '[]')
   }
 }
 

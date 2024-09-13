@@ -16,7 +16,8 @@ async function getDatabase() {
     CREATE TABLE IF NOT EXISTS diary_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT UNIQUE,
-      content TEXT
+      content TEXT,
+      todos TEXT
     )
   `)
 
@@ -27,16 +28,41 @@ interface DiaryEntry {
   id?: number
   date: string
   content: string
+  todos: TodoItem[]
 }
 
-export async function saveDiaryEntry(date: string, content: string): Promise<void> {
-  return await ipcRenderer.invoke('save-diary-entry', { date, content })
+interface TodoItem {
+  text: string
+  done: boolean
+}
+
+export async function saveDiaryEntry(
+  date: string,
+  content: string,
+  serializedTodos: string
+): Promise<void> {
+  return await ipcRenderer.invoke('save-diary-entry', {
+    date,
+    content,
+    todos: serializedTodos
+  })
 }
 
 export async function getDiaryEntries(): Promise<DiaryEntry[]> {
-  return await ipcRenderer.invoke('get-diary-entries')
+  const entries = await ipcRenderer.invoke('get-diary-entries')
+  return entries.map((entry: any) => ({
+    ...entry,
+    todos: JSON.parse(entry.todos || '[]')
+  }))
 }
 
 export async function getDiaryEntryByDate(date: string): Promise<DiaryEntry | null> {
-  return await ipcRenderer.invoke('get-diary-entry-by-date', date)
+  const entry = await ipcRenderer.invoke('get-diary-entry-by-date', date)
+  if (entry) {
+    return {
+      ...entry,
+      todos: JSON.parse(entry.todos || '[]')
+    }
+  }
+  return null
 }

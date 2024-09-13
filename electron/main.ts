@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
@@ -17,7 +17,7 @@ const adbPath = path.join(
 )
 
 // 添加执行 ADB 命令的方法
-ipcMain.handle('execute-adb', async (event: IpcMainInvokeEvent, command: string) => {
+ipcMain.handle('execute-adb', async (event: any, command: string) => {
   return new Promise<string>((resolve, reject) => {
     execFile(adbPath, command.split(' '), (error: Error | null, stdout: string, stderr: string) => {
       if (error) {
@@ -44,7 +44,8 @@ async function getDatabase(): Promise<Database> {
     CREATE TABLE IF NOT EXISTS diary_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT UNIQUE,
-      content TEXT
+      content TEXT,
+      todos TEXT
     )
   `)
 
@@ -89,21 +90,25 @@ function createWindow() {
   // 设置IPC处理程序
   ipcMain.handle(
     'save-diary-entry',
-    async (event: IpcMainInvokeEvent, { date, content }: { date: string; content: string }) => {
+    async (
+      event: any,
+      { date, content, todos }: { date: string; content: string; todos: string }
+    ) => {
       const db = await getDatabase()
-      await db.run('INSERT OR REPLACE INTO diary_entries (date, content) VALUES (?, ?)', [
+      await db.run('INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)', [
         date,
-        content
+        content,
+        todos // 这里的 todos 已经是序列化的字符串了
       ])
     }
   )
 
   ipcMain.handle('get-diary-entries', async () => {
     const db = await getDatabase()
-    return await db.all('SELECT date FROM diary_entries ORDER BY date DESC')
+    return await db.all('SELECT * FROM diary_entries ORDER BY date DESC')
   })
 
-  ipcMain.handle('get-diary-entry-by-date', async (event: IpcMainInvokeEvent, date: string) => {
+  ipcMain.handle('get-diary-entry-by-date', async (event: any, date: string) => {
     const db = await getDatabase()
     return await db.get('SELECT * FROM diary_entries WHERE date = ?', [date])
   })

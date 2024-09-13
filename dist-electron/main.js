@@ -39,7 +39,8 @@ async function getDatabase() {
     CREATE TABLE IF NOT EXISTS diary_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT UNIQUE,
-      content TEXT
+      content TEXT,
+      todos TEXT
     )
   `);
     return db;
@@ -76,16 +77,17 @@ function createWindow() {
     // 设置SQLite数据库文件路径
     process.env.SQLITE_DB_PATH = path_1.default.join(electron_1.app.getPath('userData'), 'workdiary.sqlite');
     // 设置IPC处理程序
-    electron_1.ipcMain.handle('save-diary-entry', async (event, { date, content }) => {
+    electron_1.ipcMain.handle('save-diary-entry', async (event, { date, content, todos }) => {
         const db = await getDatabase();
-        await db.run('INSERT OR REPLACE INTO diary_entries (date, content) VALUES (?, ?)', [
+        await db.run('INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)', [
             date,
-            content
+            content,
+            todos // 这里的 todos 已经是序列化的字符串了
         ]);
     });
     electron_1.ipcMain.handle('get-diary-entries', async () => {
         const db = await getDatabase();
-        return await db.all('SELECT date FROM diary_entries ORDER BY date DESC');
+        return await db.all('SELECT * FROM diary_entries ORDER BY date DESC');
     });
     electron_1.ipcMain.handle('get-diary-entry-by-date', async (event, date) => {
         const db = await getDatabase();
