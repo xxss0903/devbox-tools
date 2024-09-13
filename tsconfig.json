@@ -7,5 +7,9 @@
     {
       "path": "./tsconfig.app.json"
     }
+  ],
+  "include": [
+    // ... 其他条目 ...
+    "src/types/**/*.ts"
   ]
 }

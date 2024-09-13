@@ -7,11 +7,12 @@
     <div class="work-diary-content">
       <div class="diary-form">
         <input v-model="date" type="date" class="date-input" />
-        <textarea
-          v-model="content"
-          placeholder="请输入今天的工作内容和进度..."
+        <QuillEditor
+          v-model:content="content"
+          :options="editorOptions"
+          contentType="html"
           class="content-input"
-        ></textarea>
+        />
         <button @click="saveDiary" class="save-button">保存</button>
       </div>
       <div class="diary-list">
@@ -29,6 +30,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
 
 interface DiaryEntry {
   id?: number
@@ -50,6 +53,29 @@ const router = useRouter()
 const date = ref(new Date().toISOString().split('T')[0])
 const content = ref('')
 const diaryEntries = ref<DiaryEntry[]>([])
+
+const editorOptions = {
+  modules: {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ header: 1 }, { header: 2 }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ script: 'sub' }, { script: 'super' }],
+      [{ indent: '-1' }, { indent: '+1' }],
+      [{ direction: 'rtl' }],
+      [{ size: ['small', false, 'large', 'huge'] }],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      [{ color: [] }, { background: [] }],
+      [{ font: [] }],
+      [{ align: [] }],
+      ['clean'],
+      ['link', 'image', 'video'],
+      ['todo']
+    ]
+  },
+  placeholder: '请输入今天的工作内容和进度...'
+}
 
 const saveDiary = async () => {
   await window.electronAPI.saveDiaryEntry(date.value, content.value)
@@ -116,6 +142,7 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   padding: 20px;
+  overflow: hidden; /* 防止内容溢出 */
 }
 
 .diary-form {
@@ -123,6 +150,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   margin-right: 20px;
+  overflow-y: auto; /* 添加垂直滚动条 */
+  max-height: calc(100vh - 100px); /* 设置最大高度，留出顶部导航栏的空间 */
 }
 
 .date-input {
@@ -131,9 +160,9 @@ onMounted(async () => {
 }
 
 .content-input {
-  height: 200px;
+  flex: 1; /* 让编辑器填充剩余空间 */
+  min-height: 200px; /* 设置最小高度 */
   margin-bottom: 10px;
-  padding: 5px;
 }
 
 .save-button {
@@ -146,6 +175,8 @@ onMounted(async () => {
 
 .diary-list {
   flex: 1;
+  overflow-y: auto; /* 添加垂直滚动条 */
+  max-height: calc(100vh - 100px); /* 设置最大高度，留出顶部导航栏的空间 */
 }
 
 .diary-list ul {
