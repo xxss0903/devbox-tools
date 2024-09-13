@@ -78,12 +78,10 @@ function createWindow() {
     process.env.SQLITE_DB_PATH = path_1.default.join(electron_1.app.getPath('userData'), 'workdiary.sqlite');
     // 设置IPC处理程序
     electron_1.ipcMain.handle('save-diary-entry', async (event, { date, content, todos }) => {
+        console.log('save diary ', todos, content);
         const db = await getDatabase();
-        await db.run('INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)', [
-            date,
-            content,
-            todos // 这里的 todos 已经是序列化的字符串了
-        ]);
+        const res = await db.run('INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)', [date, content, todos]);
+        console.log('insert db res', res);
     });
     electron_1.ipcMain.handle('get-diary-entries', async () => {
         const db = await getDatabase();
@@ -91,7 +89,15 @@ function createWindow() {
     });
     electron_1.ipcMain.handle('get-diary-entry-by-date', async (event, date) => {
         const db = await getDatabase();
-        return await db.get('SELECT * FROM diary_entries WHERE date = ?', [date]);
+        const entry = await db.get('SELECT * FROM diary_entries WHERE date = ?', [date]);
+        if (entry) {
+            console.log('Retrieved entry:', entry); // 添加这行来调试
+            return {
+                ...entry,
+                todos: entry.todos || '[]' // 确保返回一个有效的 JSON 字符串
+            };
+        }
+        return null;
     });
 }
 electron_1.app.whenReady().then(createWindow);

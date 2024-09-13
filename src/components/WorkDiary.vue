@@ -57,7 +57,7 @@ interface TodoItem {
 }
 
 interface IElectronAPI {
-  saveDiaryEntry: (date: string, content: string, todos: TodoItem[]) => Promise<void>
+  saveDiaryEntry: (date: string, content: string, todos: string) => Promise<void>
   getDiaryEntries: () => Promise<DiaryEntry[]>
   getDiaryEntryByDate: (date: string) => Promise<DiaryEntry | null>
 }
@@ -100,6 +100,7 @@ const editorOptions = {
 const saveDiary = async () => {
   try {
     const serializedTodos = JSON.stringify(todos.value)
+    console.log('Saving todos:', serializedTodos) // 添加这行来调试
     await window.electronAPI.saveDiaryEntry(date.value, content.value, serializedTodos)
     await loadDiaryEntries()
   } catch (error) {
@@ -110,10 +111,14 @@ const saveDiary = async () => {
 
 const loadDiary = async (entry: DiaryEntry) => {
   const diaryEntry = await window.electronAPI.getDiaryEntryByDate(entry.date)
+  console.log('Diary entry loaded:', diaryEntry) // 添加这行来调试
   if (diaryEntry) {
     date.value = diaryEntry.date
     content.value = diaryEntry.content
-    todos.value = JSON.parse(diaryEntry.todos || '[]')
+    todos.value = Array.isArray(diaryEntry.todos)
+      ? diaryEntry.todos
+      : JSON.parse(diaryEntry.todos || '[]')
+    console.log('Loaded todos:', todos.value) // 添加这行来调试
   }
 }
 

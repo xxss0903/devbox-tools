@@ -94,12 +94,13 @@ function createWindow() {
       event: any,
       { date, content, todos }: { date: string; content: string; todos: string }
     ) => {
+      console.log('save diary ', todos, content)
       const db = await getDatabase()
-      await db.run('INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)', [
-        date,
-        content,
-        todos // 这里的 todos 已经是序列化的字符串了
-      ])
+      const res = await db.run(
+        'INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)',
+        [date, content, todos]
+      )
+      console.log('insert db res', res)
     }
   )
 
@@ -110,7 +111,15 @@ function createWindow() {
 
   ipcMain.handle('get-diary-entry-by-date', async (event: any, date: string) => {
     const db = await getDatabase()
-    return await db.get('SELECT * FROM diary_entries WHERE date = ?', [date])
+    const entry = await db.get('SELECT * FROM diary_entries WHERE date = ?', [date])
+    if (entry) {
+      console.log('Retrieved entry:', entry) // 添加这行来调试
+      return {
+        ...entry,
+        todos: entry.todos || '[]' // 确保返回一个有效的 JSON 字符串
+      }
+    }
+    return null
   })
 }
 

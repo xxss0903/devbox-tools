@@ -58,6 +58,7 @@ export async function getDiaryEntries(): Promise<DiaryEntry[]> {
 
 export async function getDiaryEntryByDate(date: string): Promise<DiaryEntry | null> {
   const entry = await ipcRenderer.invoke('get-diary-entry-by-date', date)
+  console.log('Entry received in database.ts:', entry) // 添加这行来调试
   if (entry) {
     return {
       ...entry,
