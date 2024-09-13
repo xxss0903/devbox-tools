@@ -30,39 +30,50 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
+interface DiaryEntry {
+  id?: number
+  date: string
+  content: string
+}
+
+declare global {
+  interface Window {
+    electronAPI: {
+      saveDiaryEntry: (date: string, content: string) => Promise<void>
+      getDiaryEntries: () => Promise<DiaryEntry[]>
+      getDiaryEntryByDate: (date: string) => Promise<DiaryEntry | null>
+    }
+  }
+}
+
 const router = useRouter()
 const date = ref(new Date().toISOString().split('T')[0])
 const content = ref('')
-const diaryEntries = ref<any[]>([])
+const diaryEntries = ref<DiaryEntry[]>([])
 
-const saveDiary = () => {
-  // 这里添加保存日记到数据库的逻辑
-  console.log('保存日记:', { date: date.value, content: content.value })
-  // 保存后刷新日记列表
-  loadDiaryEntries()
+const saveDiary = async () => {
+  await window.electronAPI.saveDiaryEntry(date.value, content.value)
+  await loadDiaryEntries()
 }
 
-const loadDiary = (entry: any) => {
-  date.value = entry.date
-  content.value = entry.content
+const loadDiary = async (entry: DiaryEntry) => {
+  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(entry.date)
+  if (diaryEntry) {
+    date.value = diaryEntry.date
+    content.value = diaryEntry.content
+  }
 }
 
-const loadDiaryEntries = () => {
-  // 这里添加从数据库加载日记列表的逻辑
-  // 暂时使用模拟数据
-  diaryEntries.value = [
-    { id: 1, date: '2023-04-01' },
-    { id: 2, date: '2023-04-02' },
-    { id: 3, date: '2023-04-03' }
-  ]
+const loadDiaryEntries = async () => {
+  diaryEntries.value = await window.electronAPI.getDiaryEntries()
 }
 
 const goBack = () => {
   router.push({ name: 'Home' })
 }
 
-onMounted(() => {
-  loadDiaryEntries()
+onMounted(async () => {
+  await loadDiaryEntries()
 })
 </script>
 

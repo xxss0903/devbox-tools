@@ -1,7 +1,9 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
-const { execFile } = require('child_process')
+import { app, BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
+import path from 'path'
+import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
+import sqlite3 from 'sqlite3'
+import { open, Database } from 'sqlite'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -15,9 +17,9 @@ const adbPath = path.join(
 )
 
 // 添加执行 ADB 命令的方法
-ipcMain.handle('execute-adb', async (event: any, command: any) => {
-  return new Promise((resolve: any, reject: any) => {
-    execFile(adbPath, command.split(' '), (error: any, stdout: any, stderr: any) => {
+ipcMain.handle('execute-adb', async (event: IpcMainInvokeEvent, command: string) => {
+  return new Promise<string>((resolve, reject) => {
+    execFile(adbPath, command.split(' '), (error: Error | null, stdout: string, stderr: string) => {
       if (error) {
         reject(error.message)
       } else {
@@ -28,6 +30,26 @@ ipcMain.handle('execute-adb', async (event: any, command: any) => {
 })
 
 let sequelize: Sequelize
+let db: Database | null = null
+
+async function getDatabase(): Promise<Database> {
+  if (db) return db
+
+  db = await open({
+    filename: path.join(app.getPath('userData'), 'workdiary.sqlite'),
+    driver: sqlite3.Database
+  })
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS diary_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT UNIQUE,
+      content TEXT
+    )
+  `)
+
+  return db
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -60,6 +82,31 @@ function createWindow() {
     .authenticate()
     .then(() => console.log('数据库连接成功'))
     .catch((err) => console.error('无法连接到数据库:', err))
+
+  // 设置SQLite数据库文件路径
+  process.env.SQLITE_DB_PATH = path.join(app.getPath('userData'), 'workdiary.sqlite')
+
+  // 设置IPC处理程序
+  ipcMain.handle(
+    'save-diary-entry',
+    async (event: IpcMainInvokeEvent, { date, content }: { date: string; content: string }) => {
+      const db = await getDatabase()
+      await db.run('INSERT OR REPLACE INTO diary_entries (date, content) VALUES (?, ?)', [
+        date,
+        content
+      ])
+    }
+  )
+
+  ipcMain.handle('get-diary-entries', async () => {
+    const db = await getDatabase()
+    return await db.all('SELECT date FROM diary_entries ORDER BY date DESC')
+  })
+
+  ipcMain.handle('get-diary-entry-by-date', async (event: IpcMainInvokeEvent, date: string) => {
+    const db = await getDatabase()
+    return await db.get('SELECT * FROM diary_entries WHERE date = ?', [date])
+  })
 }
 
 app.whenReady().then(createWindow)

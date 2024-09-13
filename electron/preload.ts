@@ -1,12 +1,12 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron')
 
-console.log('Preload script is running');
+console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  executeADB: (command: string) => {
-    console.log('executeADB called with command:', command);
-    return ipcRenderer.invoke('execute-adb', command);
-  }
-});
+  saveDiaryEntry: (date: string, content: string) =>
+    ipcRenderer.invoke('save-diary-entry', { date, content }),
+  getDiaryEntries: () => ipcRenderer.invoke('get-diary-entries'),
+  getDiaryEntryByDate: (date: string) => ipcRenderer.invoke('get-diary-entry-by-date', date)
+})
 
-console.log('electronAPI exposed');
+console.log('electronAPI exposed')
