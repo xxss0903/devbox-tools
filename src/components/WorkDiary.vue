@@ -7,7 +7,15 @@
     </div>
     <div class="work-diary-content">
       <div class="left-panel">
-        <input v-model="date" type="date" class="date-input" />
+        <div class="date-picker">
+          <VDatePicker
+            v-model="date"
+            :attributes="attributes"
+            is-expanded
+            :columns="1"
+            :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
+          />
+        </div>
         <div class="todo-list">
           <h3>待办事项</h3>
           <ul>
@@ -19,14 +27,6 @@
           </ul>
           <input v-model="newTodo" @keyup.enter="addTodo" placeholder="输入新的待办事项" />
           <button @click="addTodo">添加待办事项</button>
-        </div>
-        <div class="diary-list">
-          <h3>历史记录</h3>
-          <ul>
-            <li v-for="entry in diaryEntries" :key="entry.id" @click="loadDiary(entry)">
-              {{ entry.date }}
-            </li>
-          </ul>
         </div>
       </div>
       <div class="right-panel">
@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -59,18 +59,6 @@ interface DiaryEntry {
 interface TodoItem {
   text: string
   done: boolean
-}
-
-interface IElectronAPI {
-  saveDiaryEntry: (date: string, content: string, todos: string) => Promise<void>
-  getDiaryEntries: () => Promise<DiaryEntry[]>
-  getDiaryEntryByDate: (date: string) => Promise<DiaryEntry | null>
-}
-
-declare global {
-  interface Window {
-    electronAPI: IElectronAPI
-  }
 }
 
 const router = useRouter()
@@ -114,8 +102,8 @@ const saveDiary = async () => {
   }
 }
 
-const loadDiary = async (entry: DiaryEntry) => {
-  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(entry.date)
+const loadDiary = async (selectedDate: string) => {
+  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(selectedDate)
   console.log('Diary entry loaded:', diaryEntry)
   if (diaryEntry) {
     date.value = diaryEntry.date
@@ -124,6 +112,10 @@ const loadDiary = async (entry: DiaryEntry) => {
       ? diaryEntry.todos
       : JSON.parse(diaryEntry.todos || '[]')
     console.log('Loaded todos:', todos.value)
+  } else {
+    // 如果没有找到日记，清空内容和待办事项
+    content.value = ''
+    todos.value = []
   }
 }
 
@@ -143,7 +135,6 @@ const addTodo = () => {
 }
 
 const updateTodo = (index: number) => {
-  // 这个函数可以用来在需要时触发其他操作，比如自动保存
   console.log('Todo updated:', todos.value[index])
 }
 
@@ -151,8 +142,28 @@ const removeTodo = (index: number) => {
   todos.value.splice(index, 1)
 }
 
+const hasEntryForDate = computed(() => {
+  return (checkDate: string) => diaryEntries.value.some((entry) => entry.date === checkDate)
+})
+
+const attributes = computed(() => {
+  return diaryEntries.value.map((entry) => ({
+    dot: {
+      color: 'green',
+      class: 'has-entry'
+    },
+    dates: new Date(entry.date)
+  }))
+})
+
 onMounted(async () => {
   await loadDiaryEntries()
+  await loadDiary(date.value)
+})
+
+// 监听日期变化
+watch(date, async (newDate) => {
+  await loadDiary(newDate)
 })
 </script>
 
@@ -226,9 +237,25 @@ onMounted(async () => {
   height: 500px;
 }
 
-.date-input {
-  margin-bottom: 10px;
-  padding: 5px;
+.date-picker {
+  margin-bottom: 20px;
+}
+
+:deep(.vc-container) {
+  width: 100%;
+}
+
+:deep(.vc-day-content) {
+  position: relative;
+}
+
+:deep(.has-entry) {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
 .todo-list {
@@ -276,21 +303,6 @@ onMounted(async () => {
   flex-grow: 1;
   margin-right: 10px;
   padding: 5px;
-}
-
-.diary-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.diary-list li {
-  cursor: pointer;
-  padding: 5px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.diary-list li:hover {
-  background-color: #f8f9fa;
 }
 
 .quill-editor-container {

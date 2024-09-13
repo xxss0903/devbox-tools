@@ -1,9 +1,9 @@
-const { contextBridge, ipcRenderer } = require('electron')
+import { contextBridge, ipcRenderer } from 'electron'
 
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  saveDiaryEntry: (date: string, content: string, todos: any) =>
+  saveDiaryEntry: (date: string, content: string, todos: string) =>
     ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
   getDiaryEntries: () => ipcRenderer.invoke('get-diary-entries'),
   getDiaryEntryByDate: (date: string) => ipcRenderer.invoke('get-diary-entry-by-date', date)

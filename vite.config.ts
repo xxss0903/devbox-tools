@@ -16,5 +16,8 @@ export default defineConfig({
     rollupOptions: {
       external: ['electron']
     }
+  },
+  optimizeDeps: {
+    include: ['v-calendar']
   }
 })
