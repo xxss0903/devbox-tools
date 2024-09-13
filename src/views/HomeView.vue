@@ -6,9 +6,26 @@ import ToolItem from '../components/ToolItem.vue'
 const router = useRouter()
 
 const tools = [
-  { name: '图片工具', route: 'ImageTools', image: 'https://img.icons8.com/?size=100&id=12776&format=png&color=000000' },
-  { name: '颜色工具', route: 'ColorTools', image: 'https://img.icons8.com/?size=100&id=12784&format=png&color=000000' },
-  { name: '编码/解码转换', route: 'CodeConverter', image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000' },
+  {
+    name: '图片工具',
+    route: 'ImageTools',
+    image: 'https://img.icons8.com/?size=100&id=12776&format=png&color=000000'
+  },
+  {
+    name: '颜色工具',
+    route: 'ColorTools',
+    image: 'https://img.icons8.com/?size=100&id=12784&format=png&color=000000'
+  },
+  {
+    name: '编码/解码转换',
+    route: 'CodeConverter',
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+  },
+  {
+    name: '工作日记',
+    route: 'WorkDiary',
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+  }
   // 添加更多工具...
 ]
 

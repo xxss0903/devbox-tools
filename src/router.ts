@@ -10,6 +10,7 @@ import AndroidTools from './components/AndroidTools.vue'
 import SignatureInfo from './components/SignatureInfo.vue'
 import ImageBase64Converter from './components/ImageBase64Converter.vue'
 import ImageCropper from './components/ImageCropper.vue'
+import WorkDiary from './components/WorkDiary.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -17,17 +18,26 @@ const routes = [
   { path: '/image-compressor', name: 'ImageCompressor', component: ImageCompressor },
   { path: '/png-to-ico', name: 'PngToIco', component: PngToIco },
   { path: '/color-tools', name: 'ColorTools', component: ColorTools },
-  { path: '/transparency-converter', name: 'TransparencyConverter', component: TransparencyConverter },
+  {
+    path: '/transparency-converter',
+    name: 'TransparencyConverter',
+    component: TransparencyConverter
+  },
   { path: '/code-converter', name: 'CodeConverter', component: CodeConverter },
   { path: '/android-tools', name: 'AndroidTools', component: AndroidTools },
   { path: '/signature-info', name: 'SignatureInfo', component: SignatureInfo },
-  { path: '/image-base64-converter', name: 'ImageBase64Converter', component: ImageBase64Converter },
+  {
+    path: '/image-base64-converter',
+    name: 'ImageBase64Converter',
+    component: ImageBase64Converter
+  },
   { path: '/image-cropper', name: 'ImageCropper', component: ImageCropper },
+  { path: '/work-diary', name: 'WorkDiary', component: WorkDiary }
 ]
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes,
+  routes
 })
 
 export default router
