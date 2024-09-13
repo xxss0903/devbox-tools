@@ -116,20 +116,27 @@ const totalCompressionRate = computed(() => {
     <NavigationBar title="图片压缩工具" @goBack="goBack" />
     <div class="compressor-content">
       <div class="control-panel">
-        <input type="file" accept="image/*" @change="handleFileChange" multiple />
-        <button @click="handleFolderSelect">选择文件夹</button>
-        <div>
-          <label for="quality">压缩质量：</label>
-          <input type="range" id="quality" v-model="compressionQuality" min="0.1" max="1" step="0.1" />
-          {{ Math.round(compressionQuality * 100) }}%
+        <div class="file-selection">
+          <input type="file" id="file-input" accept="image/*" @change="handleFileChange" multiple class="hidden-input" />
+          <label for="file-input" class="button">选择图片</label>
+          <button @click="handleFolderSelect" class="button">选择文件夹</button>
         </div>
-        <button @click="compressImages" :disabled="selectedFiles.length === 0 || isCompressing">
-          {{ isCompressing ? '压缩中...' : '压缩图片' }}
-        </button>
-        <button @click="downloadCompressedImages" :disabled="compressedFiles.length === 0">
-          下载压缩后的图片
-        </button>
+        <div class="compression-controls">
+          <div class="quality-control">
+            <label for="quality">压缩质量：</label>
+            <input type="range" id="quality" v-model="compressionQuality" min="0.1" max="1" step="0.1" />
+            <span>{{ Math.round(compressionQuality * 100) }}%</span>
+          </div>
+          <button @click="compressImages" :disabled="selectedFiles.length === 0 || isCompressing" class="button primary">
+            {{ isCompressing ? '压缩中...' : '压缩图片' }}
+          </button>
+          <button @click="downloadCompressedImages" :disabled="compressedFiles.length === 0" class="button">
+            下载压缩后的图片
+          </button>
+        </div>
       </div>
+      
+      <!-- 文件列表和压缩结果部分保持不变 -->
       <div v-if="selectedFiles.length > 0" class="file-list">
         <h3>选中的文件：</h3>
         <ul>
@@ -169,14 +176,35 @@ const totalCompressionRate = computed(() => {
 }
 
 .control-panel {
+  background-color: #f0f0f0;
+  padding: 15px;
+  border-radius: 8px;
   margin-bottom: 20px;
 }
 
-.control-panel > * {
-  margin-bottom: 10px;
+.file-selection {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
-button {
+.compression-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.quality-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.button {
   padding: 8px 16px;
   background-color: #3498db;
   color: #ffffff;
@@ -184,15 +212,28 @@ button {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  font-size: 14px;
 }
 
-button:hover {
+.button:hover {
   background-color: #2980b9;
 }
 
-button:disabled {
+.button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.button.primary {
+  background-color: #2ecc71;
+}
+
+.button.primary:hover {
+  background-color: #27ae60;
+}
+
+input[type="range"] {
+  width: 150px;
 }
 
 .file-list, .compression-results {
