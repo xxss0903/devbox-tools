@@ -16,7 +16,12 @@ const webviewUrl = ref('https://icons8.com')
   <div class="icons8-viewer">
     <NavigationBar title="Icons8" @goBack="goBack" />
     <div class="webview-container">
-      <webview :src="webviewUrl" style="width:100%; height:100%;"></webview>
+      <webview 
+        :src="webviewUrl" 
+        style="width:100%; height:100%;"
+        sandbox="allow-scripts allow-forms allow-same-origin"
+        allowpopups
+      ></webview>
     </div>
   </div>
 </template>

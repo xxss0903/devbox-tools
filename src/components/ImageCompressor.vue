@@ -8,15 +8,12 @@ const selectedFiles = ref<{ name: string, size: number, data: string }[]>([])
 const compressedFiles = ref<{ name: string, originalSize: number, compressedSize: number, data: string }[]>([])
 const compressionQuality = ref(0.7)
 const isCompressing = ref(false)
+const isDragging = ref(false)
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    selectedFiles.value = Array.from(target.files).map(file => ({
-      name: file.name,
-      size: file.size,
-      data: URL.createObjectURL(file)
-    }))
+    addFiles(Array.from(target.files))
   }
 }
 
@@ -28,6 +25,33 @@ const handleFolderSelect = async () => {
     }
   } catch (err) {
     console.error('Error selecting folder:', err)
+  }
+}
+
+const addFiles = (files: File[]) => {
+  const newFiles = files.map(file => ({
+    name: file.name,
+    size: file.size,
+    data: URL.createObjectURL(file)
+  }))
+  selectedFiles.value = [...selectedFiles.value, ...newFiles]
+}
+
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  isDragging.value = true
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  isDragging.value = false
+}
+
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  isDragging.value = false
+  if (event.dataTransfer?.files) {
+    addFiles(Array.from(event.dataTransfer.files))
   }
 }
 
@@ -112,9 +136,12 @@ const totalCompressionRate = computed(() => {
 </script>
 
 <template>
-  <div class="image-compressor">
+  <div class="image-compressor" 
+       @dragover="handleDragOver" 
+       @dragleave="handleDragLeave" 
+       @drop="handleDrop">
     <NavigationBar title="图片压缩工具" @goBack="goBack" />
-    <div class="compressor-content">
+    <div class="compressor-content" :class="{ 'dragging': isDragging }">
       <div class="control-panel">
         <div class="file-selection">
           <input type="file" id="file-input" accept="image/*" @change="handleFileChange" multiple class="hidden-input" />
@@ -134,6 +161,10 @@ const totalCompressionRate = computed(() => {
             下载压缩后的图片
           </button>
         </div>
+      </div>
+      
+      <div v-if="isDragging" class="drag-overlay">
+        <p>拖放图片文件到这里</p>
       </div>
       
       <!-- 文件列表和压缩结果部分保持不变 -->
@@ -173,6 +204,7 @@ const totalCompressionRate = computed(() => {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  position: relative;
 }
 
 .control-panel {
@@ -180,12 +212,14 @@ const totalCompressionRate = computed(() => {
   padding: 15px;
   border-radius: 8px;
   margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .file-selection {
   display: flex;
   gap: 10px;
-  margin-bottom: 15px;
 }
 
 .compression-controls {
@@ -247,5 +281,24 @@ ul {
 
 li {
   margin-bottom: 5px;
+}
+
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  z-index: 10;
+}
+
+.dragging {
+  border: 2px dashed #3498db;
 }
 </style>

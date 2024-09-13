@@ -82,13 +82,27 @@ function createWindow() {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: false,
-      nodeIntegration: true,
-      webviewTag: true // 启用webview标签
+      contextIsolation: true, // 启用 contextIsolation
+      nodeIntegration: false, // 禁用 nodeIntegration
+      webviewTag: true, // 启用webview标签
+      webSecurity: true
     },
     resizable: true,
     maximizable: false
-  })
+  });
+
+  // 更新 Content-Security-Policy
+  const devCSP = "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com; connect-src 'self' ws: wss: https://icons8.com; img-src 'self' data: https: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com;";
+  const prodCSP = "default-src 'self'; script-src 'self' https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: https://icons8.com; connect-src 'self' https: https://icons8.com; frame-src 'self' https://icons8.com;";
+
+  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [process.env.NODE_ENV !== 'production' ? devCSP : prodCSP]
+      }
+    })
+  });
 
   if (process.env.NODE_ENV !== 'production') {
     win.loadURL('http://localhost:5173')
