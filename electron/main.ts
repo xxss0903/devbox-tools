@@ -58,10 +58,11 @@ function createWindow() {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false
+      contextIsolation: false,
+      nodeIntegration: true,
+      webviewTag: true // 启用webview标签
     },
-    resizable: false,
+    resizable: true,
     maximizable: false
   })
 

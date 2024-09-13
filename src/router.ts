@@ -11,6 +11,7 @@ import SignatureInfo from './components/SignatureInfo.vue'
 import ImageBase64Converter from './components/ImageBase64Converter.vue'
 import ImageCropper from './components/ImageCropper.vue'
 import WorkDiary from './components/WorkDiary.vue'
+import Icons8Viewer from './components/Icons8Viewer.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -33,6 +34,7 @@ const routes = [
   },
   { path: '/image-cropper', name: 'ImageCropper', component: ImageCropper },
   { path: '/work-diary', name: 'WorkDiary', component: WorkDiary }
+  { path: '/icons8-viewer', name: 'Icons8Viewer', component: Icons8Viewer },
 ]
 
 const router = createRouter({
@@ -41,3 +43,4 @@ const router = createRouter({
 })
 
 export default router
+
