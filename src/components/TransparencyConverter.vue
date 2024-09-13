@@ -18,7 +18,7 @@ const rgba = computed(() => {
 
 const hex = computed(() => {
   const alpha = Math.round(opacity.value * 255 / 100).toString(16).padStart(2, '0')
-  return `${color.value}${alpha}`
+  return `#${alpha}${color.value.slice(1)}`
 })
 
 const copyToClipboard = (text: string) => {
@@ -59,6 +59,12 @@ watch(color, (newColor) => {
     colorPreview.style.backgroundColor = newColor
   }
 })
+
+function updateOpacity() {
+  // 确保opacity值在0-100之间
+  opacity.value = Math.max(0, Math.min(100, opacity.value));
+  // ... 更新颜色逻辑 ...
+}
 </script>
 
 <template>
@@ -74,10 +80,22 @@ watch(color, (newColor) => {
           <input type="color" id="color" :value="color" @input="updateColor" />
           <input type="text" :value="color" @input="updateColor" />
         </div>
-        <div>
-          <label for="opacity">不透明度：</label>
-          <input type="range" id="opacity" v-model="opacity" min="0" max="100" step="1" />
-          {{ opacity }}%
+        <div class="opacity-control">
+          <input
+            type="range"
+            min="0"
+            max="100"
+            v-model="opacity"
+            @input="updateOpacity"
+          />
+          <input
+            type="number"
+            min="0"
+            max="100"
+            v-model="opacity"
+            @input="updateOpacity"
+          />
+          %
         </div>
       </div>
       <div class="result">
@@ -150,6 +168,16 @@ watch(color, (newColor) => {
 .control-panel label {
   display: inline-block;
   width: 80px;
+}
+
+.opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+input[type="number"] {
+  width: 60px;
 }
 
 .result {
