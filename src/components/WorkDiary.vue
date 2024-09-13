@@ -13,7 +13,7 @@
             :attributes="attributes"
             is-expanded
             :columns="1"
-            :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
+            :model-config="{ type: 'number', mask: 'YYYY-MM-DD' }"
           />
         </div>
         <div class="todo-list">
@@ -48,6 +48,8 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import 'v-calendar/style.css'
+import moment from 'moment'
 
 interface DiaryEntry {
   id?: number
@@ -62,7 +64,7 @@ interface TodoItem {
 }
 
 const router = useRouter()
-const date = ref(new Date().toISOString().split('T')[0])
+const date = ref(getDayTimestamp(new Date()))
 const content = ref('')
 const diaryEntries = ref<DiaryEntry[]>([])
 const todos = ref<TodoItem[]>([])
@@ -91,31 +93,50 @@ const editorOptions = {
   placeholder: '请输入今天的工作内容和进度...'
 }
 
+function getDayTimestamp(date: Date): number {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+function timestampToDateString(timestamp: number): string {
+  return new Date(timestamp).toISOString().split('T')[0]
+}
+
 const saveDiary = async () => {
   try {
     const serializedTodos = JSON.stringify(todos.value)
     console.log('Saving todos:', serializedTodos)
-    await window.electronAPI.saveDiaryEntry(date.value, content.value, serializedTodos)
+    let timeStampValue = moment(date.value).valueOf()
+    console.log('save date 1', timeStampValue)
+    await window.electronAPI.saveDiaryEntry(
+      timeStampValue.toString(),
+      content.value,
+      serializedTodos
+    )
     await loadDiaryEntries()
   } catch (error) {
     console.error('保存日记时出错:', error)
   }
 }
 
-const loadDiary = async (selectedDate: string) => {
-  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(selectedDate)
-  console.log('Diary entry loaded:', diaryEntry)
+const loadDiary = async (selectedTimestamp: number) => {
+  console.log('Loading diary for date:', selectedTimestamp)
+  let timeStampValue = moment(selectedTimestamp).valueOf()
+  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(timeStampValue.toString())
+  console.log('Diary entry loaded:', timeStampValue.toString(), diaryEntry)
   if (diaryEntry) {
-    date.value = diaryEntry.date
-    content.value = diaryEntry.content
+    date.value = parseInt(diaryEntry.date)
+    content.value = diaryEntry.content || ''
     todos.value = Array.isArray(diaryEntry.todos)
       ? diaryEntry.todos
       : JSON.parse(diaryEntry.todos || '[]')
+    console.log('Loaded content:', content.value)
     console.log('Loaded todos:', todos.value)
   } else {
-    // 如果没有找到日记，清空内容和待办事项
     content.value = ''
     todos.value = []
+    console.log('No diary entry found, cleared content and todos')
   }
 }
 
@@ -152,7 +173,7 @@ const attributes = computed(() => {
       color: 'green',
       class: 'has-entry'
     },
-    dates: new Date(entry.date)
+    dates: new Date(moment(entry.date).date())
   }))
 })
 
@@ -163,6 +184,7 @@ onMounted(async () => {
 
 // 监听日期变化
 watch(date, async (newDate) => {
+  console.log('Date changed to:', newDate)
   await loadDiary(newDate)
 })
 </script>

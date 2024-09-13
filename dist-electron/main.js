@@ -91,10 +91,10 @@ function createWindow() {
         const db = await getDatabase();
         const entry = await db.get('SELECT * FROM diary_entries WHERE date = ?', [date]);
         if (entry) {
-            console.log('Retrieved entry:', entry); // 添加这行来调试
+            console.log('Retrieved entry:', entry);
             return {
                 ...entry,
-                todos: entry.todos || '[]' // 确保返回一个有效的 JSON 字符串
+                todos: entry.todos || '[]'
             };
         }
         return null;

@@ -26,7 +26,7 @@ async function getDatabase() {
 
 interface DiaryEntry {
   id?: number
-  date: string
+  date: string // 这里保持为字符串，但实际上存储的是时间戳
   content: string
   todos: TodoItem[]
 }
@@ -58,7 +58,7 @@ export async function getDiaryEntries(): Promise<DiaryEntry[]> {
 
 export async function getDiaryEntryByDate(date: string): Promise<DiaryEntry | null> {
   const entry = await ipcRenderer.invoke('get-diary-entry-by-date', date)
-  console.log('Entry received in database.ts:', entry) // 添加这行来调试
+  console.log('Entry received in database.ts:', entry)
   if (entry) {
     return {
       ...entry,
