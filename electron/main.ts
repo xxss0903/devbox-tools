@@ -1,10 +1,10 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
 import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
-
+const fs = require('fs').promises;
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
 
@@ -51,6 +51,30 @@ async function getDatabase(): Promise<Database> {
 
   return db
 }
+
+// 添加选择文件夹的方法
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory']
+  });
+  if (result.canceled) {
+    return null;
+  }
+  const files = await fs.readdir(result.filePaths[0]);
+  const imageFiles = await Promise.all(files
+    .filter((file: string) => /\.(jpg|jpeg|png)$/i.test(file))
+    .map(async (file: string) => {
+      const filePath = path.join(result.filePaths[0], file);
+      const stats = await fs.stat(filePath);
+      const fileContent = await fs.readFile(filePath, { encoding: 'base64' });
+      return {
+        name: file,
+        size: stats.size,
+        data: `data:image/${path.extname(file).slice(1)};base64,${fileContent}`
+      };
+    }));
+  return imageFiles;
+});
 
 function createWindow() {
   const win = new BrowserWindow({

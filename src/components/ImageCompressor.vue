@@ -4,104 +4,111 @@ import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
-const selectedFile = ref<File | null>(null)
-const originalImage = ref<string | null>(null)
-const compressedImage = ref<string | null>(null)
+const selectedFiles = ref<{ name: string, size: number, data: string }[]>([])
+const compressedFiles = ref<{ name: string, originalSize: number, compressedSize: number, data: string }[]>([])
 const compressionQuality = ref(0.7)
-const originalWidth = ref(0)
-const originalHeight = ref(0)
-const compressedWidth = ref(0)
-const compressedHeight = ref(0)
-const originalSize = ref<number | null>(null)
-const compressedSize = ref<number | null>(null)
-
-const aspectRatio = computed(() => {
-  return originalWidth.value / originalHeight.value
-})
+const isCompressing = ref(false)
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    selectedFile.value = target.files[0]
-    originalImage.value = URL.createObjectURL(selectedFile.value)
-    originalSize.value = selectedFile.value.size
-    
-    const img = new Image()
-    img.onload = () => {
-      originalWidth.value = img.width
-      originalHeight.value = img.height
-      compressedWidth.value = img.width
-      compressedHeight.value = img.height
-    }
-    img.src = originalImage.value
+    selectedFiles.value = Array.from(target.files).map(file => ({
+      name: file.name,
+      size: file.size,
+      data: URL.createObjectURL(file)
+    }))
   }
 }
 
-const updateHeight = () => {
-  compressedHeight.value = Math.round(compressedWidth.value / aspectRatio.value)
+const handleFolderSelect = async () => {
+  try {
+    const result = await window.electronAPI.selectFolder()
+    if (result) {
+      selectedFiles.value = result
+    }
+  } catch (err) {
+    console.error('Error selecting folder:', err)
+  }
 }
 
-const updateWidth = () => {
-  compressedWidth.value = Math.round(compressedHeight.value * aspectRatio.value)
+const compressImages = async () => {
+  isCompressing.value = true
+  compressedFiles.value = []
+
+  for (const file of selectedFiles.value) {
+    const compressedImage = await compressImage(file)
+    compressedFiles.value.push({
+      name: file.name,
+      originalSize: file.size,
+      compressedSize: compressedImage.size,
+      data: compressedImage.data
+    })
+  }
+
+  isCompressing.value = false
 }
 
-const compressImage = () => {
-  if (!selectedFile.value) return
-
-  const reader = new FileReader()
-  reader.onload = (e) => {
+const compressImage = (file: { name: string, size: number, data: string }): Promise<{ size: number, data: string }> => {
+  return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
-      canvas.width = compressedWidth.value
-      canvas.height = compressedHeight.value
+      canvas.width = img.width
+      canvas.height = img.height
 
-      // 设置白色背景
       ctx!.fillStyle = '#FFFFFF'
       ctx!.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx!.imageSmoothingEnabled = true
-      ctx!.imageSmoothingQuality = 'high'
-      ctx?.drawImage(img, 0, 0, compressedWidth.value, compressedHeight.value)
+      ctx!.drawImage(img, 0, 0, img.width, img.height)
 
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            compressedImage.value = URL.createObjectURL(blob)
-            compressedSize.value = blob.size
+            const reader = new FileReader()
+            reader.onloadend = () => {
+              resolve({ 
+                size: blob.size, 
+                data: reader.result as string 
+              })
+            }
+            reader.readAsDataURL(blob)
           }
         },
         'image/jpeg',
         compressionQuality.value
       )
     }
-    img.src = e.target?.result as string
-  }
-  reader.readAsDataURL(selectedFile.value)
+    img.src = file.data
+  })
+}
+
+const downloadCompressedImages = () => {
+  compressedFiles.value.forEach((file, index) => {
+    const link = document.createElement('a')
+    link.href = file.data
+    link.download = `compressed_${file.name}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  })
 }
 
 const goBack = () => {
   router.push({ name: 'ImageTools' })
 }
 
-// 添加一个函数来格式化文件大小
-const formatFileSize = (bytes: number | null): string => {
-  if (bytes === null) return '未知'
+const formatFileSize = (bytes: number): string => {
   const kb = bytes / 1024
   return `${kb.toFixed(2)} KB`
 }
 
-const downloadCompressedImage = () => {
-  if (compressedImage.value) {
-    const link = document.createElement('a')
-    link.href = compressedImage.value
-    link.download = 'compressed_image.jpg'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-}
+const totalCompressionRate = computed(() => {
+  if (compressedFiles.value.length === 0) return 0
+  const totalOriginal = compressedFiles.value.reduce((sum, file) => sum + file.originalSize, 0)
+  const totalCompressed = compressedFiles.value.reduce((sum, file) => sum + file.compressedSize, 0)
+  return ((1 - totalCompressed / totalOriginal) * 100).toFixed(2)
+})
 </script>
 
 <template>
@@ -109,51 +116,39 @@ const downloadCompressedImage = () => {
     <NavigationBar title="图片压缩工具" @goBack="goBack" />
     <div class="compressor-content">
       <div class="control-panel">
-        <input type="file" accept="image/*" @change="handleFileChange" />
+        <input type="file" accept="image/*" @change="handleFileChange" multiple />
+        <button @click="handleFolderSelect">选择文件夹</button>
         <div>
           <label for="quality">压缩质量：</label>
           <input type="range" id="quality" v-model="compressionQuality" min="0.1" max="1" step="0.1" />
           {{ Math.round(compressionQuality * 100) }}%
         </div>
-        <button @click="compressImage" :disabled="!selectedFile">压缩图片</button>
+        <button @click="compressImages" :disabled="selectedFiles.length === 0 || isCompressing">
+          {{ isCompressing ? '压缩中...' : '压缩图片' }}
+        </button>
+        <button @click="downloadCompressedImages" :disabled="compressedFiles.length === 0">
+          下载压缩后的图片
+        </button>
       </div>
-      <div class="image-comparison">
-        <div class="image-container">
-          <h3>原图：</h3>
-          <div v-if="originalImage" class="image-info">
-            <div>
-              <label>宽度：</label>
-              <span>{{ originalWidth }}px</span>
-            </div>
-            <div>
-              <label>高度：</label>
-              <span>{{ originalHeight }}px</span>
-            </div>
-            <div>
-              <label>大小：</label>
-              <span>{{ formatFileSize(originalSize) }}</span>
-            </div>
-          </div>
-          <img v-if="originalImage" :src="originalImage" alt="Original Image" />
-        </div>
-        <div class="image-container">
-          <h3>压缩后的图片（点击下载）：</h3>
-          <div v-if="originalImage" class="image-info">
-            <div>
-              <label for="compressedWidth">宽度：</label>
-              <input type="number" id="compressedWidth" v-model="compressedWidth" @input="updateHeight" min="1" :max="originalWidth" />px
-            </div>
-            <div>
-              <label for="compressedHeight">高度：</label>
-              <input type="number" id="compressedHeight" v-model="compressedHeight" @input="updateWidth" min="1" :max="originalHeight" />px
-            </div>
-            <div>
-              <label>大小：</label>
-              <span>{{ formatFileSize(compressedSize) }}</span>
-            </div>
-          </div>
-          <img v-if="compressedImage" :src="compressedImage" alt="Compressed Image" @click="downloadCompressedImage" class="clickable-image" />
-        </div>
+      <div v-if="selectedFiles.length > 0" class="file-list">
+        <h3>选中的文件：</h3>
+        <ul>
+          <li v-for="file in selectedFiles" :key="file.name">
+            {{ file.name }} ({{ formatFileSize(file.size) }})
+          </li>
+        </ul>
+      </div>
+      <div v-if="compressedFiles.length > 0" class="compression-results">
+        <h3>压缩结果：</h3>
+        <p>总压缩率: {{ totalCompressionRate }}%</p>
+        <ul>
+          <li v-for="file in compressedFiles" :key="file.name">
+            {{ file.name }}:
+            原始大小 {{ formatFileSize(file.originalSize) }} ->
+            压缩后 {{ formatFileSize(file.compressedSize) }}
+            (压缩率: {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)
+          </li>
+        </ul>
       </div>
     </div>
   </div>
@@ -177,65 +172,39 @@ const downloadCompressedImage = () => {
   margin-bottom: 20px;
 }
 
-.image-comparison {
-  display: flex;
-  justify-content: space-between;
-}
-
-.image-container {
-  width: 48%;
-  display: flex;
-  flex-direction: column;
-}
-
-.image-info {
+.control-panel > * {
   margin-bottom: 10px;
-  background-color: #f8f9fa;
-  padding: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
   border-radius: 4px;
-}
-
-.image-info div {
-  margin-bottom: 5px;
-}
-
-.image-info label {
-  display: inline-block;
-  width: 50px;
-  font-weight: bold;
-}
-
-.image-info input[type="number"] {
-  width: 60px;
-  margin-right: 5px;
-}
-
-.clickable-image {
   cursor: pointer;
-  transition: opacity 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
-.clickable-image:hover {
-  opacity: 0.8;
+button:hover {
+  background-color: #2980b9;
 }
 
-img {
-  max-width: 100%;
-  height: auto;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-top: 10px;
-  background-color: #FFFFFF; /* 添加白色背景 */
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
-a {
-  display: block;
-  margin-top: 10px;
-  color: #3498db;
-  text-decoration: none;
+.file-list, .compression-results {
+  margin-top: 20px;
 }
 
-a:hover {
-  text-decoration: underline;
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 5px;
 }
 </style>
