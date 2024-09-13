@@ -6,33 +6,38 @@
       <button @click="saveDiary" class="save-button">保存</button>
     </div>
     <div class="work-diary-content">
-      <div class="diary-form">
+      <div class="left-panel">
         <input v-model="date" type="date" class="date-input" />
         <div class="todo-list">
           <h3>待办事项</h3>
           <ul>
             <li v-for="(todo, index) in todos" :key="index">
-              <input type="checkbox" v-model="todo.done" />
-              <input v-model="todo.text" placeholder="输入待办事项" />
+              <input type="checkbox" v-model="todo.done" @change="updateTodo(index)" />
+              <span :class="{ completed: todo.done }">{{ todo.text }}</span>
               <button @click="removeTodo(index)">删除</button>
             </li>
           </ul>
+          <input v-model="newTodo" @keyup.enter="addTodo" placeholder="输入新的待办事项" />
           <button @click="addTodo">添加待办事项</button>
         </div>
-        <QuillEditor
-          v-model:content="content"
-          :options="editorOptions"
-          contentType="html"
-          class="content-input"
-        />
+        <div class="diary-list">
+          <h3>历史记录</h3>
+          <ul>
+            <li v-for="entry in diaryEntries" :key="entry.id" @click="loadDiary(entry)">
+              {{ entry.date }}
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="diary-list">
-        <h3>历史记录</h3>
-        <ul>
-          <li v-for="entry in diaryEntries" :key="entry.id" @click="loadDiary(entry)">
-            {{ entry.date }}
-          </li>
-        </ul>
+      <div class="right-panel">
+        <div class="quill-editor-container">
+          <QuillEditor
+            v-model:content="content"
+            :options="editorOptions"
+            contentType="html"
+            class="content-input"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -73,6 +78,7 @@ const date = ref(new Date().toISOString().split('T')[0])
 const content = ref('')
 const diaryEntries = ref<DiaryEntry[]>([])
 const todos = ref<TodoItem[]>([])
+const newTodo = ref('')
 
 const editorOptions = {
   modules: {
@@ -100,25 +106,24 @@ const editorOptions = {
 const saveDiary = async () => {
   try {
     const serializedTodos = JSON.stringify(todos.value)
-    console.log('Saving todos:', serializedTodos) // 添加这行来调试
+    console.log('Saving todos:', serializedTodos)
     await window.electronAPI.saveDiaryEntry(date.value, content.value, serializedTodos)
     await loadDiaryEntries()
   } catch (error) {
     console.error('保存日记时出错:', error)
-    // 这里可以添加一些用户友好的错误处理，比如显示一个错误提示
   }
 }
 
 const loadDiary = async (entry: DiaryEntry) => {
   const diaryEntry = await window.electronAPI.getDiaryEntryByDate(entry.date)
-  console.log('Diary entry loaded:', diaryEntry) // 添加这行来调试
+  console.log('Diary entry loaded:', diaryEntry)
   if (diaryEntry) {
     date.value = diaryEntry.date
     content.value = diaryEntry.content
     todos.value = Array.isArray(diaryEntry.todos)
       ? diaryEntry.todos
       : JSON.parse(diaryEntry.todos || '[]')
-    console.log('Loaded todos:', todos.value) // 添加这行来调试
+    console.log('Loaded todos:', todos.value)
   }
 }
 
@@ -131,7 +136,15 @@ const goBack = () => {
 }
 
 const addTodo = () => {
-  todos.value.push({ text: '', done: false })
+  if (newTodo.value.trim()) {
+    todos.value.push({ text: newTodo.value.trim(), done: false })
+    newTodo.value = ''
+  }
+}
+
+const updateTodo = (index: number) => {
+  // 这个函数可以用来在需要时触发其他操作，比如自动保存
+  console.log('Todo updated:', todos.value[index])
 }
 
 const removeTodo = (index: number) => {
@@ -147,7 +160,7 @@ onMounted(async () => {
 .work-diary-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -191,51 +204,31 @@ onMounted(async () => {
 
 .work-diary-content {
   display: flex;
-  padding: 20px;
+  height: 600px; /* 假设导航栏高度为60px */
   overflow: hidden;
-  height: 500px;
 }
 
-.diary-form {
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid #e9ecef;
+}
+
+.right-panel {
   flex: 2;
   display: flex;
   flex-direction: column;
-  margin-right: 20px;
+  padding: 20px;
   overflow-y: auto;
-  max-height: calc(100vh - 80px);
+  height: 500px;
 }
 
 .date-input {
   margin-bottom: 10px;
   padding: 5px;
-}
-
-.content-input {
-  flex: 1;
-  min-height: 200px;
-  max-height: 400px; /* 添加最大高度限制 */
-  overflow-y: auto;
-}
-
-.diary-list {
-  flex: 1;
-  overflow-y: auto;
-  max-height: calc(100vh - 80px);
-}
-
-.diary-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.diary-list li {
-  cursor: pointer;
-  padding: 5px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.diary-list li:hover {
-  background-color: #f8f9fa;
 }
 
 .todo-list {
@@ -257,10 +250,14 @@ onMounted(async () => {
   margin-right: 10px;
 }
 
-.todo-list input[type='text'] {
+.todo-list span {
   flex-grow: 1;
   margin-right: 10px;
-  padding: 5px;
+}
+
+.todo-list .completed {
+  text-decoration: line-through;
+  color: #888;
 }
 
 .todo-list button {
@@ -273,5 +270,46 @@ onMounted(async () => {
 
 .todo-list button:hover {
   background-color: #d32f2f;
+}
+
+.todo-list input[type='text'] {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 5px;
+}
+
+.diary-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.diary-list li {
+  cursor: pointer;
+  padding: 5px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.diary-list li:hover {
+  background-color: #f8f9fa;
+}
+
+.quill-editor-container {
+  height: 500px; /* 将高度固定为 500px */
+}
+
+:deep(.quill-editor) {
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.ql-container) {
+  flex: 1;
+  overflow-y: auto;
+  height: 300px;
+}
+
+.content-input {
+  height: 300px;
 }
 </style>
