@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 
@@ -69,10 +70,7 @@ function updateOpacity() {
 
 <template>
   <div class="transparency-converter">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">透明度颜色转换工具</h2>
-    </div>
+    <NavigationBar title="透明度颜色转换工具" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <div>
