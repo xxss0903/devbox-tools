@@ -1,7 +1,9 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { execFile } = require('child_process');
+const sequelize_1 = require("sequelize");
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path.join(__dirname, 'preload.js'));
 // ADB 可执行文件的路径
@@ -19,6 +21,7 @@ ipcMain.handle('execute-adb', async (event, command) => {
         });
     });
 });
+let sequelize;
 function createWindow() {
     const win = new BrowserWindow({
         width: 1200,
@@ -37,11 +40,26 @@ function createWindow() {
     else {
         win.loadFile(path.join(__dirname, '../dist/index.html'));
     }
+    // 设置数据库连接
+    const dbPath = path.join(app.getPath('userData'), 'database.sqlite');
+    sequelize = new sequelize_1.Sequelize({
+        dialect: 'sqlite',
+        storage: dbPath
+    });
+    // 测试数据库连接
+    sequelize
+        .authenticate()
+        .then(() => console.log('数据库连接成功'))
+        .catch((err) => console.error('无法连接到数据库:', err));
 }
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
+    }
+    // 关闭数据库连接
+    if (sequelize) {
+        sequelize.close();
     }
 });
 app.on('activate', () => {

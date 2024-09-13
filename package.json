@@ -16,7 +16,9 @@
     "pinia": "^2.1.7",
     "vue": "^3.4.29",
     "vue-router": "^4.4.4",
-    "vue-advanced-cropper": "^2.8.8"
+    "vue-advanced-cropper": "^2.8.8",
+    "sqlite3": "^5.1.6",
+    "sequelize": "^6.32.1"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.8.0",
@@ -38,6 +40,7 @@
     "vite": "^5.3.1",
     "vite-plugin-vue-devtools": "^7.3.1",
     "vue-tsc": "^2.0.21",
-    "wait-on": "^7.0.1"
+    "wait-on": "^7.0.1",
+    "@types/sqlite3": "^3.1.8"
   }
 }
