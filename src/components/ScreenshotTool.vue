@@ -87,21 +87,33 @@ const takeScreenshot = async () => {
 
 const initCanvas = () => {
   if (canvasRef.value) {
-    ctx.value = canvasRef.value.getContext('2d')
+    ctx.value = canvasRef.value.getContext('2d', { willReadFrequently: true })
     if (ctx.value) {
       ctx.value.strokeStyle = 'red'
       ctx.value.lineWidth = 3
+      ctx.value.lineCap = 'round'
+      ctx.value.lineJoin = 'round'
+      ctx.value.imageSmoothingEnabled = true
+      ctx.value.imageSmoothingQuality = 'high'
     }
   }
   if (tempCanvasRef.value) {
-    tempCtx.value = tempCanvasRef.value.getContext('2d')
+    tempCtx.value = tempCanvasRef.value.getContext('2d', { willReadFrequently: true })
     if (tempCtx.value) {
       tempCtx.value.strokeStyle = 'red'
       tempCtx.value.lineWidth = 3
+      tempCtx.value.lineCap = 'round'
+      tempCtx.value.lineJoin = 'round'
+      tempCtx.value.imageSmoothingEnabled = true
+      tempCtx.value.imageSmoothingQuality = 'high'
     }
   }
   if (cropCanvasRef.value) {
-    cropCtx.value = cropCanvasRef.value.getContext('2d')
+    cropCtx.value = cropCanvasRef.value.getContext('2d', { willReadFrequently: true })
+    if (cropCtx.value) {
+      cropCtx.value.imageSmoothingEnabled = true
+      cropCtx.value.imageSmoothingQuality = 'high'
+    }
   }
 }
 
@@ -196,6 +208,9 @@ const draw = (e: MouseEvent) => {
   if (currentTool.value === 'pen') {
     ctx.value.lineTo(endX, endY)
     ctx.value.stroke()
+    // 重新开始路径，以确保每个点都是圆润的
+    ctx.value.beginPath()
+    ctx.value.moveTo(endX, endY)
   } else if (
     isDrawingArrow.value &&
     (currentTool.value === 'arrow' || currentTool.value === 'line')
@@ -245,7 +260,7 @@ const drawArrow = (
   const minLineWidth = 3
   const maxLineWidth = 10
   const headLength = Math.max(15, Math.min(40, length * 0.4))
-  const headWidth = headLength * 0.6 // 减小箭头宽度比例
+  const headWidth = headLength * 0.6
 
   ctx.save()
   ctx.beginPath()
@@ -281,11 +296,11 @@ const drawArrow = (
   ctx.beginPath()
   ctx.moveTo(toX, toY)
   ctx.lineTo(
-    toX - headLength * Math.cos(angle - Math.PI / 10), // 调整角度使三角形更窄
+    toX - headLength * Math.cos(angle - Math.PI / 10),
     toY - headLength * Math.sin(angle - Math.PI / 10)
   )
   ctx.lineTo(
-    toX - headLength * Math.cos(angle + Math.PI / 10), // 调整角度使三角形更窄
+    toX - headLength * Math.cos(angle + Math.PI / 10),
     toY - headLength * Math.sin(angle + Math.PI / 10)
   )
   ctx.closePath()
