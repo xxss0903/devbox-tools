@@ -14,7 +14,8 @@ const codeTypes = [
   { value: 'base64', label: 'Base64' },
   { value: 'url', label: 'URL' },
   { value: 'html', label: 'HTML实体' },
-  { value: 'md5', label: 'MD5' }
+  { value: 'md5', label: 'MD5' },
+  { value: 'unicode', label: 'Unicode' } // 添加 Unicode 选项
 ]
 
 const isDecodeDisabled = computed(() => codeType.value === 'md5')
@@ -33,6 +34,9 @@ const encode = () => {
         break
       case 'md5':
         output.value = MD5(input.value).toString()
+        break
+      case 'unicode':
+        output.value = input.value.split('').map(char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`).join('')
         break
       default:
         output.value = 'Unsupported encode type'
@@ -56,6 +60,9 @@ const decode = () => {
         break
       case 'md5':
         output.value = 'MD5 is a one-way hash function and cannot be decoded.'
+        break
+      case 'unicode':
+        output.value = input.value.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
         break
       default:
         output.value = 'Unsupported decode type'
