@@ -94,8 +94,8 @@ const goBack = () => {
           <textarea id="input" v-model="input" rows="5"></textarea>
         </div>
         <div class="button-group">
-          <button @click="encode">编码</button>
           <button @click="decode" :disabled="isDecodeDisabled">解码</button>
+          <button @click="encode">编码</button>
         </div>
       </div>
       <div class="result">
