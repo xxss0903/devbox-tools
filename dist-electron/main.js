@@ -175,3 +175,23 @@ electron_1.app.on('activate', () => {
         createWindow();
     }
 });
+// 添加生成周报的方法
+electron_1.ipcMain.handle('generate-weekly-summary', async (event, startDate, endDate) => {
+    const db = await getDatabase();
+    const entries = await db.all('SELECT * FROM diary_entries WHERE date BETWEEN ? AND ? ORDER BY date ASC', [startDate, endDate]);
+    let summary = `周报 (${startDate} 至 ${endDate}):\n\n`;
+    for (const entry of entries) {
+        summary += `日期: ${entry.date}\n`;
+        summary += `内容: ${entry.content}\n`;
+        const todos = JSON.parse(entry.todos || '[]');
+        if (todos.length > 0) {
+            summary += '待办事项:\n';
+            for (const todo of todos) {
+                summary += `- [${todo.done ? 'x' : ' '}] ${todo.text}\n`;
+            }
+        }
+        summary += '\n---\n\n';
+    }
+    // 这里可以添加更复杂的摘要生成逻辑,例如使用 AI 生成摘要
+    return summary;
+});

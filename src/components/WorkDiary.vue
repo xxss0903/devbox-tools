@@ -5,6 +5,7 @@
       <h2 class="detail-title">工作日记</h2>
       <button @click="saveDiary" class="save-button">保存</button>
       <button @click="clearDatabase" class="clear-button">清空数据库</button>
+      <button @click="generateWeeklySummary" class="summary-button">生成周报</button>
     </div>
     <div class="work-diary-content">
       <div class="left-panel">
@@ -42,6 +43,19 @@
         </div>
       </div>
     </div>
+
+    <!-- 修改模态组件部分 -->
+    <Transition name="fade">
+      <div v-if="showSummaryModal" class="modal-wrapper">
+        <div class="modal">
+          <div class="modal-content">
+            <h2>周报摘要</h2>
+            <div class="summary-content">{{ summaryContent }}</div>
+            <button @click="closeSummaryModal" class="close-button">关闭</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -73,6 +87,8 @@ const diaryEntries = ref<DiaryEntry[]>([])
 const todos = ref<TodoItem[]>([])
 const newTodo = ref('')
 const quillEditorRef = ref()
+const showSummaryModal = ref(false)
+const summaryContent = ref('')
 
 const editorOptions = {
   modules: {
@@ -128,7 +144,7 @@ const loadDiaryEntries = async () => {
 }
 
 const goBack = () => {
-  router.push({ name: 'Home' })
+  router.back()
 }
 
 const addTodo = () => {
@@ -220,6 +236,28 @@ const loadDiary = async (selectedTime: string) => {
     }
     console.log('No diary entry found, cleared content and todos')
   }
+}
+
+const generateWeeklySummary = async () => {
+  try {
+    const currentDate = moment(date.value)
+    const startOfWeek = currentDate.startOf('week').format('YYYY-MM-DD')
+    const endOfWeek = currentDate.endOf('week').format('YYYY-MM-DD')
+    
+    const summary = await window.electronAPI.generateWeeklySummary(startOfWeek, endOfWeek)
+    
+    // 更新摘要内容并显示模态框
+    summaryContent.value = summary
+    showSummaryModal.value = true
+    
+    console.log('生成的周报:', summary)
+  } catch (error) {
+    console.error('生成周报时出错:', error)
+  }
+}
+
+const closeSummaryModal = () => {
+  showSummaryModal.value = false
 }
 
 </script>
@@ -394,5 +432,482 @@ const loadDiary = async (selectedTime: string) => {
 
 .clear-button:hover {
   background-color: #c0392b;
+}
+
+.summary-button {
+  padding: 8px 16px;
+  background-color: #9b59b6;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.summary-button:hover {
+  background-color: #8e44ad;
+}
+
+.modal-wrapper {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.modal {
+  background-color: #fefefe;
+  padding: 20px;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.summary-content {
+  white-space: pre-wrap;
+  margin-bottom: 20px;
+}
+
+.close-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.close-button:hover {
+  background-color: #2980b9;
+}
+.work-diary-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.navigation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.back-button,
+.save-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover,
+.save-button:hover {
+  background-color: #2980b9;
+}
+
+.save-button {
+  background-color: #4caf50;
+}
+
+.save-button:hover {
+  background-color: #45a049;
+}
+
+.detail-title {
+  font-size: 1.2em;
+  color: #2c3e50;
+}
+
+.work-diary-content {
+  display: flex;
+  height: 600px; /* 假设导航栏高度为60px */
+  overflow: hidden;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid #e9ecef;
+}
+
+.right-panel {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  height: 500px;
+}
+
+.date-picker {
+  margin-bottom: 20px;
+}
+
+:deep(.vc-container) {
+  width: 100%;
+}
+
+:deep(.vc-day-content) {
+  position: relative;
+}
+
+:deep(.has-entry) {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.todo-list {
+  margin-bottom: 20px;
+}
+
+.todo-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.todo-list input[type='checkbox'] {
+  margin-right: 10px;
+}
+
+.todo-list span {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.todo-list .completed {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.todo-list button {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.todo-list button:hover {
+  background-color: #d32f2f;
+}
+
+.todo-list input[type='text'] {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 5px;
+}
+
+.quill-editor-container {
+  height: 500px; /* 将高度固定为 500px */
+}
+
+:deep(.quill-editor) {
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.ql-container) {
+  flex: 1;
+  overflow-y: auto;
+  height: 300px;
+}
+
+.content-input {
+  height: 300px;
+}
+
+.clear-button {
+  padding: 8px 16px;
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.clear-button:hover {
+  background-color: #c0392b;
+}
+
+.summary-button {
+  padding: 8px 16px;
+  background-color: #9b59b6;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.summary-button:hover {
+  background-color: #8e44ad;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  padding: 20px;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.summary-content {
+  white-space: pre-wrap;
+  margin-bottom: 20px;
+}
+
+.close-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.close-button:hover {
+  background-color: #2980b9;
+}
+
+.work-diary-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.navigation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.back-button,
+.save-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover,
+.save-button:hover {
+  background-color: #2980b9;
+}
+
+.save-button {
+  background-color: #4caf50;
+}
+
+.save-button:hover {
+  background-color: #45a049;
+}
+
+.detail-title {
+  font-size: 1.2em;
+  color: #2c3e50;
+}
+
+.work-diary-content {
+  display: flex;
+  height: 600px; /* 假设导航栏高度为60px */
+  overflow: hidden;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid #e9ecef;
+}
+
+.right-panel {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  height: 500px;
+}
+
+.date-picker {
+  margin-bottom: 20px;
+}
+
+:deep(.vc-container) {
+  width: 100%;
+}
+
+:deep(.vc-day-content) {
+  position: relative;
+}
+
+:deep(.has-entry) {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.todo-list {
+  margin-bottom: 20px;
+}
+
+.todo-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.todo-list input[type='checkbox'] {
+  margin-right: 10px;
+}
+
+.todo-list span {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.todo-list .completed {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.todo-list button {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.todo-list button:hover {
+  background-color: #d32f2f;
+}
+
+.todo-list input[type='text'] {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 5px;
+}
+
+.quill-editor-container {
+  height: 500px; /* 将高度固定为 500px */
+}
+
+:deep(.quill-editor) {
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.ql-container) {
+  flex: 1;
+  overflow-y: auto;
+  height: 300px;
+}
+
+.content-input {
+  height: 300px;
+}
+
+.clear-button {
+  padding: 8px 16px;
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.clear-button:hover {
+  background-color: #c0392b;
+}
+
+.summary-button {
+  padding: 8px 16px;
+  background-color: #9b59b6;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.summary-button:hover {
+  background-color: #8e44ad;
 }
 </style>

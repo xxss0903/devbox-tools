@@ -13,7 +13,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
   getDiaryEntries: () => ipcRenderer.invoke('get-diary-entries'),
   getDiaryEntryByDate: (date: string) => ipcRenderer.invoke('get-diary-entry-by-date', date),
-  clearDatabase: () => ipcRenderer.invoke('clear-database')
+  clearDatabase: () => ipcRenderer.invoke('clear-database'),
+  generateWeeklySummary: (startDate: string, endDate: string) => 
+    ipcRenderer.invoke('generate-weekly-summary', startDate, endDate),
 });
 
 console.log('electronAPI exposed');
