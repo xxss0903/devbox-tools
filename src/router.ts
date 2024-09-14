@@ -33,8 +33,8 @@ const routes = [
     component: ImageBase64Converter
   },
   { path: '/image-cropper', name: 'ImageCropper', component: ImageCropper },
-  { path: '/work-diary', name: 'WorkDiary', component: WorkDiary }
-  { path: '/icons8-viewer', name: 'Icons8Viewer', component: Icons8Viewer },
+  { path: '/work-diary', name: 'WorkDiary', component: WorkDiary },
+  { path: '/icons8-viewer', name: 'Icons8Viewer', component: Icons8Viewer }
 ]
 
 const router = createRouter({

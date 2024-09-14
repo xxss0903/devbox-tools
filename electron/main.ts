@@ -92,9 +92,16 @@ ipcMain.handle('process-dropped-files', async (event, filePaths) => {
   return imageFiles;
 });
 
+// 添加清空数据库的方法
+ipcMain.handle('clear-database', async () => {
+  const db = await getDatabase()
+  await db.run('DELETE FROM diary_entries')
+  console.log('数据库已清空')
+})
+
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1200,
+    width: 1600,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -149,7 +156,7 @@ function createWindow() {
       event: any,
       { date, content, todos }: { date: string; content: string; todos: string }
     ) => {
-      console.log('save diary ', todos, content)
+      console.log('save diary ', date, todos, content)
       const db = await getDatabase()
       const res = await db.run(
         'INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)',
@@ -176,6 +183,9 @@ function createWindow() {
     }
     return null
   })
+  
+  // 默认打开开发者工具
+  win.webContents.openDevTools()
 }
 
 app.whenReady().then(createWindow)

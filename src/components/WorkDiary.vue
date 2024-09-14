@@ -4,6 +4,7 @@
       <button class="back-button" @click="goBack">返回</button>
       <h2 class="detail-title">工作日记</h2>
       <button @click="saveDiary" class="save-button">保存</button>
+      <button @click="clearDatabase" class="clear-button">清空数据库</button>
     </div>
     <div class="work-diary-content">
       <div class="left-panel">
@@ -106,9 +107,8 @@ function timestampToDateString(timestamp: number): string {
 const saveDiary = async () => {
   try {
     const serializedTodos = JSON.stringify(todos.value)
-    console.log('Saving todos:', serializedTodos)
-    let timeStampValue = moment(date.value).valueOf()
-    console.log('save date 1', timeStampValue)
+    let timeStampValue = moment(date.value).format("YYYY-MM-DD")
+    console.log('Saving diary:',timeStampValue.toString(), content, serializedTodos)
     await window.electronAPI.saveDiaryEntry(
       timeStampValue.toString(),
       content.value,
@@ -117,26 +117,6 @@ const saveDiary = async () => {
     await loadDiaryEntries()
   } catch (error) {
     console.error('保存日记时出错:', error)
-  }
-}
-
-const loadDiary = async (selectedTimestamp: number) => {
-  console.log('Loading diary for date:', selectedTimestamp)
-  let timeStampValue = moment(selectedTimestamp).valueOf()
-  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(timeStampValue.toString())
-  console.log('Diary entry loaded:', timeStampValue.toString(), diaryEntry)
-  if (diaryEntry) {
-    date.value = parseInt(diaryEntry.date)
-    content.value = diaryEntry.content || ''
-    todos.value = Array.isArray(diaryEntry.todos)
-      ? diaryEntry.todos
-      : JSON.parse(diaryEntry.todos || '[]')
-    console.log('Loaded content:', content.value)
-    console.log('Loaded todos:', todos.value)
-  } else {
-    content.value = ''
-    todos.value = []
-    console.log('No diary entry found, cleared content and todos')
   }
 }
 
@@ -173,20 +153,57 @@ const attributes = computed(() => {
       color: 'green',
       class: 'has-entry'
     },
-    dates: new Date(moment(entry.date).date())
+    dates: new Date(moment(entry.date).format('YYYY-MM-DD'))
   }))
 })
 
+const clearDatabase = async () => {
+  if (confirm('确定要清空数据库吗？此操作不可逆！')) {
+    try {
+      await window.electronAPI.clearDatabase()
+      await loadDiaryEntries()
+      content.value = ''
+      todos.value = []
+      console.log('数据库已清空')
+    } catch (error) {
+      console.error('清空数据库时出错:', error)
+    }
+  }
+}
+
 onMounted(async () => {
   await loadDiaryEntries()
-  await loadDiary(date.value)
+  let dateStr = moment().format('YYYY-MM-DD')
+  await loadDiary(dateStr)
 })
 
 // 监听日期变化
 watch(date, async (newDate) => {
-  console.log('Date changed to:', newDate)
-  await loadDiary(newDate)
+  let dateStr = moment(newDate).format('YYYY-MM-DD')
+  console.log('Date changed to 11:', dateStr, newDate)
+  await loadDiary(dateStr)
 })
+
+
+const loadDiary = async (selectedTime: string) => {
+  console.log('Loading diary for date:', selectedTime)
+  const diaryEntry = await window.electronAPI.getDiaryEntryByDate(selectedTime)
+  console.log('Diary entry loaded:', selectedTime, diaryEntry)
+  if (diaryEntry) {
+    date.value = parseInt(diaryEntry.date)
+    content.value = diaryEntry.content || ''
+    todos.value = Array.isArray(diaryEntry.todos)
+      ? diaryEntry.todos
+      : JSON.parse(diaryEntry.todos || '[]')
+    console.log('Loaded content:', content.value)
+    console.log('Loaded todos:', todos.value)
+  } else {
+    content.value = ''
+    todos.value = []
+    console.log('No diary entry found, cleared content and todos')
+  }
+}
+
 </script>
 
 <style scoped>
@@ -345,5 +362,19 @@ watch(date, async (newDate) => {
 
 .content-input {
   height: 300px;
+}
+
+.clear-button {
+  padding: 8px 16px;
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.clear-button:hover {
+  background-color: #c0392b;
 }
 </style>
