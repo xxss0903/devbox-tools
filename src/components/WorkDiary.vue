@@ -33,6 +33,7 @@
       <div class="right-panel">
         <div class="quill-editor-container">
           <QuillEditor
+            ref="quillEditorRef"
             v-model:content="content"
             :options="editorOptions"
             contentType="html"
@@ -51,6 +52,7 @@ import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import 'v-calendar/style.css'
 import moment from 'moment'
+import { debounce } from 'lodash' // 确保已安装 lodash
 
 interface DiaryEntry {
   id?: number
@@ -70,6 +72,7 @@ const content = ref('')
 const diaryEntries = ref<DiaryEntry[]>([])
 const todos = ref<TodoItem[]>([])
 const newTodo = ref('')
+const quillEditorRef = ref()
 
 const editorOptions = {
   modules: {
@@ -177,29 +180,44 @@ onMounted(async () => {
   await loadDiary(dateStr)
 })
 
-// 监听日期变化
-watch(date, async (newDate) => {
-  let dateStr = moment(newDate).format('YYYY-MM-DD')
-  console.log('Date changed to 11:', dateStr, newDate)
+// 创建一个防抖的 loadDiary 函数
+const debouncedLoadDiary = debounce(async (dateStr: string) => {
+  console.log('Loading diary for date:', dateStr)
   await loadDiary(dateStr)
-})
+}, 300) // 300ms 的延迟
 
+// 修改 watch 函数
+watch(date, (newDate) => {
+  let dateV = new Date(newDate).getTime()
+  let dateStr = moment(dateV).format('YYYY-MM-DD')
+  console.log('Date changed to:', dateStr, newDate)
+  debouncedLoadDiary(dateStr)
+})
 
 const loadDiary = async (selectedTime: string) => {
   console.log('Loading diary for date:', selectedTime)
   const diaryEntry = await window.electronAPI.getDiaryEntryByDate(selectedTime)
   console.log('Diary entry loaded:', selectedTime, diaryEntry)
   if (diaryEntry) {
-    date.value = parseInt(diaryEntry.date)
     content.value = diaryEntry.content || ''
     todos.value = Array.isArray(diaryEntry.todos)
       ? diaryEntry.todos
       : JSON.parse(diaryEntry.todos || '[]')
     console.log('Loaded content:', content.value)
     console.log('Loaded todos:', todos.value)
+    // 如果内容为空字符串，也要清空编辑器
+    if (content.value === '') {
+      if (quillEditorRef.value && quillEditorRef.value.getQuill) {
+        quillEditorRef.value.getQuill().setText('')
+      }
+    }
   } else {
     content.value = ''
     todos.value = []
+    // 清空 Quill 编辑器的内容
+    if (quillEditorRef.value && quillEditorRef.value.getQuill) {
+      quillEditorRef.value.getQuill().setText('')
+    }
     console.log('No diary entry found, cleared content and todos')
   }
 }
