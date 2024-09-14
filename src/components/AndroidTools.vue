@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import ToolsContainer from './ToolsContainer.vue'
 import ToolItem from './ToolItem.vue'
+import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 
@@ -20,13 +21,21 @@ const goBack = () => {
 </script>
 
 <template>
-  <ToolsContainer title="Android工具" @goBack="goBack">
-    <ToolItem
-      v-for="tool in androidTools"
-      :key="tool.name"
-      :title="tool.name"
-      :imageSrc="tool.image"
-      :onClick="() => navigateTo(tool.route)"
-    />
-  </ToolsContainer>
+  <div class="android-tools">
+    <NavigationBar title="Android工具" @goBack="goBack" />
+    <ToolsContainer title="Android工具" @goBack="goBack">
+      <ToolItem
+        v-for="tool in androidTools"
+        :key="tool.name"
+        :title="tool.name"
+        :imageSrc="tool.image"
+        :onClick="() => navigateTo(tool.route)"
+      />
+    </ToolsContainer>
+  </div>
 </template>
+
+<style scoped>
+/* 移除 .navigation-bar 相关样式 */
+/* 其他样式保持不变 */
+</style>

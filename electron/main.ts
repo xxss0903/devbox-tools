@@ -76,6 +76,22 @@ ipcMain.handle('select-folder', async () => {
   return imageFiles;
 });
 
+// 添加这个新的IPC处理程序
+ipcMain.handle('process-dropped-files', async (event, filePaths) => {
+  const imageFiles = await Promise.all(filePaths
+    .filter((filePath: string) => /\.(jpg|jpeg|png)$/i.test(filePath))
+    .map(async (filePath: string) => {
+      const stats = await fs.stat(filePath);
+      const fileContent = await fs.readFile(filePath, { encoding: 'base64' });
+      return {
+        name: path.basename(filePath),
+        size: stats.size,
+        data: `data:image/${path.extname(filePath).slice(1)};base64,${fileContent}`
+      };
+    }));
+  return imageFiles;
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,

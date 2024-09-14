@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import ToolItem from './ToolItem.vue'
 import ToolsContainer from './ToolsContainer.vue'
+import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 

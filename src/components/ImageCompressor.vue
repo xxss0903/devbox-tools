@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
@@ -9,6 +9,18 @@ const compressedFiles = ref<{ name: string, originalSize: number, compressedSize
 const compressionQuality = ref(0.7)
 const isCompressing = ref(false)
 const isDragging = ref(false)
+
+onMounted(() => {
+  document.addEventListener('dragover', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+  })
+
+  document.addEventListener('drop', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+  })
+})
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -28,30 +40,44 @@ const handleFolderSelect = async () => {
   }
 }
 
-const addFiles = (files: File[]) => {
-  const newFiles = files.map(file => ({
-    name: file.name,
-    size: file.size,
-    data: URL.createObjectURL(file)
+const addFiles = async (files: File[]) => {
+  const newFiles = await Promise.all(files.map(async (file) => {
+    const arrayBuffer = await file.arrayBuffer()
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    return {
+      name: file.name,
+      size: file.size,
+      data: `data:${file.type};base64,${base64}`
+    }
   }))
   selectedFiles.value = [...selectedFiles.value, ...newFiles]
 }
 
-const handleDragOver = (event: DragEvent) => {
+const handleDragEnter = (event: DragEvent) => {
   event.preventDefault()
+  event.stopPropagation()
   isDragging.value = true
 }
 
 const handleDragLeave = (event: DragEvent) => {
   event.preventDefault()
+  event.stopPropagation()
   isDragging.value = false
 }
 
-const handleDrop = (event: DragEvent) => {
+const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
+  event.stopPropagation()
   isDragging.value = false
+  
   if (event.dataTransfer?.files) {
-    addFiles(Array.from(event.dataTransfer.files))
+    const filePaths = Array.from(event.dataTransfer.files).map(file => file.path)
+    try {
+      const processedFiles = await window.electronAPI.processDroppedFiles(filePaths)
+      selectedFiles.value = [...selectedFiles.value, ...processedFiles]
+    } catch (error) {
+      console.error('Error processing dropped files:', error)
+    }
   }
 }
 
@@ -136,12 +162,16 @@ const totalCompressionRate = computed(() => {
 </script>
 
 <template>
-  <div class="image-compressor" 
-       @dragover="handleDragOver" 
-       @dragleave="handleDragLeave" 
-       @drop="handleDrop">
+  <div class="image-compressor">
     <NavigationBar title="图片压缩工具" @goBack="goBack" />
-    <div class="compressor-content" :class="{ 'dragging': isDragging }">
+    <div 
+      class="compressor-content" 
+      :class="{ 'dragging': isDragging }"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragEnter"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
       <div class="control-panel">
         <div class="file-selection">
           <input type="file" id="file-input" accept="image/*" @change="handleFileChange" multiple class="hidden-input" />
@@ -164,10 +194,9 @@ const totalCompressionRate = computed(() => {
       </div>
       
       <div v-if="isDragging" class="drag-overlay">
-        <p>拖放图片文件到这里</p>
+        <p>释放鼠标以添加图片</p>
       </div>
       
-      <!-- 文件列表和压缩结果部分保持不变 -->
       <div v-if="selectedFiles.length > 0" class="file-list">
         <h3>选中的文件：</h3>
         <ul>
@@ -289,7 +318,7 @@ li {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(52, 152, 219, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -300,5 +329,6 @@ li {
 
 .dragging {
   border: 2px dashed #3498db;
+  background-color: rgba(52, 152, 219, 0.1);
 }
 </style>

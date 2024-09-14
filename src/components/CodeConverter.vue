@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { MD5 } from 'crypto-js'
+import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 
@@ -71,10 +72,7 @@ const goBack = () => {
 
 <template>
   <div class="code-converter">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">编码/解码转换工具</h2>
-    </div>
+    <NavigationBar title="代码转换器" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <div class="radio-group">

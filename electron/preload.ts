@@ -7,7 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log('executeADB called with command:', command);
     return ipcRenderer.invoke('execute-adb', command);
   },
-  selectFolder: () => ipcRenderer.invoke('select-folder')
+  processDroppedFiles: (filePaths: string[]) => ipcRenderer.invoke('process-dropped-files', filePaths),
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
   saveDiaryEntry: (date: string, content: string, todos: string) =>
     ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
   getDiaryEntries: () => ipcRenderer.invoke('get-diary-entries'),

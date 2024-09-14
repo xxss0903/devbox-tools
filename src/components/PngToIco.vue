@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 const selectedFile = ref<File | null>(null)
@@ -59,11 +60,8 @@ const goBack = () => {
 </script>
 
 <template>
-  <div class="image-to-ico">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">图片转ICO工具</h2>
-    </div>
+  <div class="png-to-ico">
+    <NavigationBar title="PNG转ICO" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <input type="file" accept="image/png, image/jpeg" @change="handleFileChange" />

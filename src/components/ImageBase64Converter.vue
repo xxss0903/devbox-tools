@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 const imageFile = ref<File | null>(null)
@@ -61,10 +62,7 @@ const goBack = () => {
 
 <template>
   <div class="image-base64-converter">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">图片Base64转换工具</h2>
-    </div>
+    <NavigationBar title="图片Base64转换" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <input type="file" accept="image/*" @change="handleFileChange" />
@@ -95,34 +93,6 @@ const goBack = () => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-
-.navigation-bar {
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.back-button {
-  padding: 8px 16px;
-  background-color: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.back-button:hover {
-  background-color: #2980b9;
-}
-
-.detail-title {
-  margin-left: 20px;
-  font-size: 1.2em;
-  color: #2c3e50;
 }
 
 .converter-content {
