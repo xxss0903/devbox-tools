@@ -16,6 +16,22 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     generateWeeklySummary: (startDate, endDate) => electron_1.ipcRenderer.invoke('generate-weekly-summary', startDate, endDate),
     takeScreenshot: () => electron_1.ipcRenderer.invoke('TAKE_SCREENSHOT'),
     registerScreenshotShortcut: (callback) => electron_1.ipcRenderer.on('SCREENSHOT_SHORTCUT', callback),
-    unregisterScreenshotShortcut: () => electron_1.ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT')
+    unregisterScreenshotShortcut: () => electron_1.ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT'),
+    // ... 其他 API ...
+    handleFileDrop: (callback) => {
+        document.addEventListener('drop', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const files = [];
+            for (const f of event.dataTransfer.files) {
+                files.push({ path: f.path, name: f.name, type: f.type });
+            }
+            callback(files);
+        });
+        document.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+    }
 });
 console.log('electronAPI exposed');

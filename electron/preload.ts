@@ -20,7 +20,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   takeScreenshot: () => ipcRenderer.invoke('TAKE_SCREENSHOT'),
   registerScreenshotShortcut: (callback: () => void) =>
     ipcRenderer.on('SCREENSHOT_SHORTCUT', callback),
-  unregisterScreenshotShortcut: () => ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT')
+  unregisterScreenshotShortcut: () => ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT'),
+  // ... 其他 API ...
+  handleFileDrop: (callback: any) => {
+    document.addEventListener('drop', (event: any) => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      const files = []
+      for (const f of event.dataTransfer.files) {
+        files.push({ path: f.path, name: f.name, type: f.type })
+      }
+      callback(files)
+    })
+
+    document.addEventListener('dragover', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+    })
+  }
 })
 
 console.log('electronAPI exposed')

@@ -221,6 +221,16 @@ function createWindow() {
     win.webContents.send('SCREENSHOT_SHORTCUT')
   })
 
+  // 允许加载本地文件
+  app.on('web-contents-created', (event, contents) => {
+    contents.on('will-navigate', (event, navigationUrl) => {
+      const parsedUrl = new URL(navigationUrl)
+      if (parsedUrl.protocol === 'file:') {
+        event.preventDefault()
+      }
+    })
+  })
+
   // 默认打开开发者工具
   win.webContents.openDevTools()
 }

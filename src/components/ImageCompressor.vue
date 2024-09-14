@@ -1,26 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
-const selectedFiles = ref<{ name: string, size: number, data: string }[]>([])
-const compressedFiles = ref<{ name: string, originalSize: number, compressedSize: number, data: string }[]>([])
+const selectedFiles = ref<{ name: string; size: number; data: string }[]>([])
+const compressedFiles = ref<
+  { name: string; originalSize: number; compressedSize: number; data: string }[]
+>([])
 const compressionQuality = ref(0.7)
 const isCompressing = ref(false)
 const isDragging = ref(false)
-
-onMounted(() => {
-  document.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    event.stopPropagation()
-  })
-
-  document.addEventListener('drop', (event) => {
-    event.preventDefault()
-    event.stopPropagation()
-  })
-})
+const dragCounter = ref(0)
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -41,45 +32,82 @@ const handleFolderSelect = async () => {
 }
 
 const addFiles = async (files: File[]) => {
-  const newFiles = await Promise.all(files.map(async (file) => {
-    const arrayBuffer = await file.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-    return {
-      name: file.name,
-      size: file.size,
-      data: `data:${file.type};base64,${base64}`
-    }
-  }))
+  const newFiles = await Promise.all(
+    files.map(async (file) => {
+      const arrayBuffer = await file.arrayBuffer()
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      return {
+        name: file.name,
+        size: file.size,
+        data: `data:${file.type};base64,${base64}`
+      }
+    })
+  )
   selectedFiles.value = [...selectedFiles.value, ...newFiles]
 }
 
 const handleDragEnter = (event: DragEvent) => {
   event.preventDefault()
   event.stopPropagation()
-  isDragging.value = true
+  dragCounter.value++
+  if (dragCounter.value === 1) {
+    requestAnimationFrame(() => {
+      isDragging.value = true
+    })
+  }
 }
 
 const handleDragLeave = (event: DragEvent) => {
   event.preventDefault()
   event.stopPropagation()
-  isDragging.value = false
+  dragCounter.value--
+  if (dragCounter.value === 0) {
+    requestAnimationFrame(() => {
+      isDragging.value = false
+    })
+  }
 }
 
 const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
   event.stopPropagation()
-  isDragging.value = false
-  
-  if (event.dataTransfer?.files) {
-    const filePaths = Array.from(event.dataTransfer.files).map(file => file.path)
-    try {
-      const processedFiles = await window.electronAPI.processDroppedFiles(filePaths)
-      selectedFiles.value = [...selectedFiles.value, ...processedFiles]
-    } catch (error) {
-      console.error('Error processing dropped files:', error)
+  dragCounter.value = 0
+  requestAnimationFrame(() => {
+    isDragging.value = false
+  })
+
+  window.electronAPI.handleFileDrop(async (files) => {
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
+    if (imageFiles.length > 0) {
+      try {
+        const processedFiles = await window.electronAPI.processDroppedFiles(
+          imageFiles.map((f) => f.path)
+        )
+        nextTick(() => {
+          selectedFiles.value = [...selectedFiles.value, ...processedFiles]
+        })
+      } catch (error) {
+        console.error('Error processing dropped files:', error)
+      }
     }
-  }
+  })
 }
+
+onMounted(() => {
+  window.electronAPI.handleFileDrop(async (files) => {
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
+    if (imageFiles.length > 0) {
+      try {
+        const processedFiles = await window.electronAPI.processDroppedFiles(
+          imageFiles.map((f) => f.path)
+        )
+        selectedFiles.value = [...selectedFiles.value, ...processedFiles]
+      } catch (error) {
+        console.error('Error processing dropped files:', error)
+      }
+    }
+  })
+})
 
 const compressImages = async () => {
   isCompressing.value = true
@@ -98,7 +126,11 @@ const compressImages = async () => {
   isCompressing.value = false
 }
 
-const compressImage = (file: { name: string, size: number, data: string }): Promise<{ size: number, data: string }> => {
+const compressImage = (file: {
+  name: string
+  size: number
+  data: string
+}): Promise<{ size: number; data: string }> => {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
@@ -117,9 +149,9 @@ const compressImage = (file: { name: string, size: number, data: string }): Prom
           if (blob) {
             const reader = new FileReader()
             reader.onloadend = () => {
-              resolve({ 
-                size: blob.size, 
-                data: reader.result as string 
+              resolve({
+                size: blob.size,
+                data: reader.result as string
               })
             }
             reader.readAsDataURL(blob)
@@ -164,9 +196,9 @@ const totalCompressionRate = computed(() => {
 <template>
   <div class="image-compressor">
     <NavigationBar title="图片压缩工具" @goBack="goBack" />
-    <div 
-      class="compressor-content" 
-      :class="{ 'dragging': isDragging }"
+    <div
+      class="compressor-content"
+      :class="{ dragging: isDragging }"
       @dragenter="handleDragEnter"
       @dragover="handleDragEnter"
       @dragleave="handleDragLeave"
@@ -174,29 +206,51 @@ const totalCompressionRate = computed(() => {
     >
       <div class="control-panel">
         <div class="file-selection">
-          <input type="file" id="file-input" accept="image/*" @change="handleFileChange" multiple class="hidden-input" />
+          <input
+            type="file"
+            id="file-input"
+            accept="image/*"
+            @change="handleFileChange"
+            multiple
+            class="hidden-input"
+          />
           <label for="file-input" class="button">选择图片</label>
           <button @click="handleFolderSelect" class="button">选择文件夹</button>
         </div>
         <div class="compression-controls">
           <div class="quality-control">
             <label for="quality">压缩质量：</label>
-            <input type="range" id="quality" v-model="compressionQuality" min="0.1" max="1" step="0.1" />
+            <input
+              type="range"
+              id="quality"
+              v-model="compressionQuality"
+              min="0.1"
+              max="1"
+              step="0.1"
+            />
             <span>{{ Math.round(compressionQuality * 100) }}%</span>
           </div>
-          <button @click="compressImages" :disabled="selectedFiles.length === 0 || isCompressing" class="button primary">
+          <button
+            @click="compressImages"
+            :disabled="selectedFiles.length === 0 || isCompressing"
+            class="button primary"
+          >
             {{ isCompressing ? '压缩中...' : '压缩图片' }}
           </button>
-          <button @click="downloadCompressedImages" :disabled="compressedFiles.length === 0" class="button">
+          <button
+            @click="downloadCompressedImages"
+            :disabled="compressedFiles.length === 0"
+            class="button"
+          >
             下载压缩后的图片
           </button>
         </div>
       </div>
-      
+
       <div v-if="isDragging" class="drag-overlay">
         <p>释放鼠标以添加图片</p>
       </div>
-      
+
       <div v-if="selectedFiles.length > 0" class="file-list">
         <h3>选中的文件：</h3>
         <ul>
@@ -210,10 +264,9 @@ const totalCompressionRate = computed(() => {
         <p>总压缩率: {{ totalCompressionRate }}%</p>
         <ul>
           <li v-for="file in compressedFiles" :key="file.name">
-            {{ file.name }}:
-            原始大小 {{ formatFileSize(file.originalSize) }} ->
-            压缩后 {{ formatFileSize(file.compressedSize) }}
-            (压缩率: {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)
+            {{ file.name }}: 原始大小 {{ formatFileSize(file.originalSize) }} -> 压缩后
+            {{ formatFileSize(file.compressedSize) }} (压缩率:
+            {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)
           </li>
         </ul>
       </div>
@@ -234,6 +287,7 @@ const totalCompressionRate = computed(() => {
   overflow-y: auto;
   padding: 20px;
   position: relative;
+  transition: all 0.3s ease;
 }
 
 .control-panel {
@@ -295,11 +349,12 @@ const totalCompressionRate = computed(() => {
   background-color: #27ae60;
 }
 
-input[type="range"] {
+input[type='range'] {
   width: 150px;
 }
 
-.file-list, .compression-results {
+.file-list,
+.compression-results {
   margin-top: 20px;
 }
 
@@ -325,6 +380,12 @@ li {
   color: white;
   font-size: 24px;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dragging .drag-overlay {
+  opacity: 1;
 }
 
 .dragging {
