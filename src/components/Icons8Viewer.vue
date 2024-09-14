@@ -19,8 +19,10 @@ const webviewUrl = ref('https://icons8.com')
       <webview 
         :src="webviewUrl" 
         style="width:100%; height:100%;"
-        sandbox="allow-scripts allow-forms allow-same-origin"
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-modals"
         allowpopups
+        :webpreferences="'javascript=yes, contextIsolation=no, webSecurity=no'"
+        nodeintegration
       ></webview>
     </div>
   </div>

@@ -12,6 +12,7 @@ const imageTools = [
   { name: '图像裁剪', route: 'ImageCropper', image: 'https://img.icons8.com/?size=100&id=qxnheTBF0af8&format=png&color=000000' },
   // 添加Icons8工具
   { name: 'Icons8', route: 'Icons8Viewer', image: 'https://img.icons8.com/?size=100&id=118523&format=png&color=000000' },
+  { name: '屏幕截图', route: 'ScreenshotTool', image: 'https://img.icons8.com/?size=100&id=118523&format=png&color=000000' },
   // ... 其他工具 ...
 ]
 

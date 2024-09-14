@@ -9,6 +9,7 @@ const child_process_1 = require("child_process");
 const sequelize_1 = require("sequelize");
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const sqlite_1 = require("sqlite");
+const main_1 = require("electron/main");
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -99,7 +100,8 @@ function createWindow() {
             contextIsolation: true, // 启用 contextIsolation
             nodeIntegration: false, // 禁用 nodeIntegration
             webviewTag: true, // 启用webview标签
-            webSecurity: true
+            webSecurity: false,
+            sandbox: false
         },
         resizable: true,
         maximizable: false
@@ -156,6 +158,11 @@ function createWindow() {
             };
         }
         return null;
+    });
+    // 添加IPC监听器
+    electron_1.ipcMain.handle('TAKE_SCREENSHOT', async () => {
+        const sources = await main_1.desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } });
+        return sources[0].thumbnail.toDataURL();
     });
     // 默认打开开发者工具
     win.webContents.openDevTools();

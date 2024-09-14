@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearDatabase: () => ipcRenderer.invoke('clear-database'),
   generateWeeklySummary: (startDate: string, endDate: string) => 
     ipcRenderer.invoke('generate-weekly-summary', startDate, endDate),
+  takeScreenshot: () => ipcRenderer.invoke('TAKE_SCREENSHOT')
 });
 
 console.log('electronAPI exposed');
