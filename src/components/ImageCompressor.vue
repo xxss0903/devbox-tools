@@ -76,36 +76,35 @@ const handleDrop = async (event: DragEvent) => {
     isDragging.value = false
   })
 
-  window.electronAPI.handleFileDrop(async (files) => {
-    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-    if (imageFiles.length > 0) {
+  if (event.dataTransfer?.files) {
+    const files = Array.from(event.dataTransfer.files)
+      .filter((file) => file.path) // 确保文件有路径
+      .map((file) => file.path)
+
+    console.log('Dropped files:', files)
+
+    if (files.length > 0) {
       try {
-        const processedFiles = await window.electronAPI.processDroppedFiles(
-          imageFiles.map((f) => f.path)
-        )
+        const processedFiles = await window.electronAPI.processDroppedFiles(files)
+        console.log('Processed files:', processedFiles)
         nextTick(() => {
           selectedFiles.value = [...selectedFiles.value, ...processedFiles]
         })
       } catch (error) {
         console.error('Error processing dropped files:', error)
       }
+    } else {
+      console.log('No valid files dropped')
     }
-  })
+  }
 }
 
 onMounted(() => {
-  window.electronAPI.handleFileDrop(async (files) => {
-    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-    if (imageFiles.length > 0) {
-      try {
-        const processedFiles = await window.electronAPI.processDroppedFiles(
-          imageFiles.map((f) => f.path)
-        )
-        selectedFiles.value = [...selectedFiles.value, ...processedFiles]
-      } catch (error) {
-        console.error('Error processing dropped files:', error)
-      }
-    }
+  window.electronAPI.handleFileDrop(async (processedFiles: any) => {
+    console.log('Received processed files:', processedFiles)
+    nextTick(() => {
+      selectedFiles.value = [...selectedFiles.value, ...processedFiles]
+    })
   })
 })
 

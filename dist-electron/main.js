@@ -99,11 +99,11 @@ function createWindow() {
             preload: path_1.default.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
-            webviewTag: true, // 启用webview标签
-            webSecurity: false,
+            webviewTag: true,
+            webSecurity: false, // 注意：这可能会带来安全风险，仅在开发环境使用
             sandbox: false,
-            allowRunningInsecureContent: true, // 允许运行不安全的内容
-            experimentalFeatures: true // 启用实验性功能
+            allowRunningInsecureContent: true,
+            experimentalFeatures: true
         },
         resizable: true,
         maximizable: false
@@ -194,9 +194,47 @@ function createWindow() {
             }
         });
     });
+    // 添加文件拖放处理
+    win.webContents.on('will-navigate', (event, url) => {
+        if (url.startsWith('file://')) {
+            event.preventDefault();
+        }
+    });
     // 默认打开开发者工具
     win.webContents.openDevTools();
 }
+electron_1.ipcMain.handle('handle-file-drop', async (event, filePaths) => {
+    console.log('Received file paths:', filePaths);
+    const processedFiles = [];
+    for (const filePath of filePaths) {
+        if (!filePath) {
+            console.error('Received undefined or empty file path');
+            continue;
+        }
+        try {
+            console.log('Processing file:', filePath);
+            const stats = await fs.promises.stat(filePath);
+            if (stats.isFile()) {
+                const fileBuffer = await fs.promises.readFile(filePath);
+                const base64 = fileBuffer.toString('base64');
+                const extname = path_1.default.extname(filePath).slice(1);
+                processedFiles.push({
+                    name: path_1.default.basename(filePath),
+                    size: stats.size,
+                    data: `data:image/${extname};base64,${base64}`
+                });
+            }
+            else {
+                console.log('Not a file:', filePath);
+            }
+        }
+        catch (error) {
+            console.error('Error processing file:', filePath, error);
+        }
+    }
+    console.log('Processed files:', processedFiles.length);
+    return processedFiles;
+});
 electron_1.app.whenReady().then(createWindow);
 electron_1.app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {

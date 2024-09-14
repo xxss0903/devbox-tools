@@ -7,8 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log('executeADB called with command:', command)
     return ipcRenderer.invoke('execute-adb', command)
   },
-  processDroppedFiles: (filePaths: string[]) =>
-    ipcRenderer.invoke('process-dropped-files', filePaths),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   saveDiaryEntry: (date: string, content: string, todos: string) =>
     ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
@@ -27,17 +25,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
       event.preventDefault()
       event.stopPropagation()
 
-      const files = []
-      for (const f of event.dataTransfer.files) {
-        files.push({ path: f.path, name: f.name, type: f.type })
+      const files = Array.from(event.dataTransfer.files)
+        .filter((file: any) => file.path) // 确保文件有路径
+        .map((file: any) => file.path)
+
+      console.log('Dragged files:', files)
+
+      if (files.length > 0) {
+        ipcRenderer.invoke('handle-file-drop', files).then(callback)
+      } else {
+        console.log('No valid files dropped')
       }
-      callback(files)
     })
 
     document.addEventListener('dragover', (event) => {
       event.preventDefault()
       event.stopPropagation()
     })
+  },
+  processDroppedFiles: (filePaths: any) => {
+    console.log('Processing dropped files:', filePaths)
+    return ipcRenderer.invoke('handle-file-drop', filePaths)
   }
 })
 
