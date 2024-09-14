@@ -176,12 +176,12 @@ const handleMouseOut = (e: MouseEvent) => {
 }
 
 const startDrawing = (e: MouseEvent) => {
-  console.log('Start drawing')
+  console.log('开始绘制')
   if (!ctx.value) return
   isDrawing.value = true
   ;[startX, startY] = [e.offsetX, e.offsetY]
   if (currentTool.value === 'pen') {
-    ctx.value.beginPath()
+    ctx.value.beginPath() // 每次开始新的路径
     ctx.value.moveTo(startX, startY)
   } else if (currentTool.value === 'arrow' || currentTool.value === 'line') {
     isDrawingArrow.value = true
@@ -189,13 +189,13 @@ const startDrawing = (e: MouseEvent) => {
 }
 
 const draw = (e: MouseEvent) => {
-  console.log('Drawing')
-  if (!isDrawing.value || !tempCtx.value || !tempCanvasRef.value) return
+  console.log('绘制中')
+  if (!isDrawing.value || !ctx.value || !tempCtx.value || !tempCanvasRef.value) return
   ;[endX, endY] = [e.offsetX, e.offsetY]
 
   if (currentTool.value === 'pen') {
-    tempCtx.value.lineTo(endX, endY)
-    tempCtx.value.stroke()
+    ctx.value.lineTo(endX, endY)
+    ctx.value.stroke()
   } else if (
     isDrawingArrow.value &&
     (currentTool.value === 'arrow' || currentTool.value === 'line')
@@ -220,8 +220,10 @@ const stopDrawing = () => {
   isDrawing.value = false
   isDrawingArrow.value = false
 
-  // 将临时 canvas 的内容绘制到主 canvas 上
-  ctx.value.drawImage(tempCanvasRef.value, 0, 0)
+  if (currentTool.value === 'arrow' || currentTool.value === 'line') {
+    // 将临时 canvas 的内容绘制到主 canvas 上
+    ctx.value.drawImage(tempCanvasRef.value, 0, 0)
+  }
 
   // 清除临时 canvas
   tempCtx.value.clearRect(0, 0, tempCanvasRef.value.width, tempCanvasRef.value.height)
