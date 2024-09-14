@@ -24,13 +24,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
 // 定义 electronAPI 的接口
 interface IElectronAPI {
   takeScreenshot: () => Promise<string>
+  registerScreenshotShortcut: (callback: () => void) => void
+  unregisterScreenshotShortcut: () => void
 }
 
 // 扩展全局 Window 接口
@@ -64,6 +66,7 @@ const isCropping = ref(false)
 
 const takeScreenshot = async () => {
   try {
+    console.log('takeScreenshot called in renderer process')
     const dataUrl = await window.electronAPI.takeScreenshot()
     console.log('Screenshot taken:', dataUrl.substring(0, 50) + '...')
     screenshotPath.value = dataUrl
@@ -276,6 +279,11 @@ watch(screenshotTaken, (newValue) => {
 
 onMounted(() => {
   initCanvas()
+  window.electronAPI.registerScreenshotShortcut(takeScreenshot)
+})
+
+onUnmounted(() => {
+  window.electronAPI.unregisterScreenshotShortcut()
 })
 </script>
 
