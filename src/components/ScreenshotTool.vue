@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
@@ -19,6 +19,54 @@ const takeScreenshot = async () => {
     console.error('截图失败:', error)
   }
 }
+
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const ctx = ref<CanvasRenderingContext2D | null>(null)
+const currentTool = ref('pen')
+const isDrawing = ref(false)
+let lastX = 0
+let lastY = 0
+
+onMounted(() => {
+  if (canvasRef.value) {
+    ctx.value = canvasRef.value.getContext('2d')
+  }
+})
+
+const startDrawing = (e: MouseEvent) => {
+  isDrawing.value = true
+  ;[lastX, lastY] = [e.offsetX, e.offsetY]
+}
+
+const draw = (e: MouseEvent) => {
+  if (!isDrawing.value || !ctx.value) return
+  ctx.value.beginPath()
+  ctx.value.moveTo(lastX, lastY)
+  ctx.value.lineTo(e.offsetX, e.offsetY)
+  ctx.value.stroke()
+  ;[lastX, lastY] = [e.offsetX, e.offsetY]
+}
+
+const stopDrawing = () => {
+  isDrawing.value = false
+}
+
+const setTool = (tool: string) => {
+  currentTool.value = tool
+  if (ctx.value) {
+    switch (tool) {
+      case 'pen':
+        ctx.value.strokeStyle = 'black'
+        ctx.value.lineWidth = 2
+        break
+      case 'arrow':
+      case 'line':
+        ctx.value.strokeStyle = 'red'
+        ctx.value.lineWidth = 3
+        break
+    }
+  }
+}
 </script>
 
 <template>
@@ -27,7 +75,21 @@ const takeScreenshot = async () => {
     <div class="content">
       <button @click="takeScreenshot">截取屏幕</button>
       <div v-if="screenshotPath" class="screenshot-preview">
-        <img :src="screenshotPath" alt="Screenshot preview" />
+        <canvas
+          ref="canvasRef"
+          :width="800"
+          :height="600"
+          @mousedown="startDrawing"
+          @mousemove="draw"
+          @mouseup="stopDrawing"
+          @mouseout="stopDrawing"
+        ></canvas>
+        <div class="tools">
+          <button @click="setTool('pen')">画笔</button>
+          <button @click="setTool('arrow')">箭头</button>
+          <button @click="setTool('line')">横线</button>
+          <button>裁剪</button>
+        </div>
       </div>
     </div>
   </div>
@@ -65,5 +127,15 @@ button {
 .screenshot-preview img {
   max-width: 100%;
   height: auto;
+}
+
+.tools {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+canvas {
+  border: 1px solid #ccc;
 }
 </style>
