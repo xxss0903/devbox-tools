@@ -1,11 +1,11 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut, dialog } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
 import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
 import { desktopCapturer } from 'electron/main'
-const fs = require('fs').promises;
+const fs = require('fs').promises
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
 
@@ -57,41 +57,45 @@ async function getDatabase(): Promise<Database> {
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory']
-  });
+  })
   if (result.canceled) {
-    return null;
+    return null
   }
-  const files = await fs.readdir(result.filePaths[0]);
-  const imageFiles = await Promise.all(files
-    .filter((file: string) => /\.(jpg|jpeg|png)$/i.test(file))
-    .map(async (file: string) => {
-      const filePath = path.join(result.filePaths[0], file);
-      const stats = await fs.stat(filePath);
-      const fileContent = await fs.readFile(filePath, { encoding: 'base64' });
-      return {
-        name: file,
-        size: stats.size,
-        data: `data:image/${path.extname(file).slice(1)};base64,${fileContent}`
-      };
-    }));
-  return imageFiles;
-});
+  const files = await fs.readdir(result.filePaths[0])
+  const imageFiles = await Promise.all(
+    files
+      .filter((file: string) => /\.(jpg|jpeg|png)$/i.test(file))
+      .map(async (file: string) => {
+        const filePath = path.join(result.filePaths[0], file)
+        const stats = await fs.stat(filePath)
+        const fileContent = await fs.readFile(filePath, { encoding: 'base64' })
+        return {
+          name: file,
+          size: stats.size,
+          data: `data:image/${path.extname(file).slice(1)};base64,${fileContent}`
+        }
+      })
+  )
+  return imageFiles
+})
 
 // 添加这个新的IPC处理程序
 ipcMain.handle('process-dropped-files', async (event, filePaths) => {
-  const imageFiles = await Promise.all(filePaths
-    .filter((filePath: string) => /\.(jpg|jpeg|png)$/i.test(filePath))
-    .map(async (filePath: string) => {
-      const stats = await fs.stat(filePath);
-      const fileContent = await fs.readFile(filePath, { encoding: 'base64' });
-      return {
-        name: path.basename(filePath),
-        size: stats.size,
-        data: `data:image/${path.extname(filePath).slice(1)};base64,${fileContent}`
-      };
-    }));
-  return imageFiles;
-});
+  const imageFiles = await Promise.all(
+    filePaths
+      .filter((filePath: string) => /\.(jpg|jpeg|png)$/i.test(filePath))
+      .map(async (filePath: string) => {
+        const stats = await fs.stat(filePath)
+        const fileContent = await fs.readFile(filePath, { encoding: 'base64' })
+        return {
+          name: path.basename(filePath),
+          size: stats.size,
+          data: `data:image/${path.extname(filePath).slice(1)};base64,${fileContent}`
+        }
+      })
+  )
+  return imageFiles
+})
 
 // 添加清空数据库的方法
 ipcMain.handle('clear-database', async () => {
@@ -114,11 +118,13 @@ function createWindow() {
     },
     resizable: true,
     maximizable: false
-  });
+  })
 
   // 更新 Content-Security-Policy
-  const devCSP = "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com; connect-src 'self' ws: wss: https://icons8.com; img-src 'self' data: https: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com;";
-  const prodCSP = "default-src 'self'; script-src 'self' https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: https://icons8.com; connect-src 'self' https: https://icons8.com; frame-src 'self' https://icons8.com;";
+  const devCSP =
+    "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com; connect-src 'self' ws: wss: https://icons8.com; img-src 'self' data: https: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com;"
+  const prodCSP =
+    "default-src 'self'; script-src 'self' https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: https://icons8.com; connect-src 'self' https: https://icons8.com; frame-src 'self' https://icons8.com;"
 
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -127,7 +133,7 @@ function createWindow() {
         'Content-Security-Policy': [process.env.NODE_ENV !== 'production' ? devCSP : prodCSP]
       }
     })
-  });
+  })
 
   if (process.env.NODE_ENV !== 'production') {
     win.loadURL('http://localhost:5173')
@@ -186,12 +192,21 @@ function createWindow() {
     return null
   })
 
-    // 添加IPC监听器
-    ipcMain.handle('TAKE_SCREENSHOT', async () => {
-      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } })
-      return sources[0].thumbnail.toDataURL()
+  // 添加IPC监听器
+  ipcMain.handle('TAKE_SCREENSHOT', async () => {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1920, height: 1080 }
     })
-  
+    return sources[0].thumbnail.toDataURL()
+  })
+
+  // 注册全局快捷键
+  globalShortcut.register('Ctrl+Alt+C', () => {
+    console.log('quick screen shot')
+    win.webContents.send('SCREENSHOT_SHORTCUT')
+  })
+
   // 默认打开开发者工具
   win.webContents.openDevTools()
 }
@@ -227,7 +242,7 @@ ipcMain.handle('generate-weekly-summary', async (event, startDate, endDate) => {
   for (const entry of entries) {
     summary += `日期: ${entry.date}\n`
     summary += `内容: ${entry.content}\n`
-    
+
     const todos = JSON.parse(entry.todos || '[]')
     if (todos.length > 0) {
       summary += '待办事项:\n'
@@ -235,11 +250,16 @@ ipcMain.handle('generate-weekly-summary', async (event, startDate, endDate) => {
         summary += `- [${todo.done ? 'x' : ' '}] ${todo.text}\n`
       }
     }
-    
+
     summary += '\n---\n\n'
   }
 
   // 这里可以添加更复杂的摘要生成逻辑,例如使用 AI 生成摘要
 
   return summary
+})
+
+app.on('will-quit', () => {
+  // 注销所有快捷键
+  globalShortcut.unregisterAll()
 })
