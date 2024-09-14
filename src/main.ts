@@ -13,4 +13,4 @@ declare global {
   }
 }
 
-createApp(App).use(router).mount('#app')
+createApp(App).use(VCalendar).use(router).mount('#app')

@@ -51,7 +51,10 @@
           <div class="modal-content">
             <h2>周报摘要</h2>
             <div class="summary-content">{{ summaryContent }}</div>
-            <button @click="closeSummaryModal" class="close-button">关闭</button>
+            <div class="modal-buttons">
+              <button @click="copySummary" class="copy-button">复制</button>
+              <button @click="closeSummaryModal" class="close-button">关闭</button>
+            </div>
           </div>
         </div>
       </div>
@@ -126,8 +129,8 @@ function timestampToDateString(timestamp: number): string {
 const saveDiary = async () => {
   try {
     const serializedTodos = JSON.stringify(todos.value)
-    let timeStampValue = moment(date.value).format("YYYY-MM-DD")
-    console.log('Saving diary:',timeStampValue.toString(), content, serializedTodos)
+    let timeStampValue = moment(date.value).format('YYYY-MM-DD')
+    console.log('Saving diary:', timeStampValue.toString(), content, serializedTodos)
     await window.electronAPI.saveDiaryEntry(
       timeStampValue.toString(),
       content.value,
@@ -156,6 +159,18 @@ const addTodo = () => {
 
 const updateTodo = (index: number) => {
   console.log('Todo updated:', todos.value[index])
+}
+
+const copySummary = () => {
+  navigator.clipboard
+    .writeText(summaryContent.value)
+    .then(() => {
+      alert('周报内容已复制到剪贴板')
+    })
+    .catch((err) => {
+      console.error('复制失败:', err)
+      alert('复制失败，请手动复制')
+    })
 }
 
 const removeTodo = (index: number) => {
@@ -243,13 +258,13 @@ const generateWeeklySummary = async () => {
     const currentDate = moment(date.value)
     const startOfWeek = currentDate.startOf('week').format('YYYY-MM-DD')
     const endOfWeek = currentDate.endOf('week').format('YYYY-MM-DD')
-    
+
     const summary = await window.electronAPI.generateWeeklySummary(startOfWeek, endOfWeek)
-    
+
     // 更新摘要内容并显示模态框
     summaryContent.value = summary
     showSummaryModal.value = true
-    
+
     console.log('生成的周报:', summary)
   } catch (error) {
     console.error('生成周报时出错:', error)
@@ -259,7 +274,6 @@ const generateWeeklySummary = async () => {
 const closeSummaryModal = () => {
   showSummaryModal.value = false
 }
-
 </script>
 
 <style scoped>
@@ -455,7 +469,7 @@ const closeSummaryModal = () => {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -691,7 +705,7 @@ const closeSummaryModal = () => {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -909,5 +923,39 @@ const closeSummaryModal = () => {
 
 .summary-button:hover {
   background-color: #8e44ad;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.copy-button,
+.close-button {
+  padding: 8px 16px;
+  margin-left: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.copy-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.copy-button:hover {
+  background-color: #45a049;
+}
+
+.close-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.close-button:hover {
+  background-color: #2980b9;
 }
 </style>
