@@ -6,12 +6,13 @@
       <div class="screenshot-preview">
         <canvas
           ref="canvasRef"
-          @mousedown="currentTool === 'crop' ? startCropping : startDrawing"
-          @mousemove="currentTool === 'crop' ? updateCrop : draw"
-          @mouseup="currentTool === 'crop' ? finishCropping : stopDrawing"
-          @mouseout="currentTool === 'crop' ? finishCropping : stopDrawing"
-          @click="handleCanvasClick"
+          @mousedown.prevent="handleMouseDown"
+          @mousemove.prevent="handleMouseMove"
+          @mouseup.prevent="handleMouseUp"
+          @mouseout.prevent="handleMouseOut"
         ></canvas>
+        <canvas ref="tempCanvasRef" class="temp-canvas"></canvas>
+        <canvas ref="cropCanvasRef" class="crop-canvas"></canvas>
       </div>
       <div v-if="screenshotTaken" class="tools">
         <button @click="setTool('pen')">画笔</button>
@@ -51,6 +52,10 @@ const goBack = () => {
 const screenshotPath = ref('')
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const ctx = ref<CanvasRenderingContext2D | null>(null)
+const tempCanvasRef = ref<HTMLCanvasElement | null>(null)
+const tempCtx = ref<CanvasRenderingContext2D | null>(null)
+const cropCanvasRef = ref<HTMLCanvasElement | null>(null)
+const cropCtx = ref<CanvasRenderingContext2D | null>(null)
 const currentTool = ref('pen')
 const isDrawing = ref(false)
 let startX = 0
@@ -58,11 +63,12 @@ let startY = 0
 let endX = 0
 let endY = 0
 const screenshotTaken = ref(false)
-const clickCount = ref(0)
 
 const cropStart = ref({ x: 0, y: 0 })
 const cropEnd = ref({ x: 0, y: 0 })
 const isCropping = ref(false)
+
+const isDrawingArrow = ref(false)
 
 const takeScreenshot = async () => {
   try {
@@ -82,6 +88,20 @@ const takeScreenshot = async () => {
 const initCanvas = () => {
   if (canvasRef.value) {
     ctx.value = canvasRef.value.getContext('2d')
+    if (ctx.value) {
+      ctx.value.strokeStyle = 'red'
+      ctx.value.lineWidth = 3
+    }
+  }
+  if (tempCanvasRef.value) {
+    tempCtx.value = tempCanvasRef.value.getContext('2d')
+    if (tempCtx.value) {
+      tempCtx.value.strokeStyle = 'red'
+      tempCtx.value.lineWidth = 3
+    }
+  }
+  if (cropCanvasRef.value) {
+    cropCtx.value = cropCanvasRef.value.getContext('2d')
   }
 }
 
@@ -104,43 +124,107 @@ const drawImageOnCanvas = (dataUrl: string) => {
       canvas.width = width
       canvas.height = height
       ctx.value!.drawImage(img, 0, 0, width, height)
+
+      // 设置临时 canvas 和裁剪 canvas 的大小
+      if (tempCanvasRef.value) {
+        tempCanvasRef.value.width = width
+        tempCanvasRef.value.height = height
+      }
+      if (cropCanvasRef.value) {
+        cropCanvasRef.value.width = width
+        cropCanvasRef.value.height = height
+      }
     }
     img.src = dataUrl
   }
 }
 
+const handleMouseDown = (e: MouseEvent) => {
+  console.log('Mouse down', e.offsetX, e.offsetY)
+  if (currentTool.value === 'crop') {
+    startCropping(e)
+  } else {
+    startDrawing(e)
+  }
+}
+
+const handleMouseMove = (e: MouseEvent) => {
+  console.log('Mouse move', e.offsetX, e.offsetY)
+  if (currentTool.value === 'crop') {
+    updateCrop(e)
+  } else {
+    draw(e)
+  }
+}
+
+const handleMouseUp = (e: MouseEvent) => {
+  console.log('Mouse up', e.offsetX, e.offsetY)
+  if (currentTool.value === 'crop') {
+    finishCropping()
+  } else {
+    stopDrawing()
+  }
+}
+
+const handleMouseOut = (e: MouseEvent) => {
+  console.log('Mouse out', e.offsetX, e.offsetY)
+  if (currentTool.value === 'crop') {
+    finishCropping()
+  } else {
+    stopDrawing()
+  }
+}
+
 const startDrawing = (e: MouseEvent) => {
+  console.log('Start drawing')
   if (!ctx.value) return
   isDrawing.value = true
   ;[startX, startY] = [e.offsetX, e.offsetY]
   if (currentTool.value === 'pen') {
     ctx.value.beginPath()
     ctx.value.moveTo(startX, startY)
+  } else if (currentTool.value === 'arrow' || currentTool.value === 'line') {
+    isDrawingArrow.value = true
   }
 }
 
 const draw = (e: MouseEvent) => {
-  if (!isDrawing.value || !ctx.value) return
+  console.log('Drawing')
+  if (!isDrawing.value || !tempCtx.value || !tempCanvasRef.value) return
   ;[endX, endY] = [e.offsetX, e.offsetY]
 
   if (currentTool.value === 'pen') {
-    ctx.value.lineTo(endX, endY)
-    ctx.value.stroke()
+    tempCtx.value.lineTo(endX, endY)
+    tempCtx.value.stroke()
+  } else if (
+    isDrawingArrow.value &&
+    (currentTool.value === 'arrow' || currentTool.value === 'line')
+  ) {
+    // 清除临时 canvas
+    tempCtx.value.clearRect(0, 0, tempCanvasRef.value.width, tempCanvasRef.value.height)
+
+    if (currentTool.value === 'arrow') {
+      drawArrow(tempCtx.value, startX, startY, endX, endY)
+    } else {
+      tempCtx.value.beginPath()
+      tempCtx.value.moveTo(startX, startY)
+      tempCtx.value.lineTo(endX, endY)
+      tempCtx.value.stroke()
+    }
   }
 }
 
 const stopDrawing = () => {
-  if (!isDrawing.value || !ctx.value) return
+  if (!isDrawing.value || !ctx.value || !tempCtx.value || !canvasRef.value || !tempCanvasRef.value)
+    return
   isDrawing.value = false
+  isDrawingArrow.value = false
 
-  if (currentTool.value === 'arrow') {
-    drawArrow(ctx.value, startX, startY, endX, endY)
-  } else if (currentTool.value === 'line') {
-    ctx.value.beginPath()
-    ctx.value.moveTo(startX, startY)
-    ctx.value.lineTo(endX, endY)
-    ctx.value.stroke()
-  }
+  // 将临时 canvas 的内容绘制到主 canvas 上
+  ctx.value.drawImage(tempCanvasRef.value, 0, 0)
+
+  // 清除临时 canvas
+  tempCtx.value.clearRect(0, 0, tempCanvasRef.value.width, tempCanvasRef.value.height)
 }
 
 const drawArrow = (
@@ -150,7 +234,7 @@ const drawArrow = (
   toX: number,
   toY: number
 ) => {
-  const headLength = 10
+  const headLength = 15 // 增加箭头头部长度
   const angle = Math.atan2(toY - fromY, toX - fromX)
 
   ctx.beginPath()
@@ -168,41 +252,43 @@ const drawArrow = (
   ctx.stroke()
 }
 
-const handleCanvasClick = (e: MouseEvent) => {
-  if (!ctx.value) return
-  clickCount.value++
-
-  if (clickCount.value === 1) {
-    ;[startX, startY] = [e.offsetX, e.offsetY]
-  } else if (clickCount.value === 2) {
-    ;[endX, endY] = [e.offsetX, e.offsetY]
-
-    if (currentTool.value === 'arrow') {
-      drawArrow(ctx.value, startX, startY, endX, endY)
-    } else if (currentTool.value === 'line') {
-      ctx.value.beginPath()
-      ctx.value.moveTo(startX, startY)
-      ctx.value.lineTo(endX, endY)
-      ctx.value.stroke()
-    }
-
-    clickCount.value = 0
-  }
-}
-
 const startCropping = (e: MouseEvent) => {
-  if (currentTool.value === 'crop') {
+  if (currentTool.value === 'crop' && cropCtx.value && cropCanvasRef.value) {
     isCropping.value = true
     cropStart.value = { x: e.offsetX, y: e.offsetY }
     cropEnd.value = { x: e.offsetX, y: e.offsetY }
+
+    // 清除裁剪 canvas 并绘制原始图像
+    cropCtx.value.clearRect(0, 0, cropCanvasRef.value.width, cropCanvasRef.value.height)
+    cropCtx.value.drawImage(canvasRef.value!, 0, 0)
   }
 }
 
 const updateCrop = (e: MouseEvent) => {
-  if (isCropping.value) {
+  if (isCropping.value && cropCtx.value && cropCanvasRef.value) {
     cropEnd.value = { x: e.offsetX, y: e.offsetY }
     drawCropOverlay()
   }
+}
+
+const drawCropOverlay = () => {
+  if (!cropCtx.value || !cropCanvasRef.value) return
+
+  const canvas = cropCanvasRef.value
+  cropCtx.value.clearRect(0, 0, canvas.width, canvas.height)
+  cropCtx.value.drawImage(canvasRef.value!, 0, 0)
+
+  cropCtx.value.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  cropCtx.value.fillRect(0, 0, canvas.width, canvas.height)
+
+  const x = Math.min(cropStart.value.x, cropEnd.value.x)
+  const y = Math.min(cropStart.value.y, cropEnd.value.y)
+  const width = Math.abs(cropEnd.value.x - cropStart.value.x)
+  const height = Math.abs(cropEnd.value.y - cropStart.value.y)
+
+  cropCtx.value.clearRect(x, y, width, height)
+  cropCtx.value.strokeStyle = 'white'
+  cropCtx.value.strokeRect(x, y, width, height)
 }
 
 const finishCropping = () => {
@@ -212,28 +298,8 @@ const finishCropping = () => {
   }
 }
 
-const drawCropOverlay = () => {
-  if (!ctx.value || !canvasRef.value) return
-
-  const canvas = canvasRef.value
-  ctx.value.clearRect(0, 0, canvas.width, canvas.height)
-  drawImageOnCanvas(screenshotPath.value)
-
-  ctx.value.fillStyle = 'rgba(0, 0, 0, 0.5)'
-  ctx.value.fillRect(0, 0, canvas.width, canvas.height)
-
-  const x = Math.min(cropStart.value.x, cropEnd.value.x)
-  const y = Math.min(cropStart.value.y, cropEnd.value.y)
-  const width = Math.abs(cropEnd.value.x - cropStart.value.x)
-  const height = Math.abs(cropEnd.value.y - cropStart.value.y)
-
-  ctx.value.clearRect(x, y, width, height)
-  ctx.value.strokeStyle = 'white'
-  ctx.value.strokeRect(x, y, width, height)
-}
-
 const applyCrop = () => {
-  if (!ctx.value || !canvasRef.value) return
+  if (!ctx.value || !canvasRef.value || !cropCanvasRef.value) return
 
   const x = Math.min(cropStart.value.x, cropEnd.value.x)
   const y = Math.min(cropStart.value.y, cropEnd.value.y)
@@ -246,21 +312,34 @@ const applyCrop = () => {
   canvasRef.value.height = height
   ctx.value.putImageData(imageData, 0, 0)
 
+  // 更新临时 canvas 和裁剪 canvas 的大小
+  if (tempCanvasRef.value) {
+    tempCanvasRef.value.width = width
+    tempCanvasRef.value.height = height
+  }
+  if (cropCanvasRef.value) {
+    cropCanvasRef.value.width = width
+    cropCanvasRef.value.height = height
+  }
+
   screenshotPath.value = canvasRef.value.toDataURL()
 }
 
 const setTool = (tool: string) => {
+  console.log('set tool', tool)
   currentTool.value = tool
-  clickCount.value = 0
-  if (ctx.value) {
+  if (ctx.value && tempCtx.value) {
     ctx.value.strokeStyle = 'red' // 所有工具都使用红色
+    tempCtx.value.strokeStyle = 'red' // 临时 canvas 也使用红色
     switch (tool) {
       case 'pen':
-        ctx.value.lineWidth = 2
+        ctx.value.lineWidth = 3 // 将画笔宽度增加到 3
+        tempCtx.value.lineWidth = 3
         break
       case 'arrow':
       case 'line':
-        ctx.value.lineWidth = 3
+        ctx.value.lineWidth = 4 // 将箭头和线条宽度增加到 4
+        tempCtx.value.lineWidth = 4
         break
       case 'crop':
         isCropping.value = false
@@ -311,6 +390,7 @@ button {
 }
 
 .screenshot-preview {
+  position: relative;
   margin-top: 20px;
   max-width: 800px;
   max-height: 500px;
@@ -327,5 +407,19 @@ canvas {
   border: 1px solid #ccc;
   max-width: 100%;
   height: auto;
+}
+
+.temp-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.crop-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 </style>
