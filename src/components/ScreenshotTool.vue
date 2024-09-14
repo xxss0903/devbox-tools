@@ -6,17 +6,18 @@
       <div class="screenshot-preview">
         <canvas
           ref="canvasRef"
-          @mousedown="startDrawing"
-          @mousemove="draw"
-          @mouseup="stopDrawing"
-          @mouseout="stopDrawing"
+          @mousedown="currentTool === 'crop' ? startCropping : startDrawing"
+          @mousemove="currentTool === 'crop' ? updateCrop : draw"
+          @mouseup="currentTool === 'crop' ? finishCropping : stopDrawing"
+          @mouseout="currentTool === 'crop' ? finishCropping : stopDrawing"
+          @click="handleCanvasClick"
         ></canvas>
       </div>
       <div v-if="screenshotTaken" class="tools">
         <button @click="setTool('pen')">画笔</button>
         <button @click="setTool('arrow')">箭头</button>
         <button @click="setTool('line')">横线</button>
-        <button>裁剪</button>
+        <button @click="setTool('crop')">裁剪</button>
       </div>
     </div>
   </div>
@@ -27,6 +28,18 @@ import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
+// 定义 electronAPI 的接口
+interface IElectronAPI {
+  takeScreenshot: () => Promise<string>
+}
+
+// 扩展全局 Window 接口
+declare global {
+  interface Window {
+    electronAPI: IElectronAPI
+  }
+}
+
 const router = useRouter()
 
 const goBack = () => {
@@ -34,14 +47,28 @@ const goBack = () => {
 }
 
 const screenshotPath = ref('')
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const ctx = ref<CanvasRenderingContext2D | null>(null)
+const currentTool = ref('pen')
+const isDrawing = ref(false)
+let startX = 0
+let startY = 0
+let endX = 0
+let endY = 0
+const screenshotTaken = ref(false)
+const clickCount = ref(0)
+
+const cropStart = ref({ x: 0, y: 0 })
+const cropEnd = ref({ x: 0, y: 0 })
+const isCropping = ref(false)
 
 const takeScreenshot = async () => {
   try {
     const dataUrl = await window.electronAPI.takeScreenshot()
-    console.log('Screenshot taken:', dataUrl.substring(0, 50) + '...') // 添加日志，只显示 dataUrl 的开头部分
+    console.log('Screenshot taken:', dataUrl.substring(0, 50) + '...')
     screenshotPath.value = dataUrl
     screenshotTaken.value = true
-    await nextTick() // 等待 DOM 更新
+    await nextTick()
     initCanvas()
     drawImageOnCanvas(dataUrl)
   } catch (error) {
@@ -49,36 +76,16 @@ const takeScreenshot = async () => {
   }
 }
 
-const canvasRef = ref()
-const ctx = ref()
-const currentTool = ref('pen')
-const isDrawing = ref(false)
-let lastX = 0
-let lastY = 0
-const screenshotTaken = ref(false)
-
 const initCanvas = () => {
-  console.log('Initializing canvas')
   if (canvasRef.value) {
-    console.log('Canvas element found')
     ctx.value = canvasRef.value.getContext('2d')
-    if (ctx.value) {
-      console.log('Canvas context set')
-    } else {
-      console.error('Unable to get canvas context')
-    }
-  } else {
-    console.error('Canvas element not found')
   }
 }
 
-// 修改 drawImageOnCanvas 函数
 const drawImageOnCanvas = (dataUrl: string) => {
-  console.log('Drawing image on canvas:', dataUrl.substring(0, 50) + '...') // 添加日志
   if (canvasRef.value && ctx.value) {
     const img = new Image()
     img.onload = () => {
-      console.log('Image loaded, dimensions:', img.width, 'x', img.height) // 添加日志
       const canvas = canvasRef.value!
       const maxWidth = 800
       const maxHeight = 500
@@ -94,11 +101,168 @@ const drawImageOnCanvas = (dataUrl: string) => {
       canvas.width = width
       canvas.height = height
       ctx.value!.drawImage(img, 0, 0, width, height)
-      console.log('Image drawn on canvas') // 添加日志
     }
     img.src = dataUrl
-  } else {
-    console.error('Canvas or context is null') // 添加错误日志
+  }
+}
+
+const startDrawing = (e: MouseEvent) => {
+  if (!ctx.value) return
+  isDrawing.value = true
+  ;[startX, startY] = [e.offsetX, e.offsetY]
+  if (currentTool.value === 'pen') {
+    ctx.value.beginPath()
+    ctx.value.moveTo(startX, startY)
+  }
+}
+
+const draw = (e: MouseEvent) => {
+  if (!isDrawing.value || !ctx.value) return
+  ;[endX, endY] = [e.offsetX, e.offsetY]
+
+  if (currentTool.value === 'pen') {
+    ctx.value.lineTo(endX, endY)
+    ctx.value.stroke()
+  }
+}
+
+const stopDrawing = () => {
+  if (!isDrawing.value || !ctx.value) return
+  isDrawing.value = false
+
+  if (currentTool.value === 'arrow') {
+    drawArrow(ctx.value, startX, startY, endX, endY)
+  } else if (currentTool.value === 'line') {
+    ctx.value.beginPath()
+    ctx.value.moveTo(startX, startY)
+    ctx.value.lineTo(endX, endY)
+    ctx.value.stroke()
+  }
+}
+
+const drawArrow = (
+  ctx: CanvasRenderingContext2D,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number
+) => {
+  const headLength = 10
+  const angle = Math.atan2(toY - fromY, toX - fromX)
+
+  ctx.beginPath()
+  ctx.moveTo(fromX, fromY)
+  ctx.lineTo(toX, toY)
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle - Math.PI / 6),
+    toY - headLength * Math.sin(angle - Math.PI / 6)
+  )
+  ctx.moveTo(toX, toY)
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle + Math.PI / 6),
+    toY - headLength * Math.sin(angle + Math.PI / 6)
+  )
+  ctx.stroke()
+}
+
+const handleCanvasClick = (e: MouseEvent) => {
+  if (!ctx.value) return
+  clickCount.value++
+
+  if (clickCount.value === 1) {
+    ;[startX, startY] = [e.offsetX, e.offsetY]
+  } else if (clickCount.value === 2) {
+    ;[endX, endY] = [e.offsetX, e.offsetY]
+
+    if (currentTool.value === 'arrow') {
+      drawArrow(ctx.value, startX, startY, endX, endY)
+    } else if (currentTool.value === 'line') {
+      ctx.value.beginPath()
+      ctx.value.moveTo(startX, startY)
+      ctx.value.lineTo(endX, endY)
+      ctx.value.stroke()
+    }
+
+    clickCount.value = 0
+  }
+}
+
+const startCropping = (e: MouseEvent) => {
+  if (currentTool.value === 'crop') {
+    isCropping.value = true
+    cropStart.value = { x: e.offsetX, y: e.offsetY }
+    cropEnd.value = { x: e.offsetX, y: e.offsetY }
+  }
+}
+
+const updateCrop = (e: MouseEvent) => {
+  if (isCropping.value) {
+    cropEnd.value = { x: e.offsetX, y: e.offsetY }
+    drawCropOverlay()
+  }
+}
+
+const finishCropping = () => {
+  if (isCropping.value) {
+    isCropping.value = false
+    applyCrop()
+  }
+}
+
+const drawCropOverlay = () => {
+  if (!ctx.value || !canvasRef.value) return
+
+  const canvas = canvasRef.value
+  ctx.value.clearRect(0, 0, canvas.width, canvas.height)
+  drawImageOnCanvas(screenshotPath.value)
+
+  ctx.value.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  ctx.value.fillRect(0, 0, canvas.width, canvas.height)
+
+  const x = Math.min(cropStart.value.x, cropEnd.value.x)
+  const y = Math.min(cropStart.value.y, cropEnd.value.y)
+  const width = Math.abs(cropEnd.value.x - cropStart.value.x)
+  const height = Math.abs(cropEnd.value.y - cropStart.value.y)
+
+  ctx.value.clearRect(x, y, width, height)
+  ctx.value.strokeStyle = 'white'
+  ctx.value.strokeRect(x, y, width, height)
+}
+
+const applyCrop = () => {
+  if (!ctx.value || !canvasRef.value) return
+
+  const x = Math.min(cropStart.value.x, cropEnd.value.x)
+  const y = Math.min(cropStart.value.y, cropEnd.value.y)
+  const width = Math.abs(cropEnd.value.x - cropStart.value.x)
+  const height = Math.abs(cropEnd.value.y - cropStart.value.y)
+
+  const imageData = ctx.value.getImageData(x, y, width, height)
+
+  canvasRef.value.width = width
+  canvasRef.value.height = height
+  ctx.value.putImageData(imageData, 0, 0)
+
+  screenshotPath.value = canvasRef.value.toDataURL()
+}
+
+const setTool = (tool: string) => {
+  currentTool.value = tool
+  clickCount.value = 0
+  if (ctx.value) {
+    ctx.value.strokeStyle = 'red' // 所有工具都使用红色
+    switch (tool) {
+      case 'pen':
+        ctx.value.lineWidth = 2
+        break
+      case 'arrow':
+      case 'line':
+        ctx.value.lineWidth = 3
+        break
+      case 'crop':
+        isCropping.value = false
+        break
+    }
   }
 }
 
@@ -111,54 +275,8 @@ watch(screenshotTaken, (newValue) => {
 })
 
 onMounted(() => {
-  console.log('Component mounted') // 添加日志
-  if (canvasRef.value) {
-    console.log('Canvas 元素已加载')
-    ctx.value = canvasRef.value.getContext('2d')
-    if (ctx.value) {
-      console.log('Canvas 上下文已设置')
-    } else {
-      console.error('无法获取 Canvas 上下文')
-    }
-  } else {
-    console.error('Canvas 元素未找到')
-  }
+  initCanvas()
 })
-
-const startDrawing = (e: MouseEvent) => {
-  isDrawing.value = true
-  ;[lastX, lastY] = [e.offsetX, e.offsetY]
-}
-
-const draw = (e: MouseEvent) => {
-  if (!isDrawing.value || !ctx.value) return
-  ctx.value.beginPath()
-  ctx.value.moveTo(lastX, lastY)
-  ctx.value.lineTo(e.offsetX, e.offsetY)
-  ctx.value.stroke()
-  ;[lastX, lastY] = [e.offsetX, e.offsetY]
-}
-
-const stopDrawing = () => {
-  isDrawing.value = false
-}
-
-const setTool = (tool: string) => {
-  currentTool.value = tool
-  if (ctx.value) {
-    switch (tool) {
-      case 'pen':
-        ctx.value.strokeStyle = 'black'
-        ctx.value.lineWidth = 2
-        break
-      case 'arrow':
-      case 'line':
-        ctx.value.strokeStyle = 'red'
-        ctx.value.lineWidth = 3
-        break
-    }
-  }
-}
 </script>
 
 <style scoped>
