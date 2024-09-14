@@ -234,22 +234,62 @@ const drawArrow = (
   toX: number,
   toY: number
 ) => {
-  const headLength = 15 // 增加箭头头部长度
-  const angle = Math.atan2(toY - fromY, toX - fromX)
+  const dx = toX - fromX
+  const dy = toY - fromY
+  const angle = Math.atan2(dy, dx)
+  const length = Math.sqrt(dx * dx + dy * dy)
 
+  // 线条宽度
+  const minLineWidth = 3
+  const maxLineWidth = 10
+  const headLength = Math.max(15, Math.min(40, length * 0.4))
+  const headWidth = headLength * 0.6 // 减小箭头宽度比例
+
+  ctx.save()
   ctx.beginPath()
-  ctx.moveTo(fromX, fromY)
-  ctx.lineTo(toX, toY)
-  ctx.lineTo(
-    toX - headLength * Math.cos(angle - Math.PI / 6),
-    toY - headLength * Math.sin(angle - Math.PI / 6)
-  )
+
+  // 设置线条样式
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  // 计算箭身的终点（不包括箭头部分）
+  const arrowBodyEndX = toX - headLength * 0.7 * Math.cos(angle)
+  const arrowBodyEndY = toY - headLength * 0.7 * Math.sin(angle)
+
+  // 绘制渐变箭身
+  const gradient = ctx.createLinearGradient(fromX, fromY, arrowBodyEndX, arrowBodyEndY)
+  gradient.addColorStop(0, `rgba(255, 0, 0, ${minLineWidth / maxLineWidth})`)
+  gradient.addColorStop(1, 'rgba(255, 0, 0, 1)')
+  ctx.strokeStyle = gradient
+
+  const bodyLength = Math.sqrt((arrowBodyEndX - fromX) ** 2 + (arrowBodyEndY - fromY) ** 2)
+  for (let i = 0; i < bodyLength; i++) {
+    const t = i / bodyLength
+    const x = fromX + (arrowBodyEndX - fromX) * t
+    const y = fromY + (arrowBodyEndY - fromY) * t
+    ctx.beginPath()
+    ctx.lineWidth = minLineWidth + (maxLineWidth - minLineWidth) * t
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + (arrowBodyEndX - fromX) / bodyLength, y + (arrowBodyEndY - fromY) / bodyLength)
+    ctx.stroke()
+  }
+
+  // 绘制箭头顶部
+  ctx.fillStyle = 'red'
+  ctx.beginPath()
   ctx.moveTo(toX, toY)
   ctx.lineTo(
-    toX - headLength * Math.cos(angle + Math.PI / 6),
-    toY - headLength * Math.sin(angle + Math.PI / 6)
+    toX - headLength * Math.cos(angle - Math.PI / 10), // 调整角度使三角形更窄
+    toY - headLength * Math.sin(angle - Math.PI / 10)
   )
-  ctx.stroke()
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle + Math.PI / 10), // 调整角度使三角形更窄
+    toY - headLength * Math.sin(angle + Math.PI / 10)
+  )
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.restore()
 }
 
 const startCropping = (e: MouseEvent) => {
@@ -367,6 +407,76 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.screenshot-tool {
+  display: flex;
+}
+.screenshot-tool {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.screenshot-preview {
+  position: relative;
+  margin-top: 20px;
+  max-width: 800px;
+  max-height: 500px;
+  overflow: auto;
+}
+.screenshot-tool {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.screenshot-preview {
+  position: relative;
+  margin-top: 20px;
+  max-width: 800px;
+  max-height: 500px;
+  overflow: auto;
+}
+
+.tools {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+canvas {
+}
 .screenshot-tool {
   display: flex;
   flex-direction: column;
