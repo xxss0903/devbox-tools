@@ -3,6 +3,9 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  takeScreenshot: () => ipcRenderer.send('take-screenshot'),
+  onScreenshotCaptured: (callback: (dataURL: string) => void) =>
+    ipcRenderer.on('screenshot-captured', (_, dataURL) => callback(dataURL)),
   executeADB: (command: string) => {
     console.log('executeADB called with command:', command)
     return ipcRenderer.invoke('execute-adb', command)
@@ -15,7 +18,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearDatabase: () => ipcRenderer.invoke('clear-database'),
   generateWeeklySummary: (startDate: string, endDate: string) =>
     ipcRenderer.invoke('generate-weekly-summary', startDate, endDate),
-  takeScreenshot: () => ipcRenderer.invoke('TAKE_SCREENSHOT'),
   registerScreenshotShortcut: (callback: () => void) =>
     ipcRenderer.on('SCREENSHOT_SHORTCUT', callback),
   unregisterScreenshotShortcut: () => ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT'),

@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    takeScreenshot: () => electron_1.ipcRenderer.send('take-screenshot'),
+    onScreenshotCaptured: (callback) => electron_1.ipcRenderer.on('screenshot-captured', (_, dataURL) => callback(dataURL)),
     executeADB: (command) => {
         console.log('executeADB called with command:', command);
         return electron_1.ipcRenderer.invoke('execute-adb', command);
@@ -13,7 +15,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getDiaryEntryByDate: (date) => electron_1.ipcRenderer.invoke('get-diary-entry-by-date', date),
     clearDatabase: () => electron_1.ipcRenderer.invoke('clear-database'),
     generateWeeklySummary: (startDate, endDate) => electron_1.ipcRenderer.invoke('generate-weekly-summary', startDate, endDate),
-    takeScreenshot: () => electron_1.ipcRenderer.invoke('TAKE_SCREENSHOT'),
     registerScreenshotShortcut: (callback) => electron_1.ipcRenderer.on('SCREENSHOT_SHORTCUT', callback),
     unregisterScreenshotShortcut: () => electron_1.ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT'),
     // ... 其他 API ...

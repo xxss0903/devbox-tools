@@ -10,6 +10,7 @@ const sequelize_1 = require("sequelize");
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const sqlite_1 = require("sqlite");
 const main_1 = require("electron/main");
+const electron_screenshots_1 = __importDefault(require("electron-screenshots"));
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -91,6 +92,7 @@ electron_1.ipcMain.handle('clear-database', async () => {
     await db.run('DELETE FROM diary_entries');
     console.log('数据库已清空');
 });
+let screenshots = null;
 function createWindow() {
     const win = new electron_1.BrowserWindow({
         width: 1600,
@@ -202,6 +204,24 @@ function createWindow() {
     });
     // 默认打开开发者工具
     win.webContents.openDevTools();
+    // 初始化截图工具
+    screenshots = new electron_screenshots_1.default({
+        singleWindow: true, // 使用单窗口模式
+        lang: {
+            operation_ok_title: '确定',
+            operation_cancel_title: '取消',
+            operation_save_title: '保存'
+            // ... 其他语言设置
+        }
+    });
+    // 监听截图完成事件
+    screenshots.on('ok', (e, buffer, bounds) => {
+        win?.webContents.send('screenshot-captured', buffer.toString('base64'));
+    });
+    // 监听截图取消事件
+    screenshots.on('cancel', () => {
+        console.log('Screenshot cancelled');
+    });
 }
 electron_1.ipcMain.handle('handle-file-drop', async (event, filePaths) => {
     console.log('Received file paths:', filePaths);
@@ -273,4 +293,8 @@ electron_1.ipcMain.handle('generate-weekly-summary', async (event, startDate, en
 electron_1.app.on('will-quit', () => {
     // 注销所有快捷键
     electron_1.globalShortcut.unregisterAll();
+});
+// 处理从渲染进程发来的截图请求
+electron_1.ipcMain.on('take-screenshot', () => {
+    screenshots?.startCapture();
 });

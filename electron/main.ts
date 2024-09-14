@@ -5,6 +5,7 @@ import { Sequelize } from 'sequelize'
 import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
 import { desktopCapturer } from 'electron/main'
+import Screenshots from 'electron-screenshots'
 const fs = require('fs').promises
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -103,6 +104,8 @@ ipcMain.handle('clear-database', async () => {
   await db.run('DELETE FROM diary_entries')
   console.log('数据库已清空')
 })
+
+let screenshots: Screenshots | null = null
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -240,6 +243,26 @@ function createWindow() {
 
   // 默认打开开发者工具
   win.webContents.openDevTools()
+
+  // 初始化截图工具
+  screenshots = new Screenshots({
+    singleWindow: true, // 使用单窗口模式
+    lang: {
+      operation_ok_title: '确定',
+      operation_cancel_title: '取消',
+      operation_save_title: '保存'
+      // ... 其他语言设置
+    }
+  })
+  // 监听截图完成事件
+  screenshots.on('ok', (e, buffer, bounds: any) => {
+    win?.webContents.send('screenshot-captured', buffer.toString('base64'))
+  })
+
+  // 监听截图取消事件
+  screenshots.on('cancel', () => {
+    console.log('Screenshot cancelled')
+  })
 }
 
 ipcMain.handle('handle-file-drop', async (event, filePaths) => {
@@ -324,4 +347,9 @@ ipcMain.handle('generate-weekly-summary', async (event, startDate, endDate) => {
 app.on('will-quit', () => {
   // 注销所有快捷键
   globalShortcut.unregisterAll()
+})
+
+// 处理从渲染进程发来的截图请求
+ipcMain.on('take-screenshot', () => {
+  screenshots?.startCapture()
 })

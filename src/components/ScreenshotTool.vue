@@ -113,18 +113,19 @@ const redrawCanvas = () => {
 }
 
 const takeScreenshot = async () => {
-  try {
-    console.log('takeScreenshot called in renderer process')
-    const dataUrl = await window.electronAPI.takeScreenshot()
-    console.log('Screenshot taken:', dataUrl.substring(0, 50) + '...')
-    screenshotPath.value = dataUrl
-    screenshotTaken.value = true
-    await nextTick()
-    initCanvas()
-    drawImageOnCanvas(dataUrl)
-  } catch (error) {
-    console.error('截图失败:', error)
-  }
+  window.electronAPI.takeScreenshot()
+  // try {
+  //   console.log('takeScreenshot called in renderer process')
+  //   const dataUrl = await window.electronAPI.takeScreenshot()
+  //   console.log('Screenshot taken:', dataUrl.substring(0, 50) + '...')
+  //   screenshotPath.value = dataUrl
+  //   screenshotTaken.value = true
+  //   await nextTick()
+  //   initCanvas()
+  //   drawImageOnCanvas(dataUrl)
+  // } catch (error) {
+  //   console.error('截图失败:', error)
+  // }
 }
 
 const initCanvas = () => {
@@ -467,10 +468,13 @@ watch(screenshotTaken, (newValue) => {
     })
   }
 })
-
+const screenshotDataURL = ref('')
 onMounted(() => {
   initCanvas()
   window.electronAPI.registerScreenshotShortcut(takeScreenshot)
+  window.electronAPI.onScreenshotCaptured((dataURL: string) => {
+    screenshotDataURL.value = `data:image/png;base64,${dataURL}`
+  })
 })
 
 onUnmounted(() => {
