@@ -10,6 +10,7 @@
           @mousemove.prevent="handleMouseMove"
           @mouseup.prevent="handleMouseUp"
           @mouseout.prevent="handleMouseOut"
+          @wheel.prevent="handleWheel"
         ></canvas>
         <canvas ref="tempCanvasRef" class="temp-canvas"></canvas>
         <canvas ref="cropCanvasRef" class="crop-canvas"></canvas>
@@ -69,6 +70,47 @@ const cropEnd = ref({ x: 0, y: 0 })
 const isCropping = ref(false)
 
 const isDrawingArrow = ref(false)
+
+const scale = ref(1)
+const offsetX = ref(0)
+const offsetY = ref(0)
+
+const handleWheel = (e: WheelEvent) => {
+  e.preventDefault()
+  const delta = e.deltaY > 0 ? 0.9 : 1.1
+  const newScale = Math.max(0.1, Math.min(5, scale.value * delta))
+
+  // 计算鼠标位置相对于 canvas 的坐标
+  const rect = canvasRef.value!.getBoundingClientRect()
+  const mouseX = e.clientX - rect.left
+  const mouseY = e.clientY - rect.top
+
+  // 计算新的偏移量，使缩放中心位于鼠标位置
+  offsetX.value = mouseX - (mouseX - offsetX.value) * (newScale / scale.value)
+  offsetY.value = mouseY - (mouseY - offsetY.value) * (newScale / scale.value)
+
+  scale.value = newScale
+  redrawCanvas()
+}
+
+const redrawCanvas = () => {
+  if (!ctx.value || !canvasRef.value) return
+
+  ctx.value.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
+  ctx.value.save()
+  ctx.value.translate(offsetX.value, offsetY.value)
+  ctx.value.scale(scale.value, scale.value)
+
+  // 重新绘制图像
+  if (screenshotPath.value) {
+    const img = new Image()
+    img.onload = () => {
+      ctx.value!.drawImage(img, 0, 0)
+      ctx.value!.restore()
+    }
+    img.src = screenshotPath.value
+  }
+}
 
 const takeScreenshot = async () => {
   try {
@@ -137,6 +179,11 @@ const drawImageOnCanvas = (dataUrl: string) => {
       canvas.height = height
       ctx.value!.drawImage(img, 0, 0, width, height)
 
+      // 重置缩放和偏移
+      scale.value = 1
+      offsetX.value = 0
+      offsetY.value = 0
+
       // 设置临时 canvas 和裁剪 canvas 的大小
       if (tempCanvasRef.value) {
         tempCanvasRef.value.width = width
@@ -191,6 +238,10 @@ const startDrawing = (e: MouseEvent) => {
   console.log('开始绘制')
   if (!ctx.value) return
   isDrawing.value = true
+
+  const rect = canvasRef.value!.getBoundingClientRect()
+  startX = (e.clientX - rect.left - offsetX.value) / scale.value
+  startY = (e.clientY - rect.top - offsetY.value) / scale.value
   ;[startX, startY] = [e.offsetX, e.offsetY]
   if (currentTool.value === 'pen') {
     ctx.value.beginPath() // 每次开始新的路径
@@ -203,6 +254,10 @@ const startDrawing = (e: MouseEvent) => {
 const draw = (e: MouseEvent) => {
   console.log('绘制中')
   if (!isDrawing.value || !ctx.value || !tempCtx.value || !tempCanvasRef.value) return
+
+  const rect = canvasRef.value!.getBoundingClientRect()
+  endX = (e.clientX - rect.left - offsetX.value) / scale.value
+  endY = (e.clientY - rect.top - offsetY.value) / scale.value
   ;[endX, endY] = [e.offsetX, e.offsetY]
 
   if (currentTool.value === 'pen') {
@@ -454,7 +509,7 @@ button {
   margin-top: 20px;
   max-width: 800px;
   max-height: 500px;
-  overflow: auto;
+  overflow: hidden; /* 修改为 hidden 以防止滚动条出现 */
 }
 .screenshot-tool {
   display: flex;
