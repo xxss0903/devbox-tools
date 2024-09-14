@@ -97,11 +97,13 @@ function createWindow() {
         height: 800,
         webPreferences: {
             preload: path_1.default.join(__dirname, 'preload.js'),
-            contextIsolation: true, // 启用 contextIsolation
-            nodeIntegration: false, // 禁用 nodeIntegration
+            contextIsolation: true,
+            nodeIntegration: false,
             webviewTag: true, // 启用webview标签
             webSecurity: false,
-            sandbox: false
+            sandbox: false,
+            allowRunningInsecureContent: true, // 允许运行不安全的内容
+            experimentalFeatures: true // 启用实验性功能
         },
         resizable: true,
         maximizable: false
@@ -114,6 +116,17 @@ function createWindow() {
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [process.env.NODE_ENV !== 'production' ? devCSP : prodCSP]
+            }
+        });
+    });
+    // 设置 webview 权限
+    electron_1.session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [
+                    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:; connect-src 'self' https: http: ws: wss:; img-src 'self' data: https: http:; style-src 'self' 'unsafe-inline' https: http:; frame-src 'self' https: http:;"
+                ]
             }
         });
     });
@@ -161,8 +174,16 @@ function createWindow() {
     });
     // 添加IPC监听器
     electron_1.ipcMain.handle('TAKE_SCREENSHOT', async () => {
-        const sources = await main_1.desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } });
+        const sources = await main_1.desktopCapturer.getSources({
+            types: ['screen'],
+            thumbnailSize: { width: 1920, height: 1080 }
+        });
         return sources[0].thumbnail.toDataURL();
+    });
+    // 注册全局快捷键
+    electron_1.globalShortcut.register('Ctrl+Alt+C', () => {
+        console.log('quick screen shot');
+        win.webContents.send('SCREENSHOT_SHORTCUT');
     });
     // 默认打开开发者工具
     win.webContents.openDevTools();
@@ -201,4 +222,8 @@ electron_1.ipcMain.handle('generate-weekly-summary', async (event, startDate, en
     }
     // 这里可以添加更复杂的摘要生成逻辑,例如使用 AI 生成摘要
     return summary;
+});
+electron_1.app.on('will-quit', () => {
+    // 注销所有快捷键
+    electron_1.globalShortcut.unregisterAll();
 });

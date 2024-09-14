@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, globalShortcut, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut, dialog, session } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
@@ -110,11 +110,13 @@ function createWindow() {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true, // 启用 contextIsolation
-      nodeIntegration: false, // 禁用 nodeIntegration
+      contextIsolation: true,
+      nodeIntegration: false,
       webviewTag: true, // 启用webview标签
       webSecurity: false,
-      sandbox: false
+      sandbox: false,
+      allowRunningInsecureContent: true, // 允许运行不安全的内容
+      experimentalFeatures: true // 启用实验性功能
     },
     resizable: true,
     maximizable: false
@@ -131,6 +133,18 @@ function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [process.env.NODE_ENV !== 'production' ? devCSP : prodCSP]
+      }
+    })
+  })
+
+  // 设置 webview 权限
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:; connect-src 'self' https: http: ws: wss:; img-src 'self' data: https: http:; style-src 'self' 'unsafe-inline' https: http:; frame-src 'self' https: http:;"
+        ]
       }
     })
   })
