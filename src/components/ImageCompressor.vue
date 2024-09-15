@@ -14,11 +14,34 @@ const isCompressing = ref(false)
 const isDragging = ref(false)
 const dragCounter = ref(0)
 
-const handleFileChange = (event: Event) => {
+const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    addFiles(Array.from(target.files))
+    const files = Array.from(target.files)
+    await addFiles(files)
+    // 重置 input，以便能够选择相同的文件
+    target.value = ''
   }
+}
+
+const addFiles = async (files: File[]) => {
+  const newFiles = await Promise.all(
+    files.map(async (file) => {
+      // 使用 FileReader 来读取文件，避免可能的堆栈溢出
+      return new Promise<{ name: string; size: number; data: string }>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          resolve({
+            name: file.name,
+            size: file.size,
+            data: e.target?.result as string
+          })
+        }
+        reader.readAsDataURL(file)
+      })
+    })
+  )
+  selectedFiles.value = [...selectedFiles.value, ...newFiles]
 }
 
 const handleFolderSelect = async () => {
@@ -30,21 +53,6 @@ const handleFolderSelect = async () => {
   } catch (err) {
     console.error('Error selecting folder:', err)
   }
-}
-
-const addFiles = async (files: File[]) => {
-  const newFiles = await Promise.all(
-    files.map(async (file) => {
-      const arrayBuffer = await file.arrayBuffer()
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-      return {
-        name: file.name,
-        size: file.size,
-        data: `data:${file.type};base64,${base64}`
-      }
-    })
-  )
-  selectedFiles.value = [...selectedFiles.value, ...newFiles]
 }
 
 const handleDragEnter = (event: DragEvent) => {
@@ -195,6 +203,15 @@ const downloadCompressedImages = async () => {
   }
 }
 
+const downloadSingleFile = (file: { name: string; data: string }) => {
+  const link = document.createElement('a')
+  link.href = file.data
+  link.download = file.name
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 const goBack = () => {
   router.push({ name: 'ImageTools' })
 }
@@ -210,6 +227,13 @@ const totalCompressionRate = computed(() => {
   const totalCompressed = compressedFiles.value.reduce((sum, file) => sum + file.compressedSize, 0)
   return ((1 - totalCompressed / totalOriginal) * 100).toFixed(2)
 })
+
+const clearAll = () => {
+  selectedFiles.value = []
+  compressedFiles.value = []
+  compressionQuality.value = 0.7
+  isCompressing.value = false
+}
 </script>
 
 <template>
@@ -235,6 +259,7 @@ const totalCompressionRate = computed(() => {
           />
           <label for="file-input" class="button">选择图片</label>
           <button @click="handleFolderSelect" class="button">选择文件夹</button>
+          <button @click="clearAll" class="button clear">清空</button>
         </div>
         <div class="compression-controls">
           <div class="quality-control">
@@ -257,11 +282,11 @@ const totalCompressionRate = computed(() => {
             {{ isCompressing ? '压缩中...' : '压缩图片' }}
           </button>
           <button
+            v-if="compressedFiles.length > 1"
             @click="downloadCompressedImages"
-            :disabled="compressedFiles.length === 0"
             class="button"
           >
-            {{ compressedFiles.length > 1 ? '下载压缩后的图片(ZIP)' : '下载压缩后的图片' }}
+            下载所有压缩后的图片(ZIP)
           </button>
         </div>
       </div>
@@ -284,13 +309,16 @@ const totalCompressionRate = computed(() => {
         <p class="total-compression">总压缩率: <span>{{ totalCompressionRate }}%</span></p>
         <ul>
           <li v-for="file in compressedFiles" :key="file.name" class="file-item">
-            <span class="file-name">{{ file.name }}</span>
-            <div class="compression-info">
-              <span class="original-size">{{ formatFileSize(file.originalSize) }}</span>
-              <span class="arrow">→</span>
-              <span class="compressed-size">{{ formatFileSize(file.compressedSize) }}</span>
-              <span class="compression-rate">(压缩率: {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)</span>
+            <div class="file-info">
+              <span class="file-name">{{ file.name }}</span>
+              <div class="compression-info">
+                <span class="original-size">{{ formatFileSize(file.originalSize) }}</span>
+                <span class="arrow">→</span>
+                <span class="compressed-size">{{ formatFileSize(file.compressedSize) }}</span>
+                <span class="compression-rate">(压缩率: {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)</span>
+              </div>
             </div>
+            <button @click="downloadSingleFile(file)" class="button download-single">下载</button>
           </li>
         </ul>
       </div>
@@ -408,6 +436,10 @@ ul {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.file-info {
+  flex-grow: 1;
+}
+
 .file-name {
   font-weight: bold;
   color: #2c3e50;
@@ -470,5 +502,28 @@ ul {
 .dragging {
   border: 2px dashed #3498db;
   background-color: rgba(52, 152, 219, 0.1);
+}
+
+.button.clear {
+  background-color: #e74c3c;
+}
+
+.button.clear:hover {
+  background-color: #c0392b;
+}
+
+.button.download-single {
+  background-color: #3498db;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s ease;
+}
+
+.button.download-single:hover {
+  background-color: #2980b9;
 }
 </style>
