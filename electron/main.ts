@@ -222,7 +222,7 @@ function createWindow() {
   // 注册全局快捷键
   globalShortcut.register('Ctrl+Alt+C', () => {
     console.log('quick screen shot')
-    win.webContents.send('SCREENSHOT_SHORTCUT')
+    screenshots?.startCapture()
   })
 
   // 允许加载本地文件

@@ -186,7 +186,7 @@ function createWindow() {
     // 注册全局快捷键
     electron_1.globalShortcut.register('Ctrl+Alt+C', () => {
         console.log('quick screen shot');
-        win.webContents.send('SCREENSHOT_SHORTCUT');
+        screenshots?.startCapture();
     });
     // 允许加载本地文件
     electron_1.app.on('web-contents-created', (event, contents) => {
@@ -224,9 +224,6 @@ function createWindow() {
         // 将截图保存到系统粘贴板
         electron_1.clipboard.writeImage(image);
         console.log('截图已保存到系统粘贴板');
-        // 确保截图可以被复制
-        // clipboard.writeText(base64)
-        // console.log('截图已保存为可复制的格式')
         win?.webContents.send('screenshot-captured', base64);
     });
     // 监听截图取消事件
