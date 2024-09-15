@@ -253,19 +253,24 @@ const totalCompressionRate = computed(() => {
       <div v-if="selectedFiles.length > 0" class="file-list">
         <h3>选中的文件：</h3>
         <ul>
-          <li v-for="file in selectedFiles" :key="file.name">
-            {{ file.name }} ({{ formatFileSize(file.size) }})
+          <li v-for="file in selectedFiles" :key="file.name" class="file-item">
+            <span class="file-name">{{ file.name }}</span>
+            <span class="file-size">{{ formatFileSize(file.size) }}</span>
           </li>
         </ul>
       </div>
       <div v-if="compressedFiles.length > 0" class="compression-results">
         <h3>压缩结果：</h3>
-        <p>总压缩率: {{ totalCompressionRate }}%</p>
+        <p class="total-compression">总压缩率: <span>{{ totalCompressionRate }}%</span></p>
         <ul>
-          <li v-for="file in compressedFiles" :key="file.name">
-            {{ file.name }}: 原始大小 {{ formatFileSize(file.originalSize) }} -> 压缩后
-            {{ formatFileSize(file.compressedSize) }} (压缩率:
-            {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)
+          <li v-for="file in compressedFiles" :key="file.name" class="file-item">
+            <span class="file-name">{{ file.name }}</span>
+            <div class="compression-info">
+              <span class="original-size">{{ formatFileSize(file.originalSize) }}</span>
+              <span class="arrow">→</span>
+              <span class="compressed-size">{{ formatFileSize(file.compressedSize) }}</span>
+              <span class="compression-rate">(压缩率: {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)</span>
+            </div>
           </li>
         </ul>
       </div>
@@ -355,6 +360,16 @@ input[type='range'] {
 .file-list,
 .compression-results {
   margin-top: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.file-list h3,
+.compression-results h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
 }
 
 ul {
@@ -362,8 +377,53 @@ ul {
   padding: 0;
 }
 
-li {
-  margin-bottom: 5px;
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.file-name {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.file-size,
+.original-size,
+.compressed-size {
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+.compression-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrow {
+  color: #3498db;
+  font-weight: bold;
+}
+
+.compression-rate {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.total-compression {
+  font-size: 1.1em;
+  margin-bottom: 15px;
+}
+
+.total-compression span {
+  font-weight: bold;
+  color: #27ae60;
 }
 
 .drag-overlay {
