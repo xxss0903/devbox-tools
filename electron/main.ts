@@ -34,6 +34,7 @@ ipcMain.handle('execute-adb', async (event: any, command: string) => {
 
 let sequelize: Sequelize
 let db: Database | null = null
+let lastClipboardContent: string = '' // 最新的剪切板内容
 
 async function getDatabase(): Promise<Database> {
   if (db) return db
@@ -202,7 +203,6 @@ async function createWindow() {
     const db = await getDatabase()
     const entry = await db.get('SELECT * FROM diary_entries WHERE date = ?', [date])
     if (entry) {
-      console.log('Retrieved entry:', entry)
       return {
         ...entry,
         todos: entry.todos || '[]'
@@ -226,6 +226,12 @@ async function createWindow() {
     screenshots?.startCapture()
   })
 
+  win?.webContents.on('did-finish-load', async () => {
+    await checkAndUpdateClipboard()
+    console.log('get latestcontent 2:', lastClipboardContent)
+    watchClipboard(win!!)
+  })
+
   // 允许加载本地文件
   app.on('web-contents-created', (event, contents) => {
     contents.on('will-navigate', (event, navigationUrl) => {
@@ -234,8 +240,6 @@ async function createWindow() {
         event.preventDefault()
       }
     })
-
-    watchClipboard(win!!)
   })
 
   // 添加文件拖放处理
@@ -278,7 +282,21 @@ async function createWindow() {
   })
 }
 
-let lastClipboardContent: string = ''
+async function checkAndUpdateClipboard() {
+  if (!win) return
+
+  const db = await getDatabase()
+  const latestItem = await db.get('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 1')
+
+  console.log('get latestcontent 1:', latestItem)
+
+  if (latestItem.type === 'text') {
+    lastClipboardContent = latestItem.content
+  } else if (latestItem.type === 'image') {
+    lastClipboardContent = latestItem.content
+  }
+}
+
 async function watchClipboard(win: BrowserWindow) {
   // 添加监听系统剪贴板的功能
   const db = await getDatabase()
@@ -287,6 +305,8 @@ async function watchClipboard(win: BrowserWindow) {
     const currentContent = clipboard.readText()
     if (currentContent && currentContent !== lastClipboardContent) {
       if (currentContent) {
+        console.log('watchClipboard currenttext', currentContent)
+        console.log('latest text', lastClipboardContent)
         lastClipboardContent = currentContent
         await db.run(
           'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
@@ -295,7 +315,6 @@ async function watchClipboard(win: BrowserWindow) {
           Date.now()
         )
         win?.webContents.send('clipboard-update', currentContent)
-        console.log('watchClipboard interval 1000 text update', currentContent)
       }
     }
 
@@ -448,7 +467,6 @@ ipcMain.on('request-clipboard-history', async (event: any) => {
   console.log('request-clipboard-history')
   const db = await getDatabase()
   const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50')
-  console.log('history data', history)
   event.reply('clipboard-history-update', history)
   return history
 })
