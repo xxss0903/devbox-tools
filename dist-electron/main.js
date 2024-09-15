@@ -241,10 +241,12 @@ async function watchClipboard(win) {
     setInterval(async () => {
         const currentContent = electron_1.clipboard.readText();
         if (currentContent && currentContent !== lastClipboardContent) {
-            lastClipboardContent = currentContent;
-            await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', 'text', currentContent, Date.now());
-            win?.webContents.send('clipboard-update', currentContent);
-            console.log('watchClipboard interval 1000 text update', currentContent);
+            if (currentContent) {
+                lastClipboardContent = currentContent;
+                await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', 'text', currentContent, Date.now());
+                win?.webContents.send('clipboard-update', currentContent);
+                console.log('watchClipboard interval 1000 text update', currentContent);
+            }
         }
         const image = electron_1.clipboard.readImage();
         if (!image.isEmpty()) {
@@ -389,4 +391,17 @@ electron_1.ipcMain.on('clipboard-history-update', async (event) => {
     catch (error) {
         console.error('获取剪贴板历史记录时出错:', error);
     }
+});
+electron_1.ipcMain.handle('delete-clipboard-item', async (event, id) => {
+    const db = await getDatabase();
+    await db.run('DELETE FROM clipboard_history WHERE id = ?', id);
+    const updatedHistory = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC');
+    return updatedHistory;
+});
+electron_1.ipcMain.handle('write-text-to-clipboard', async (event, text) => {
+    electron_1.clipboard.writeText(text);
+});
+electron_1.ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
+    const img = common_1.nativeImage.createFromDataURL(dataURL);
+    electron_1.clipboard.writeImage(img);
 });

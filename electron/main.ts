@@ -286,15 +286,17 @@ async function watchClipboard(win: BrowserWindow) {
   setInterval(async () => {
     const currentContent = clipboard.readText()
     if (currentContent && currentContent !== lastClipboardContent) {
-      lastClipboardContent = currentContent
-      await db.run(
-        'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-        'text',
-        currentContent,
-        Date.now()
-      )
-      win?.webContents.send('clipboard-update', currentContent)
-      console.log('watchClipboard interval 1000 text update', currentContent)
+      if (currentContent) {
+        lastClipboardContent = currentContent
+        await db.run(
+          'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+          'text',
+          currentContent,
+          Date.now()
+        )
+        win?.webContents.send('clipboard-update', currentContent)
+        console.log('watchClipboard interval 1000 text update', currentContent)
+      }
     }
 
     const image = clipboard.readImage()
@@ -473,4 +475,20 @@ ipcMain.on('clipboard-history-update', async (event) => {
   } catch (error) {
     console.error('获取剪贴板历史记录时出错:', error)
   }
+})
+
+ipcMain.handle('delete-clipboard-item', async (event, id) => {
+  const db = await getDatabase()
+  await db.run('DELETE FROM clipboard_history WHERE id = ?', id)
+  const updatedHistory = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC')
+  return updatedHistory
+})
+
+ipcMain.handle('write-text-to-clipboard', async (event, text) => {
+  clipboard.writeText(text)
+})
+
+ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
+  const img = nativeImage.createFromDataURL(dataURL)
+  clipboard.writeImage(img)
 })

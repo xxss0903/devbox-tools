@@ -3,6 +3,11 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  writeTextToClipboard: (text: string) => ipcRenderer.invoke('write-text-to-clipboard', text),
+  writeImageToClipboard: (dataURL: string) =>
+    ipcRenderer.invoke('write-image-to-clipboard', dataURL),
+  // 删除粘贴板单个内容
+  deleteClipboardItem: (id: number) => ipcRenderer.invoke('delete-clipboard-item', id),
   onClipboardHistoryUpdate: (callback: (history: any[]) => void) =>
     ipcRenderer.on('clipboard-history-update', (_, history) => callback(history)),
   requestClipboardHistory: () => ipcRenderer.send('request-clipboard-history'),

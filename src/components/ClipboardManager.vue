@@ -17,23 +17,29 @@
       </div>
       <ul v-else class="clipboard-list">
         <li v-for="item in clipboardHistory" :key="item.id" class="clipboard-item">
-          <span v-if="item.type === 'text'" class="text-content">{{ item.content }}</span>
-          <img
-            v-else-if="item.type === 'image'"
-            :src="item.content"
-            alt="剪贴板图片"
-            class="image-content"
-          />
+          <div class="item-content">
+            <span v-if="item.type === 'text'" class="text-content">{{ item.content }}</span>
+            <img
+              v-else-if="item.type === 'image'"
+              :src="item.content"
+              alt="剪贴板图片"
+              class="image-content"
+            />
+          </div>
+          <div class="item-actions">
+            <button @click="copyToClipboard(item)" class="action-button copy-button">复制</button>
+            <button @click="deleteItem(item.id)" class="action-button delete-button">删除</button>
+          </div>
         </li>
       </ul>
     </div>
+    <div v-if="showCopySuccess" class="copy-success-toast">复制成功！</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import ToolsContainer from './ToolsContainer.vue'
 
 interface ClipboardItem {
   id: number
@@ -45,6 +51,7 @@ interface ClipboardItem {
 const router = useRouter()
 const clipboardHistory = ref<ClipboardItem[]>([])
 const loading = ref(true)
+const showCopySuccess = ref(false)
 
 const goBack = () => {
   router.push({ name: 'Home' })
@@ -78,13 +85,78 @@ onMounted(() => {
   window.electronAPI.onClipboardHistoryUpdate(updateClipboardHistory)
   refreshHistory() // 初始加载使用相同的刷新函数
 })
+
+const copyToClipboard = async (item: ClipboardItem) => {
+  try {
+    if (item.type === 'text') {
+      await window.electronAPI.writeTextToClipboard(item.content)
+    } else if (item.type === 'image') {
+      await window.electronAPI.writeImageToClipboard(item.content)
+    }
+    showCopySuccess.value = true
+    setTimeout(() => {
+      showCopySuccess.value = false
+    }, 2000) // 2秒后隐藏提示
+    console.log('内容已复制到剪贴板')
+  } catch (error) {
+    console.error('复制到剪贴板失败:', error)
+  }
+}
+
+const deleteItem = async (id: number) => {
+  try {
+    await window.electronAPI.deleteClipboardItem(id)
+    clipboardHistory.value = clipboardHistory.value.filter((item) => item.id !== id)
+    console.log('剪贴板项目已删除')
+  } catch (error) {
+    console.error('删除剪贴板项目失败:', error)
+  }
+}
 </script>
 
 <style scoped>
+.navigation-bar-title {
+  display: flex;
+  align-items: center;
+}
+.navigation-bar {
+  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: #2980b9;
+}
+
+.detail-title {
+  margin-left: 20px;
+  font-size: 1.2em;
+  color: #2c3e50;
+}
+
+.clipboard-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .clipboard-content {
+  flex-grow: 1;
   overflow-y: auto;
-  padding: 0 20px;
-  width: 100%;
   padding: 20px;
 }
 
@@ -92,26 +164,29 @@ onMounted(() => {
   list-style-type: none;
   padding: 0;
   margin: 0;
-  width: 100%;
 }
 
 .clipboard-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 10px;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+.item-content {
+  flex: 1;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  width: 90%;
-  box-sizing: border-box;
+  margin-right: 10px;
 }
 
 .text-content {
   display: block;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
-  width: 100%;
 }
 
 .image-content {
@@ -119,6 +194,12 @@ onMounted(() => {
   max-height: 100px;
   object-fit: cover;
   display: block;
+}
+
+.item-actions {
+  width: 120px;
+  display: flex;
+  gap: 5px;
 }
 
 .loading-state,
@@ -130,13 +211,19 @@ onMounted(() => {
   height: 100%;
   color: #888;
   text-align: center;
-  width: 100%;
+}
+
+.footer {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  border-top: 1px solid #ddd;
+  text-align: center;
 }
 
 .refresh-button,
-.clear-button {
+.clear-button,
+.action-button {
   padding: 8px 16px;
-  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
@@ -144,37 +231,46 @@ onMounted(() => {
   transition: background-color 0.3s ease;
 }
 
+.refresh-button,
+.clear-button {
+  background-color: #4caf50;
+}
+
 .refresh-button:hover,
 .clear-button:hover {
   background-color: #45a049;
 }
 
-.navigation-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+.action-button {
+  padding: 4px 8px;
+  font-size: 0.9em;
 }
 
-.navigation-bar-title {
-  display: flex;
-  align-items: center;
-}
-
-.back-button {
-  padding: 8px 16px;
+.copy-button {
   background-color: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin-right: 20px;
 }
 
-.back-button:hover {
+.copy-button:hover {
   background-color: #2980b9;
+}
+
+.delete-button {
+  background-color: #e74c3c;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+}
+
+.copy-success-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 1000;
 }
 </style>

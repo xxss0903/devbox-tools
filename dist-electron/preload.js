@@ -3,6 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    writeTextToClipboard: (text) => electron_1.ipcRenderer.invoke('write-text-to-clipboard', text),
+    writeImageToClipboard: (dataURL) => electron_1.ipcRenderer.invoke('write-image-to-clipboard', dataURL),
+    // 删除粘贴板单个内容
+    deleteClipboardItem: (id) => electron_1.ipcRenderer.invoke('delete-clipboard-item', id),
     onClipboardHistoryUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-history-update', (_, history) => callback(history)),
     requestClipboardHistory: () => electron_1.ipcRenderer.send('request-clipboard-history'),
     clearClipboardHistory: () => electron_1.ipcRenderer.send('clear-clipboard-history'),
