@@ -11,6 +11,7 @@ const sqlite3_1 = __importDefault(require("sqlite3"));
 const sqlite_1 = require("sqlite");
 const main_1 = require("electron/main");
 const electron_screenshots_1 = __importDefault(require("electron-screenshots"));
+const common_1 = require("electron/common");
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -215,8 +216,18 @@ function createWindow() {
         }
     });
     // 监听截图完成事件
-    screenshots.on('ok', (e, buffer, bounds) => {
-        win?.webContents.send('screenshot-captured', buffer.toString('base64'));
+    screenshots.on('ok', (e, buffer, data) => {
+        console.log('data', data);
+        const image = common_1.nativeImage.createFromBuffer(buffer);
+        const base64 = image.toDataURL();
+        console.log('截图已捕获');
+        // 将截图保存到系统粘贴板
+        electron_1.clipboard.writeImage(image);
+        console.log('截图已保存到系统粘贴板');
+        // 确保截图可以被复制
+        // clipboard.writeText(base64)
+        // console.log('截图已保存为可复制的格式')
+        win?.webContents.send('screenshot-captured', base64);
     });
     // 监听截图取消事件
     screenshots.on('cancel', () => {

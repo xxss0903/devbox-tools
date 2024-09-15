@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, globalShortcut, dialog, session } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut, dialog, session, clipboard } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
@@ -6,6 +6,7 @@ import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
 import { desktopCapturer } from 'electron/main'
 import Screenshots from 'electron-screenshots'
+import { nativeImage } from 'electron/common'
 const fs = require('fs').promises
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -255,8 +256,17 @@ function createWindow() {
     }
   })
   // 监听截图完成事件
-  screenshots.on('ok', (e, buffer, bounds: any) => {
-    win?.webContents.send('screenshot-captured', buffer.toString('base64'))
+  screenshots.on('ok', (e, buffer, data: any) => {
+    console.log('data', data)
+    const image = nativeImage.createFromBuffer(buffer)
+    const base64 = image.toDataURL()
+    console.log('截图已捕获')
+
+    // 将截图保存到系统粘贴板
+    clipboard.writeImage(image)
+    console.log('截图已保存到系统粘贴板')
+
+    win?.webContents.send('screenshot-captured', base64)
   })
 
   // 监听截图取消事件
