@@ -9,9 +9,13 @@
               <input type="file" @change="onFileSelected" accept="image/*" class="file-input" />
               <span class="file-input-text">选择图片</span>
             </label>
-            <button @click="processAndDownload" class="primary-button" :disabled="!imageUrl">生成并下载圆角图片</button>
+            <label class="file-input-label">
+              <input type="file" @change="onFolderSelected" webkitdirectory directory multiple class="file-input" />
+              <span class="file-input-text">选择文件夹</span>
+            </label>
+            <button @click="processAndDownload" class="primary-button" :disabled="!imageUrl && !folderSelected">生成并下载圆角图片</button>
           </div>
-          <div v-if="imageUrl" class="radius-controls">
+          <div v-if="imageUrl || folderSelected" class="radius-controls">
             <div class="radio-group">
               <label>
                 <input type="radio" v-model="radiusType" value="percent" /> 百分比
@@ -44,7 +48,19 @@
             <img :src="imageUrl" alt="圆角效果" class="result-image" :style="resultImageStyle" />
           </div>
         </div>
+        <div v-if="folderSelected" class="folder-info">
+          <h3>已选择文件夹，包含 {{ imageFiles.length }} 个图片文件：</h3>
+          <div class="image-grid">
+            <div v-for="file in imageFiles" :key="file.name" class="image-item">
+              <img :src="getImageUrl(file)" alt="缩略图" class="thumbnail" />
+              <span class="file-name">{{ file.name }}</span>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+    <div v-if="showOpenDownloadFolder" class="open-download-folder">
+      <button @click="openDownloadFolder" class="secondary-button">打开下载文件夹</button>
     </div>
   </div>
 </template>
@@ -52,14 +68,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import NavigationBar from './NavigationBar.vue';
-import { useRouter } from 'vue-router'
+import { useRouter } from 'vue-router';
+import JSZip from 'jszip';
 
-const router = useRouter()
+const router = useRouter();
 const imageUrl = ref('');
 const borderRadiusPercent = ref(10);
 const borderRadiusPixel = ref(20);
 const radiusType = ref('percent');
 const originalFileName = ref('');
+const folderSelected = ref(false);
+const imageFiles = ref<File[]>([]);
+const showOpenDownloadFolder = ref(false);
 
 const resultImageStyle = computed(() => {
   if (radiusType.value === 'percent') {
@@ -74,12 +94,22 @@ const onFileSelected = (event: Event) => {
   if (file) {
     imageUrl.value = URL.createObjectURL(file);
     originalFileName.value = file.name;
+    folderSelected.value = false;
+    imageFiles.value = [];
   }
 };
 
-const processAndDownload = () => {
-  const img = new Image();
-  img.onload = () => {
+const onFolderSelected = (event: Event) => {
+  const files = (event.target as HTMLInputElement).files;
+  if (files) {
+    imageFiles.value = Array.from(files).filter(file => file.type.startsWith('image/'));
+    folderSelected.value = true;
+    imageUrl.value = '';
+  }
+};
+
+const processImage = (img: HTMLImageElement): Promise<string> => {
+  return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -106,24 +136,74 @@ const processAndDownload = () => {
 
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const resultUrl = canvas.toDataURL('image/png');
-    
+    resolve(canvas.toDataURL('image/png'));
+  });
+};
+
+const processAndDownload = async () => {
+  if (imageUrl.value) {
+    // 处理单个图片
+    const img = new Image();
+    img.onload = async () => {
+      const resultUrl = await processImage(img);
+      const link = document.createElement('a');
+      link.href = resultUrl;
+      const extension = originalFileName.value.split('.').pop();
+      const newFileName = originalFileName.value.replace(`.${extension}`, `_round.${extension}`);
+      link.download = newFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showOpenDownloadFolder.value = true;
+    };
+    img.src = imageUrl.value;
+  } else if (folderSelected.value) {
+    // 处理文件夹中的所有图片
+    const zip = new JSZip();
+    const promises = imageFiles.value.map(file => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = async () => {
+          const resultUrl = await processImage(img);
+          const data = atob(resultUrl.split(',')[1]);
+          const array = new Uint8Array(data.length);
+          for (let i = 0; i < data.length; i++) {
+            array[i] = data.charCodeAt(i);
+          }
+          const extension = file.name.split('.').pop();
+          const newFileName = file.name.replace(`.${extension}`, `_round.${extension}`);
+          zip.file(newFileName, array);
+          resolve();
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    });
+
+    await Promise.all(promises);
+    const content = await zip.generateAsync({ type: 'blob' });
     const link = document.createElement('a');
-    link.href = resultUrl;
-    
-    const extension = originalFileName.value.split('.').pop();
-    const newFileName = originalFileName.value.replace(`.${extension}`, `_round.${extension}`);
-    
-    link.download = newFileName;
+    link.href = URL.createObjectURL(content);
+    link.download = 'rounded_images.zip';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-  img.src = imageUrl.value;
+    showOpenDownloadFolder.value = true;
+  }
+};
+
+const openDownloadFolder = () => {
+  // 由于浏览器安全限制，我们不能直接打开下载文件夹
+  // 但我们可以提供一些指导信息
+  alert('请在您的文件管理器中打开下载文件夹查看处理后的图片。');
+  showOpenDownloadFolder.value = false;
 };
 
 const goBack = () => {
   router.back();
+};
+
+const getImageUrl = (file: File) => {
+  return URL.createObjectURL(file);
 };
 </script>
 
@@ -261,6 +341,83 @@ h3 {
   margin-top: 0;
   margin-bottom: 15px;
   color: #333;
+}
+
+.folder-info {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #333;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+}
+
+.image-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+.image-item:hover {
+  transform: translateY(-5px);
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.file-name {
+  font-size: 14px;
+  color: #333;
+  text-align: center;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.open-download-folder {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f0f2f5;
+  padding: 15px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.secondary-button {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.secondary-button:hover {
+  background-color: #357abd;
 }
 
 @media (max-width: 768px) {
