@@ -9,7 +9,6 @@ const titles = ref([
   { title: '常用工具', value: 'Home' },
   { title: '图片工具', value: 'ImageTools' },
   { title: 'PDF工具', value: 'Home' }, // 暂时导航到Home
-  { title: '常用组件', value: 'Home' }, // 暂时导航到Home
   { title: '颜色工具', value: 'ColorTools' },
   { title: 'Android工具', value: 'AndroidTools' }
 ])
@@ -24,7 +23,7 @@ const navigateTo = (index: number) => {
 // 根据当前路由更新activeIndex
 const updateActiveIndex = () => {
   const currentRouteName = route.name as string
-  const index = titles.value.findIndex(title => title.value === currentRouteName)
+  const index = titles.value.findIndex((title) => title.value === currentRouteName)
   if (index !== -1) {
     activeIndex.value = index
   }
@@ -100,7 +99,9 @@ updateActiveIndex()
   color: #34495e;
   padding: 15px 20px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
   border-radius: 8px;
 }
 
