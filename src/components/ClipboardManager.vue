@@ -7,6 +7,19 @@
       </div>
       <button class="refresh-button" @click="refreshHistory">刷新</button>
     </div>
+    <!-- 添加搜索输入框 -->
+    <div class="search-bar">
+      <div class="search-input-container">
+        <input
+          v-model="searchText"
+          @input="filterClipboardHistory"
+          type="text"
+          placeholder="搜索剪切板内容..."
+          class="search-input"
+        />
+        <button v-if="searchText" @click="clearSearch" class="clear-search-button">×</button>
+      </div>
+    </div>
     <div class="clipboard-content">
       <div v-if="loading" class="loading-state">
         <p>加载中...</p>
@@ -16,7 +29,7 @@
         <p>复制或截图内容后将显示在这里</p>
       </div>
       <ul v-else class="clipboard-list">
-        <li v-for="item in clipboardHistory" :key="item.id" class="clipboard-item">
+        <li v-for="item in filteredClipboardHistory" :key="item.id" class="clipboard-item">
           <div class="item-content">
             <span v-if="item.type === 'text'" class="text-content">{{ item.content }}</span>
             <img
@@ -38,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 interface ClipboardItem {
@@ -52,6 +65,7 @@ const router = useRouter()
 const clipboardHistory = ref<ClipboardItem[]>([])
 const loading = ref(true)
 const showCopySuccess = ref(false)
+const searchText = ref('')
 
 const goBack = () => {
   router.push({ name: 'Home' })
@@ -86,6 +100,24 @@ onMounted(() => {
   refreshHistory() // 初始加载使用相同的刷新函数
 })
 
+// 修改过滤后的剪切板历史计算属性
+const filteredClipboardHistory = computed(() => {
+  if (!searchText.value) {
+    return clipboardHistory.value
+  }
+  return clipboardHistory.value.filter((item) => {
+    if (item.type === 'text') {
+      return item.content.toLowerCase().includes(searchText.value.toLowerCase())
+    }
+  })
+})
+
+// 添加过滤函数（可选，用于性能优化）
+const filterClipboardHistory = () => {
+  // 这里可以添加防抖逻辑，如果需要的话
+  console.log('Filtering clipboard history with:', searchText.value)
+}
+
 const copyToClipboard = async (item: ClipboardItem) => {
   try {
     if (item.type === 'text') {
@@ -111,6 +143,12 @@ const deleteItem = async (id: number) => {
   } catch (error) {
     console.error('删除剪贴板项目失败:', error)
   }
+}
+
+// 添加清除搜索的函数
+const clearSearch = () => {
+  searchText.value = ''
+  filterClipboardHistory()
 }
 </script>
 
@@ -272,5 +310,40 @@ const deleteItem = async (id: number) => {
   padding: 10px 20px;
   border-radius: 4px;
   z-index: 1000;
+}
+
+/* 添加搜索栏样式 */
+.search-bar {
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 30px 8px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1em;
+}
+
+.clear-search-button {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  color: #6c757d;
+  cursor: pointer;
+}
+
+.clear-search-button:hover {
+  color: #495057;
 }
 </style>
