@@ -230,6 +230,22 @@ function createWindow() {
     screenshots.on('cancel', () => {
         console.log('Screenshot cancelled');
     });
+    // 添加监听系统剪贴板的功能
+    const watchClipboard = () => {
+        let lastContent = electron_1.clipboard.readText();
+        setInterval(() => {
+            const newContent = electron_1.clipboard.readText();
+            if (newContent !== lastContent) {
+                lastContent = newContent;
+                win?.webContents.send('clipboard-update', newContent);
+            }
+            const image = electron_1.clipboard.readImage();
+            if (!image.isEmpty()) {
+                win?.webContents.send('clipboard-update-image', image.toDataURL());
+            }
+        }, 1000); // 每秒检查一次
+    };
+    watchClipboard();
 }
 electron_1.ipcMain.handle('handle-file-drop', async (event, filePaths) => {
     console.log('Received file paths:', filePaths);

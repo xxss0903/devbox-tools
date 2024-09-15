@@ -25,6 +25,11 @@ const tools = [
     name: '工作日记',
     route: 'WorkDiary',
     image: 'https://img.icons8.com/?size=100&id=64503&format=png&color=000000'
+  },
+  {
+    name: '粘贴板管理',
+    route: 'ClipboardManager',
+    image: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
   }
   // 添加更多工具...
 ]

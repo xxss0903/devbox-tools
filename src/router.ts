@@ -13,6 +13,7 @@ import ImageCropper from './components/ImageCropper.vue'
 import WorkDiary from './components/WorkDiary.vue'
 import Icons8Viewer from './components/Icons8Viewer.vue'
 import ScreenshotTool from './components/ScreenshotTool.vue'
+import ClipboardManager from './components/ClipboardManager.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -36,7 +37,8 @@ const routes = [
   { path: '/image-cropper', name: 'ImageCropper', component: ImageCropper },
   { path: '/work-diary', name: 'WorkDiary', component: WorkDiary },
   { path: '/icons8-viewer', name: 'Icons8Viewer', component: Icons8Viewer },
-  { path: '/screenshot-tool', name: 'ScreenshotTool', component: ScreenshotTool }
+  { path: '/screenshot-tool', name: 'ScreenshotTool', component: ScreenshotTool },
+  { path: '/clipboard-manager', name: 'ClipboardManager', component: ClipboardManager }
 ]
 
 const router = createRouter({

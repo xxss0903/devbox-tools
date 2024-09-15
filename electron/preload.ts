@@ -48,7 +48,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   processDroppedFiles: (filePaths: any) => {
     console.log('Processing dropped files:', filePaths)
     return ipcRenderer.invoke('handle-file-drop', filePaths)
-  }
+  },
+  onClipboardUpdate: (callback: (content: string) => void) =>
+    ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
+  onClipboardImageUpdate: (callback: (dataUrl: string) => void) =>
+    ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl))
 })
 
 console.log('electronAPI exposed')

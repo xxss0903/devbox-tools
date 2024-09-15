@@ -273,6 +273,25 @@ function createWindow() {
   screenshots.on('cancel', () => {
     console.log('Screenshot cancelled')
   })
+
+  // 添加监听系统剪贴板的功能
+  const watchClipboard = () => {
+    let lastContent = clipboard.readText()
+    setInterval(() => {
+      const newContent = clipboard.readText()
+      if (newContent !== lastContent) {
+        lastContent = newContent
+        win?.webContents.send('clipboard-update', newContent)
+      }
+
+      const image = clipboard.readImage()
+      if (!image.isEmpty()) {
+        win?.webContents.send('clipboard-update-image', image.toDataURL())
+      }
+    }, 1000) // 每秒检查一次
+  }
+
+  watchClipboard()
 }
 
 ipcMain.handle('handle-file-drop', async (event, filePaths) => {
