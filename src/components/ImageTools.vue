@@ -41,6 +41,11 @@ const imageTools = [
     name: '屏幕截图',
     route: 'ScreenshotTool',
     image: 'https://img.icons8.com/?size=100&id=112798&format=png&color=000000'
+  },
+   {
+    name: 'Svg渲染',
+    route: 'SvgEditor',
+    image: 'https://img.icons8.com/?size=100&id=57475&format=png&color=000000'
   }
   // ... 其他工具 ...
 ]

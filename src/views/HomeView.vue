@@ -7,16 +7,6 @@ const router = useRouter()
 
 const tools = [
   {
-    name: '图片工具',
-    route: 'ImageTools',
-    image: 'https://img.icons8.com/?size=100&id=80732&format=png&color=000000'
-  },
-  {
-    name: '颜色工具',
-    route: 'ColorTools',
-    image: 'https://img.icons8.com/?size=100&id=Segceu5oDSqd&format=png&color=000000'
-  },
-  {
     name: '编码/解码转换',
     route: 'CodeConverter',
     image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'

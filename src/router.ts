@@ -15,6 +15,7 @@ import Icons8Viewer from './components/Icons8Viewer.vue'
 import ScreenshotTool from './components/ScreenshotTool.vue'
 import ClipboardManager from './components/ClipboardManager.vue'
 import ImageRounder from './components/ImageRounder.vue'
+import SvgEditor from './components/SvgEditor.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -40,7 +41,8 @@ const routes = [
   { path: '/icons8-viewer', name: 'Icons8Viewer', component: Icons8Viewer },
   { path: '/screenshot-tool', name: 'ScreenshotTool', component: ScreenshotTool },
   { path: '/clipboard-manager', name: 'ClipboardManager', component: ClipboardManager },
-  { path: '/image-rounder', name: 'ImageRounder', component: ImageRounder }
+  { path: '/image-rounder', name: 'ImageRounder', component: ImageRounder },
+  { path: '/svg-editor', name: 'SvgEditor', component: SvgEditor },
 ]
 
 const router = createRouter({
