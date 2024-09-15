@@ -312,7 +312,7 @@ async function watchClipboard(win: BrowserWindow) {
         console.log('watchClipboard interval 1000 image update')
       }
     }
-  }, 3000) // 每秒检查一次剪贴板，3秒检查一次
+  }, 1000) // 每秒检查一次剪贴板，3秒检查一次
 }
 
 ipcMain.handle('handle-file-drop', async (event, filePaths) => {

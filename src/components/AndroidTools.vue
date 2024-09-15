@@ -7,7 +7,11 @@ import NavigationBar from './NavigationBar.vue'
 const router = useRouter()
 
 const androidTools = [
-  { name: '获取签名信息', route: 'SignatureInfo', image: 'https://img.icons8.com/?size=100&id=13792&format=png&color=000000' },
+  {
+    name: '获取签名信息',
+    route: 'SignatureInfo',
+    image: 'https://img.icons8.com/?size=100&id=13792&format=png&color=000000'
+  }
   // 在这里添加更多Android工具
 ]
 
@@ -22,7 +26,6 @@ const goBack = () => {
 
 <template>
   <div class="android-tools">
-    <NavigationBar title="Android工具" @goBack="goBack" />
     <ToolsContainer title="Android工具" @goBack="goBack">
       <ToolItem
         v-for="tool in androidTools"

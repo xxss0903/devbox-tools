@@ -1,39 +1,39 @@
 <template>
   <div class="clipboard-manager">
-    <NavigationBar title="剪贴板历史" @goBack="goBack" />
+    <div class="navigation-bar">
+      <div class="navigation-bar-title">
+        <button class="back-button" @click="goBack">返回</button>
+        <h2 class="detail-title">剪切板历史</h2>
+      </div>
+      <button class="refresh-button" @click="refreshHistory">刷新</button>
+    </div>
     <div class="clipboard-content">
       <div v-if="loading" class="loading-state">
         <p>加载中...</p>
       </div>
-      <div v-else-if="clipboardHistory.length === 0" class="empty-state">
+      <div v-else-if="!clipboardHistory || clipboardHistory.length === 0" class="empty-state">
         <p>剪贴板历史为空</p>
         <p>复制或截图内容后将显示在这里</p>
       </div>
-      <div v-else class="clipboard-list">
-        <ul>
-          <li v-for="item in clipboardHistory" :key="item.id">
-            <template v-if="item.type === 'text'">
-              <p>{{ item.content }}</p>
-            </template>
-            <template v-else-if="item.type === 'image'">
-              <img
-                :src="item.content"
-                alt="剪贴板图片"
-                style="max-width: 200px; max-height: 200px"
-              />
-            </template>
-          </li>
-        </ul>
-      </div>
+      <ul v-else class="clipboard-list">
+        <li v-for="item in clipboardHistory" :key="item.id" class="clipboard-item">
+          <span v-if="item.type === 'text'" class="text-content">{{ item.content }}</span>
+          <img
+            v-else-if="item.type === 'image'"
+            :src="item.content"
+            alt="剪贴板图片"
+            class="image-content"
+          />
+        </li>
+      </ul>
     </div>
-    <button @click="clearHistory" class="clear-button">清空历史</button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import NavigationBar from './NavigationBar.vue'
+import ToolsContainer from './ToolsContainer.vue'
 
 interface ClipboardItem {
   id: number
@@ -61,47 +61,67 @@ const clearHistory = () => {
   window.electronAPI.clearClipboardHistory()
 }
 
+const refreshHistory = async () => {
+  loading.value = true
+  try {
+    const history = await window.electronAPI.requestClipboardHistory()
+    updateClipboardHistory(history)
+  } catch (error) {
+    console.error('刷新剪贴板历史失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   console.log('组件已挂载，请求剪贴板历史')
   window.electronAPI.onClipboardHistoryUpdate(updateClipboardHistory)
-  window.electronAPI.requestClipboardHistory()
+  refreshHistory() // 初始加载使用相同的刷新函数
 })
 </script>
-<style scoped>
-.clipboard-manager {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 
+<style scoped>
 .clipboard-content {
-  flex-grow: 1;
   overflow-y: auto;
+  padding: 0 20px;
+  width: 100%;
   padding: 20px;
 }
 
 .clipboard-list {
-  height: 100%;
-}
-
-ul {
   list-style-type: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
-li {
+.clipboard-item {
   margin-bottom: 10px;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 90%;
+  box-sizing: border-box;
 }
 
-p {
-  margin: 0;
-  word-break: break-all;
+.text-content {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
+.image-content {
+  max-width: 100%;
+  max-height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.loading-state,
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -110,14 +130,51 @@ p {
   height: 100%;
   color: #888;
   text-align: center;
+  width: 100%;
 }
 
-.empty-state p {
-  margin: 5px 0;
+.refresh-button,
+.clear-button {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.empty-state p:first-child {
-  font-size: 1.2em;
-  margin-bottom: 10px;
+.refresh-button:hover,
+.clear-button:hover {
+  background-color: #45a049;
+}
+
+.navigation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.navigation-bar-title {
+  display: flex;
+  align-items: center;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-right: 20px;
+}
+
+.back-button:hover {
+  background-color: #2980b9;
 }
 </style>
