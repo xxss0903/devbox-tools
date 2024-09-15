@@ -49,13 +49,17 @@
           </div>
         </div>
         <div v-if="folderSelected" class="folder-info">
-          <h3>已选择文件夹，包含 {{ imageFiles.length }} 个图片文件：</h3>
-          <div class="image-grid">
+          <h3>已选择文件夹，包含 {{ imageFiles.length }} 个图片文件</h3>
+          <div v-if="imageFiles.length <= 6" class="image-grid">
             <div v-for="file in imageFiles" :key="file.name" class="image-item">
               <img :src="getImageUrl(file)" alt="缩略图" class="thumbnail" />
               <span class="file-name">{{ file.name }}</span>
             </div>
           </div>
+          <ul v-else-if="imageFiles.length <= 12" class="file-list">
+            <li v-for="file in imageFiles" :key="file.name">{{ file.name }}</li>
+          </ul>
+          <p v-else>选中的图片数量过多，不显示具体列表。</p>
         </div>
       </div>
     </div>
@@ -308,6 +312,7 @@ const getImageUrl = (file: File) => {
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  margin-right: 4px;
   font-size: 14px;
 }
 
@@ -391,6 +396,25 @@ h3 {
   text-align: center;
   word-break: break-all;
   max-width: 100%;
+}
+
+.file-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+  list-style-type: none;
+}
+
+.file-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.file-list li:last-child {
+  border-bottom: none;
 }
 
 .open-download-folder {
