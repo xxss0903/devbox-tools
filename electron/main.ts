@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, globalShortcut, dialog, session, clipboard } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut, dialog, session, clipboard, Menu } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
 import { Sequelize } from 'sequelize'
@@ -109,8 +109,33 @@ ipcMain.handle('clear-database', async () => {
 
 let screenshots: Screenshots | null = null // 截图工具
 let win: BrowserWindow | null = null // 主窗口
+  
+// 设置mac应用图标
+if (process.platform === 'darwin') {
+  const iconPath = path.join(__dirname, '../public/icon.png')
+  app.dock.setIcon(iconPath)
+}
+
+// 设置 Dock 菜单
+const dockMenu = Menu.buildFromTemplate([
+  {
+    label: '铁牛工具箱',
+    submenu: [
+      {
+        label: '退出',
+        click: () => {
+          app.quit()
+        }
+      }
+    ]
+  }
+])
+app.dock.setMenu(dockMenu)
+
+app.setName('铁牛工具箱')
 
 async function createWindow() {
+
   win = new BrowserWindow({
     width: 1600,
     height: 800,
@@ -125,8 +150,16 @@ async function createWindow() {
       experimentalFeatures: true
     },
     resizable: true,
-    maximizable: false
+    maximizable: false,
+    icon: path.join(__dirname, '../public/icon.png'),
+    titleBarOverlay: {
+      color: '#2f3237',
+      symbolColor: '#74b1be',
+      height: 22
+    },
+    title: '铁牛工具箱'
   })
+
 
   // 更新 Content-Security-Policy
   const devCSP =

@@ -96,6 +96,27 @@ electron_1.ipcMain.handle('clear-database', async () => {
 });
 let screenshots = null; // 截图工具
 let win = null; // 主窗口
+// 设置mac应用图标
+if (process.platform === 'darwin') {
+    const iconPath = path_1.default.join(__dirname, '../public/icon.png');
+    electron_1.app.dock.setIcon(iconPath);
+}
+// 设置 Dock 菜单
+const dockMenu = electron_1.Menu.buildFromTemplate([
+    {
+        label: '铁牛工具箱',
+        submenu: [
+            {
+                label: '退出',
+                click: () => {
+                    electron_1.app.quit();
+                }
+            }
+        ]
+    }
+]);
+electron_1.app.dock.setMenu(dockMenu);
+electron_1.app.setName('铁牛工具箱');
 async function createWindow() {
     win = new electron_1.BrowserWindow({
         width: 1600,
@@ -111,7 +132,14 @@ async function createWindow() {
             experimentalFeatures: true
         },
         resizable: true,
-        maximizable: false
+        maximizable: false,
+        icon: path_1.default.join(__dirname, '../public/icon.png'),
+        titleBarOverlay: {
+            color: '#2f3237',
+            symbolColor: '#74b1be',
+            height: 22
+        },
+        title: '铁牛工具箱'
     });
     // 更新 Content-Security-Policy
     const devCSP = "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com blob:; connect-src 'self' ws: wss: https://icons8.com blob:; img-src 'self' data: https: http: blob: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com blob:;";
@@ -185,8 +213,8 @@ async function createWindow() {
         return sources[0].thumbnail.toDataURL();
     });
     // 注册全局快捷键
-    electron_1.globalShortcut.register('Ctrl+Alt+C', () => {
-        console.log('quick screen shot');
+    electron_1.globalShortcut.register(process.platform === 'darwin' ? 'Command+Option+C' : 'Ctrl+Alt+C', () => {
+        console.log('快速截图');
         screenshots?.startCapture();
     });
     win?.webContents.on('did-finish-load', async () => {

@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "main": "dist-electron/main.js",
+  "mac": {
+    "icon": "./public/icon.icns",
+    "name": "铁牛工具箱"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
