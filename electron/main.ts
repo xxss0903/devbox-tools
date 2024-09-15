@@ -221,8 +221,8 @@ async function createWindow() {
   })
 
   // 注册全局快捷键
-  globalShortcut.register('Ctrl+Alt+C', () => {
-    console.log('quick screen shot')
+  globalShortcut.register(process.platform === 'darwin' ? 'Command+Option+C' : 'Ctrl+Alt+C', () => {
+    console.log('快速截图')
     screenshots?.startCapture()
   })
 
