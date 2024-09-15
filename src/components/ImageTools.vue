@@ -33,6 +33,11 @@ const imageTools = [
     image: 'https://img.icons8.com/?size=100&id=118523&format=png&color=000000'
   },
   {
+    name: '图片圆角',
+    route: 'ImageRounder',
+    image: 'https://img.icons8.com/?size=100&id=0uYcfoG9OUaw&format=png&color=000000'
+  },
+  {
     name: '屏幕截图',
     route: 'ScreenshotTool',
     image: 'https://img.icons8.com/?size=100&id=112798&format=png&color=000000'
