@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
+import JSZip from 'jszip'
 
 const router = useRouter()
 const selectedFiles = ref<{ name: string; size: number; data: string }[]>([])
@@ -164,15 +165,34 @@ const compressImage = (file: {
   })
 }
 
-const downloadCompressedImages = () => {
-  compressedFiles.value.forEach((file, index) => {
+const downloadCompressedImages = async () => {
+  if (compressedFiles.value.length === 1) {
+    // 如果只有一个文件,直接下载
+    const file = compressedFiles.value[0]
     const link = document.createElement('a')
     link.href = file.data
-    link.download = `compressed_${file.name}`
+    link.download = file.name  // 使用原始文件名
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-  })
+  } else {
+    // 如果有多个文件,创建zip文件
+    const zip = new JSZip()
+    
+    for (const file of compressedFiles.value) {
+      const base64Data = file.data.split(',')[1]
+      zip.file(file.name, base64Data, {base64: true})  // 使用原始文件名
+    }
+    
+    const content = await zip.generateAsync({type: 'blob'})
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(content)
+    link.download = 'compressed_images.zip'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(link.href)
+  }
 }
 
 const goBack = () => {
@@ -241,7 +261,7 @@ const totalCompressionRate = computed(() => {
             :disabled="compressedFiles.length === 0"
             class="button"
           >
-            下载压缩后的图片
+            {{ compressedFiles.length > 1 ? '下载压缩后的图片(ZIP)' : '下载压缩后的图片' }}
           </button>
         </div>
       </div>

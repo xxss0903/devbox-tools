@@ -17,6 +17,7 @@
     "@vueup/vue-quill": "^1.2.0",
     "crypto-js": "^4.2.0",
     "electron-screenshots": "^0.5.27",
+    "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "moment": "^2.30.1",
     "pinia": "^2.1.7",
