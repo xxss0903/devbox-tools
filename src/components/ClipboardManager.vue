@@ -51,6 +51,7 @@ const goBack = () => {
 }
 
 const updateClipboardHistory = (history: ClipboardItem[]) => {
+  console.log('updateClipboardHistory', history)
   clipboardHistory.value = history
   loading.value = false
 }
@@ -61,6 +62,7 @@ const clearHistory = () => {
 }
 
 onMounted(() => {
+  console.log('组件已挂载，请求剪贴板历史')
   window.electronAPI.onClipboardHistoryUpdate(updateClipboardHistory)
   window.electronAPI.requestClipboardHistory()
 })
