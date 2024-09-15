@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    onClipboardHistoryUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-history-update', (_, history) => callback(history)),
+    requestClipboardHistory: () => electron_1.ipcRenderer.send('request-clipboard-history'),
+    clearClipboardHistory: () => electron_1.ipcRenderer.send('clear-clipboard-history'),
     takeScreenshot: () => electron_1.ipcRenderer.send('take-screenshot'),
     onScreenshotCaptured: (callback) => electron_1.ipcRenderer.on('screenshot-captured', (_, dataURL) => callback(dataURL)),
     executeADB: (command) => {

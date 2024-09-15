@@ -93,9 +93,10 @@ electron_1.ipcMain.handle('clear-database', async () => {
     await db.run('DELETE FROM diary_entries');
     console.log('数据库已清空');
 });
-let screenshots = null;
-function createWindow() {
-    const win = new electron_1.BrowserWindow({
+let screenshots = null; // 截图工具
+let win = null; // 主窗口
+async function createWindow() {
+    win = new electron_1.BrowserWindow({
         width: 1600,
         height: 800,
         webPreferences: {
@@ -196,6 +197,7 @@ function createWindow() {
                 event.preventDefault();
             }
         });
+        watchClipboard(win);
     });
     // 添加文件拖放处理
     win.webContents.on('will-navigate', (event, url) => {
@@ -230,22 +232,29 @@ function createWindow() {
     screenshots.on('cancel', () => {
         console.log('Screenshot cancelled');
     });
+}
+let lastClipboardContent = '';
+async function watchClipboard(win) {
     // 添加监听系统剪贴板的功能
-    const watchClipboard = () => {
-        let lastContent = electron_1.clipboard.readText();
-        setInterval(() => {
-            const newContent = electron_1.clipboard.readText();
-            if (newContent !== lastContent) {
-                lastContent = newContent;
-                win?.webContents.send('clipboard-update', newContent);
+    const db = await getDatabase();
+    // 监听剪贴板变化
+    setInterval(async () => {
+        const currentContent = electron_1.clipboard.readText();
+        if (currentContent && currentContent !== lastClipboardContent) {
+            lastClipboardContent = currentContent;
+            await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', 'text', currentContent, Date.now());
+            win?.webContents.send('clipboard-update', currentContent);
+        }
+        const image = electron_1.clipboard.readImage();
+        if (!image.isEmpty()) {
+            const dataURL = image.toDataURL();
+            if (dataURL !== lastClipboardContent) {
+                lastClipboardContent = dataURL;
+                await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', 'image', dataURL, Date.now());
+                win?.webContents.send('clipboard-image-update', dataURL);
             }
-            const image = electron_1.clipboard.readImage();
-            if (!image.isEmpty()) {
-                win?.webContents.send('clipboard-update-image', image.toDataURL());
-            }
-        }, 1000); // 每秒检查一次
-    };
-    watchClipboard();
+        }
+    }, 1000); // 每秒检查一次剪贴板
 }
 electron_1.ipcMain.handle('handle-file-drop', async (event, filePaths) => {
     console.log('Received file paths:', filePaths);
@@ -321,4 +330,42 @@ electron_1.app.on('will-quit', () => {
 // 处理从渲染进程发来的截图请求
 electron_1.ipcMain.on('take-screenshot', () => {
     screenshots?.startCapture();
+});
+// IPC 处理器
+electron_1.ipcMain.handle('add-clipboard-item', async (event, item) => {
+    const db = await getDatabase();
+    await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', item.type, item.content, item.timestamp);
+});
+electron_1.ipcMain.handle('get-clipboard-history', async (event, limit) => {
+    const db = await getDatabase();
+    return await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT ?', limit);
+});
+electron_1.ipcMain.handle('clear-clipboard-history', async () => {
+    const db = await getDatabase();
+    await db.run('DELETE FROM clipboard_history');
+});
+async function updateClipboardHistory() {
+    try {
+        const clipboardContent = electron_1.clipboard.readText();
+        const db = await getDatabase();
+        await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', 'text', clipboardContent, Date.now());
+        console.log('剪贴板内容已添加到历史记录');
+    }
+    catch (error) {
+        console.error('更新剪贴板历史记录时出错:', error);
+    }
+}
+// IPC 处理器
+electron_1.ipcMain.on('request-clipboard-history', async () => {
+    await updateClipboardHistory();
+});
+electron_1.ipcMain.on('clear-clipboard-history', async () => {
+    try {
+        const db = await getDatabase();
+        await db.run('DELETE FROM clipboard_history');
+        console.log('剪贴板历史记录已清空');
+    }
+    catch (error) {
+        console.error('清空剪贴板历史记录时出错:', error);
+    }
 });

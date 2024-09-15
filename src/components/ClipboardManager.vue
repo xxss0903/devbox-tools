@@ -2,13 +2,16 @@
   <div class="clipboard-manager">
     <NavigationBar title="剪贴板历史" @goBack="goBack" />
     <div class="clipboard-content">
-      <div v-if="clipboardHistory.length === 0" class="empty-state">
+      <div v-if="loading" class="loading-state">
+        <p>加载中...</p>
+      </div>
+      <div v-else-if="clipboardHistory.length === 0" class="empty-state">
         <p>剪贴板历史为空</p>
         <p>复制或截图内容后将显示在这里</p>
       </div>
       <div v-else class="clipboard-list">
         <ul>
-          <li v-for="(item, index) in clipboardHistory" :key="index">
+          <li v-for="item in clipboardHistory" :key="item.id">
             <template v-if="item.type === 'text'">
               <p>{{ item.content }}</p>
             </template>
@@ -23,56 +26,45 @@
         </ul>
       </div>
     </div>
+    <button @click="clearHistory" class="clear-button">清空历史</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
 interface ClipboardItem {
+  id: number
   type: 'text' | 'image'
   content: string
+  timestamp: number
 }
 
 const router = useRouter()
 const clipboardHistory = ref<ClipboardItem[]>([])
-const lastAddedContent = ref('')
+const loading = ref(true)
 
 const goBack = () => {
-  router.push({ name: 'Home' }) // 或者您希望返回的路由
+  router.push({ name: 'Home' })
+}
+
+const updateClipboardHistory = (history: ClipboardItem[]) => {
+  clipboardHistory.value = history
+  loading.value = false
+}
+
+const clearHistory = () => {
+  loading.value = true
+  window.electronAPI.clearClipboardHistory()
 }
 
 onMounted(() => {
-  window.electronAPI.onClipboardUpdate((content: string) => {
-    if (content !== lastAddedContent.value) {
-      clipboardHistory.value.unshift({ type: 'text', content })
-      lastAddedContent.value = content
-    }
-  })
-
-  window.electronAPI.onClipboardImageUpdate((dataUrl: string) => {
-    if (dataUrl !== lastAddedContent.value) {
-      clipboardHistory.value.unshift({ type: 'image', content: dataUrl })
-      lastAddedContent.value = dataUrl
-    }
-  })
+  window.electronAPI.onClipboardHistoryUpdate(updateClipboardHistory)
+  window.electronAPI.requestClipboardHistory()
 })
-
-// 监听剪贴板历史变化，限制最大数量
-watch(
-  clipboardHistory,
-  (newHistory) => {
-    if (newHistory.length > 50) {
-      // 假设我们想保留最近的50条记录
-      clipboardHistory.value = newHistory.slice(0, 50)
-    }
-  },
-  { deep: true }
-)
 </script>
-
 <style scoped>
 .clipboard-manager {
   height: 100vh;

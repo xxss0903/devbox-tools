@@ -3,6 +3,11 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  onClipboardHistoryUpdate: (callback: (history: any[]) => void) =>
+    ipcRenderer.on('clipboard-history-update', (_, history) => callback(history)),
+  requestClipboardHistory: () => ipcRenderer.send('request-clipboard-history'),
+  clearClipboardHistory: () => ipcRenderer.send('clear-clipboard-history'),
+
   takeScreenshot: () => ipcRenderer.send('take-screenshot'),
   onScreenshotCaptured: (callback: (dataURL: string) => void) =>
     ipcRenderer.on('screenshot-captured', (_, dataURL) => callback(dataURL)),

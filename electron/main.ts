@@ -106,10 +106,11 @@ ipcMain.handle('clear-database', async () => {
   console.log('数据库已清空')
 })
 
-let screenshots: Screenshots | null = null
+let screenshots: Screenshots | null = null // 截图工具
+let win: BrowserWindow | null = null // 主窗口
 
-function createWindow() {
-  const win = new BrowserWindow({
+async function createWindow() {
+  win = new BrowserWindow({
     width: 1600,
     height: 800,
     webPreferences: {
@@ -233,6 +234,8 @@ function createWindow() {
         event.preventDefault()
       }
     })
+
+    watchClipboard(win!!)
   })
 
   // 添加文件拖放处理
@@ -273,25 +276,41 @@ function createWindow() {
   screenshots.on('cancel', () => {
     console.log('Screenshot cancelled')
   })
+}
 
+let lastClipboardContent: string = ''
+async function watchClipboard(win: BrowserWindow) {
   // 添加监听系统剪贴板的功能
-  const watchClipboard = () => {
-    let lastContent = clipboard.readText()
-    setInterval(() => {
-      const newContent = clipboard.readText()
-      if (newContent !== lastContent) {
-        lastContent = newContent
-        win?.webContents.send('clipboard-update', newContent)
-      }
+  const db = await getDatabase()
+  // 监听剪贴板变化
+  setInterval(async () => {
+    const currentContent = clipboard.readText()
+    if (currentContent && currentContent !== lastClipboardContent) {
+      lastClipboardContent = currentContent
+      await db.run(
+        'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+        'text',
+        currentContent,
+        Date.now()
+      )
+      win?.webContents.send('clipboard-update', currentContent)
+    }
 
-      const image = clipboard.readImage()
-      if (!image.isEmpty()) {
-        win?.webContents.send('clipboard-update-image', image.toDataURL())
+    const image = clipboard.readImage()
+    if (!image.isEmpty()) {
+      const dataURL = image.toDataURL()
+      if (dataURL !== lastClipboardContent) {
+        lastClipboardContent = dataURL
+        await db.run(
+          'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+          'image',
+          dataURL,
+          Date.now()
+        )
+        win?.webContents.send('clipboard-image-update', dataURL)
       }
-    }, 1000) // 每秒检查一次
-  }
-
-  watchClipboard()
+    }
+  }, 1000) // 每秒检查一次剪贴板
 }
 
 ipcMain.handle('handle-file-drop', async (event, filePaths) => {
@@ -381,4 +400,56 @@ app.on('will-quit', () => {
 // 处理从渲染进程发来的截图请求
 ipcMain.on('take-screenshot', () => {
   screenshots?.startCapture()
+})
+
+// IPC 处理器
+ipcMain.handle('add-clipboard-item', async (event, item) => {
+  const db = await getDatabase()
+  await db.run(
+    'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+    item.type,
+    item.content,
+    item.timestamp
+  )
+})
+
+ipcMain.handle('get-clipboard-history', async (event, limit) => {
+  const db = await getDatabase()
+  return await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT ?', limit)
+})
+
+ipcMain.handle('clear-clipboard-history', async () => {
+  const db = await getDatabase()
+  await db.run('DELETE FROM clipboard_history')
+})
+
+async function updateClipboardHistory() {
+  try {
+    const clipboardContent = clipboard.readText()
+    const db = await getDatabase()
+    await db.run(
+      'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+      'text',
+      clipboardContent,
+      Date.now()
+    )
+    console.log('剪贴板内容已添加到历史记录')
+  } catch (error) {
+    console.error('更新剪贴板历史记录时出错:', error)
+  }
+}
+
+// IPC 处理器
+ipcMain.on('request-clipboard-history', async () => {
+  await updateClipboardHistory()
+})
+
+ipcMain.on('clear-clipboard-history', async () => {
+  try {
+    const db = await getDatabase()
+    await db.run('DELETE FROM clipboard_history')
+    console.log('剪贴板历史记录已清空')
+  } catch (error) {
+    console.error('清空剪贴板历史记录时出错:', error)
+  }
 })
