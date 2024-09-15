@@ -58,6 +58,27 @@ const copyBase64String = async () => {
 const goBack = () => {
   router.push({ name: 'ImageTools' })
 }
+
+const modalVisible = ref(false)
+const modalImage = ref('')
+
+const openModal = (imageSrc: string) => {
+  modalImage.value = imageSrc
+  modalVisible.value = true
+}
+
+const closeModal = () => {
+  modalVisible.value = false
+}
+
+const downloadModalImage = () => {
+  const link = document.createElement('a')
+  link.href = modalImage.value
+  link.download = 'image.png' // 你可以根据需要修改文件名
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 </script>
 
 <template>
@@ -65,22 +86,39 @@ const goBack = () => {
     <NavigationBar title="图片Base64转换" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
-        <input type="file" accept="image/*" @change="handleFileChange" />
-        <div class="base64-container">
-          <textarea v-model="base64String" placeholder="在此输入Base64字符串"></textarea>
-          <button @click="copyBase64String" class="copy-button">复制Base64</button>
-          <span class="copy-status">{{ copyStatus }}</span>
+        <div class="file-input-wrapper">
+          <input type="file" accept="image/*" @change="handleFileChange" id="file-input" class="file-input" />
+          <label for="file-input" class="file-input-label">选择图片</label>
         </div>
-        <button @click="convertBase64ToImage">转换Base64为图片</button>
+        <div class="base64-container">
+          <textarea v-model="base64String" placeholder="在此输入Base64字符串" class="base64-textarea"></textarea>
+          <div class="button-group">
+            <button @click="copyBase64String" class="button copy-button">复制Base64</button>
+            <button @click="convertBase64ToImage" class="button convert-button">转换Base64为图片</button>
+          </div>
+          <span class="copy-status" :class="{ 'show': copyStatus }">{{ copyStatus }}</span>
+        </div>
       </div>
       <div class="image-display">
-        <div v-if="imageFile && imageUrl">
+        <div v-if="imageFile && imageUrl" class="image-preview">
           <h3>原始图片：</h3>
-          <img :src="imageUrl" alt="Original Image" />
+          <div class="image-wrapper">
+            <img :src="imageUrl" alt="Original Image" class="preview-image" @click="openModal(imageUrl)" />
+          </div>
         </div>
-        <div v-if="convertedImage">
-          <h3>转换后的图片（点击图片下载）：</h3>
-          <img :src="convertedImage" alt="Converted Image" @click="downloadConvertedImage" class="clickable-image" />
+        <div v-if="convertedImage" class="image-preview">
+          <h3>转换后的图片：</h3>
+          <div class="image-wrapper">
+            <img :src="convertedImage" alt="Converted Image" class="preview-image clickable-image" @click="openModal(convertedImage)" />
+          </div>
+          <p class="download-hint">点击图片放大,双击下载</p>
+        </div>
+      </div>
+
+      <!-- 图片放大模态框 -->
+      <div v-if="modalVisible" class="modal" @click="closeModal">
+        <div class="modal-content" @click.stop>
+          <img :src="modalImage" alt="Enlarged Image" class="modal-image" @dblclick="downloadModalImage" />
         </div>
       </div>
     </div>
@@ -91,28 +129,111 @@ const goBack = () => {
 .image-base64-converter {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  height: 100vh;
+  background-color: #f5f7fa;
 }
 
 .converter-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 20px;
   display: flex;
+  padding: 20px;
   gap: 20px;
+  overflow-y: auto;
 }
 
 .control-panel {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.file-input-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.file-input {
+  position: absolute;
+  font-size: 100px;
+  right: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.file-input-label:hover {
+  background-color: #2980b9;
+}
+
+.base64-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 300px;
 }
 
-.control-panel textarea {
+.base64-textarea {
   height: 200px;
   resize: vertical;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: bold;
+}
+
+.copy-button {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.copy-button:hover {
+  background-color: #27ae60;
+}
+
+.convert-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.convert-button:hover {
+  background-color: #c0392b;
+}
+
+.copy-status {
+  font-size: 0.9em;
+  color: #2ecc71;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.copy-status.show {
+  opacity: 1;
 }
 
 .image-display {
@@ -120,11 +241,32 @@ const goBack = () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
 }
 
-.image-display img {
+.image-preview {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.image-preview h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.image-wrapper {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.preview-image {
   max-width: 100%;
   height: auto;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .clickable-image {
@@ -136,32 +278,47 @@ const goBack = () => {
   opacity: 0.8;
 }
 
-.base64-container {
-  position: relative;
+.download-hint {
+  text-align: center;
+  color: #7f8c8d;
+  margin-top: 10px;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-.copy-button {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  padding: 5px 10px;
-  background-color: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
+.modal-content {
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.modal-image {
+  max-width: 100%;
+  height: auto;
   cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
-.copy-button:hover {
-  background-color: #2980b9;
+.preview-image {
+  cursor: pointer;
 }
 
-.copy-status {
-  margin-top: 5px;
-  font-size: 0.9em;
-  color: #2ecc71;
+.download-hint {
+  text-align: center;
+  color: #7f8c8d;
+  margin-top: 10px;
 }
 </style>
