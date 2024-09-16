@@ -20,6 +20,11 @@ const tools = [
     name: '粘贴板管理',
     route: 'ClipboardManager',
     image: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
+  },
+  {
+    name: '计算器',
+    route: 'Calculator',
+    image: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
   }
   // 添加更多工具...
 ]

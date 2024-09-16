@@ -16,6 +16,7 @@ import ScreenshotTool from './components/ScreenshotTool.vue'
 import ClipboardManager from './components/ClipboardManager.vue'
 import ImageRounder from './components/ImageRounder.vue'
 import SvgEditor from './components/SvgEditor.vue'
+import Calculator from './components/Calculator.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -43,6 +44,7 @@ const routes = [
   { path: '/clipboard-manager', name: 'ClipboardManager', component: ClipboardManager },
   { path: '/image-rounder', name: 'ImageRounder', component: ImageRounder },
   { path: '/svg-editor', name: 'SvgEditor', component: SvgEditor },
+  { path: '/calculator', name: 'Calculator', component: Calculator },
 ]
 
 const router = createRouter({
