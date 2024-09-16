@@ -1,9 +1,9 @@
 <template>
   <div class="tools-container">
-    <div class="navigation-bar">
+    <!-- <div class="navigation-bar">
       <button class="back-button" @click="$emit('goBack')">返回</button>
       <h2 class="page-title">{{ title }}</h2>
-    </div>
+    </div> -->
     <div class="tools-grid">
       <slot></slot>
     </div>

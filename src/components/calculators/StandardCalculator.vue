@@ -1,5 +1,5 @@
 <template>
-  <div class="standard-calculator" @keydown.enter="handleEnter" tabindex="0">
+  <div class="standard-calculator" tabindex="0">
     <div class="display">{{ display || '0' }}</div>
     <div class="buttons">
       <button 
@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 
 const display = ref('')
 
@@ -52,10 +52,13 @@ const calculate = () => {
 }
 
 const handleClick = (value: string) => {
+  console.log('handle click', value)
   if (value === '=') {
     calculate()
   } else if (value === 'clear') {
     display.value = ''
+  } else if (value === 'delete') {
+    display.value = display.value.slice(0, -1)
   } else if (value === 'negate') {
     // 处理正负号
     if (display.value !== '' && display.value !== '0') {
@@ -74,16 +77,10 @@ const handleClick = (value: string) => {
   }
 }
 
-const handleEnter = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    event.preventDefault() // 防止默认行为
-    calculate()
-  }
-}
-
 const handleKeyDown = (event: KeyboardEvent) => {
   const key = event.key
 
+  console.log('press key', key)
   if (/^[0-9.]$/.test(key)) {
     handleClick(key)
   } else if (['+', '-', '*', '/'].includes(key)) {
@@ -98,14 +95,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 }
 
 defineExpose({ handleKeyDown })
-
-onMounted(() => {
-  window.addEventListener('keydown', handleEnter)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleEnter)
-})
 </script>
 
 <style scoped>

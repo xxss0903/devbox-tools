@@ -152,10 +152,6 @@ const handleEnter = (event: KeyboardEvent) => {
   }
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', handleEnter)
-})
-
 onUnmounted(() => {
   window.removeEventListener('keydown', handleEnter)
 })

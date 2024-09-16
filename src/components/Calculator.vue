@@ -1,6 +1,6 @@
 <template>
   <div class="calculator-wrapper" @keydown="handleKeyDown" tabindex="0">
-    <NavigationBar title="计算器" />
+    <NavigationBar title="计算器" @goBack="goBack"/>
     <div class="calculator-container">
       <div class="calculator-sidebar">
         <h3>计算器类型</h3>
@@ -30,6 +30,9 @@ import NavigationBar from '@/components/NavigationBar.vue'
 import StandardCalculator from '@/components/calculators/StandardCalculator.vue'
 import ScientificCalculator from '@/components/calculators/ScientificCalculator.vue'
 import LoanCalculator from '@/components/calculators/LoanCalculator.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const selectedType = ref('standard')
 const standardCalculator = ref(null)
@@ -42,12 +45,17 @@ const calculatorTypes = [
   { id: 'loan', name: '贷款计算器' },
 ]
 
+const goBack = () => {
+  router.back()
+}
+
 const selectCalculator = (typeId: string) => {
   selectedType.value = typeId
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
   const key = event.key
+  console.log('calculator handle key down', key)
   let currentCalculator
 
   if (selectedType.value === 'standard') {
