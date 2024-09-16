@@ -1,5 +1,5 @@
 <template>
-  <div class="calculator-wrapper">
+  <div class="calculator-wrapper" @keydown="handleKeyDown" tabindex="0">
     <NavigationBar title="计算器" />
     <div class="calculator-container">
       <div class="calculator-sidebar">
@@ -16,22 +16,25 @@
         </ul>
       </div>
       <div class="calculator-display">
-        <StandardCalculator v-if="selectedType === 'standard'" />
-        <ScientificCalculator v-else-if="selectedType === 'scientific'" />
-        <LoanCalculator v-else-if="selectedType === 'loan'" />
+        <StandardCalculator v-if="selectedType === 'standard'" ref="standardCalculator" />
+        <ScientificCalculator v-else-if="selectedType === 'scientific'" ref="scientificCalculator" />
+        <LoanCalculator v-else-if="selectedType === 'loan'" ref="loanCalculator" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import NavigationBar from '@/components/NavigationBar.vue'
 import StandardCalculator from '@/components/calculators/StandardCalculator.vue'
 import ScientificCalculator from '@/components/calculators/ScientificCalculator.vue'
 import LoanCalculator from '@/components/calculators/LoanCalculator.vue'
 
 const selectedType = ref('standard')
+const standardCalculator = ref(null)
+const scientificCalculator = ref(null)
+const loanCalculator = ref(null)
 
 const calculatorTypes = [
   { id: 'standard', name: '普通计算器' },
@@ -42,6 +45,31 @@ const calculatorTypes = [
 const selectCalculator = (typeId: string) => {
   selectedType.value = typeId
 }
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const key = event.key
+  let currentCalculator
+
+  if (selectedType.value === 'standard') {
+    currentCalculator = standardCalculator.value
+  } else if (selectedType.value === 'scientific') {
+    currentCalculator = scientificCalculator.value
+  } else if (selectedType.value === 'loan') {
+    currentCalculator = loanCalculator.value
+  }
+
+  if (currentCalculator && currentCalculator.handleKeyDown) {
+    currentCalculator.handleKeyDown(event)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>

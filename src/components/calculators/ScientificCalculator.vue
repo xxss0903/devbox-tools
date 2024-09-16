@@ -159,6 +159,31 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleEnter)
 })
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const key = event.key
+
+  if (/^[0-9.]$/.test(key)) {
+    handleClick(key)
+  } else if (['+', '-', '*', '/'].includes(key)) {
+    handleClick(key)
+  } else if (key === 'Enter') {
+    handleClick('=')
+  } else if (key === 'Backspace') {
+    handleClick('delete')
+  } else if (key === 'Escape') {
+    handleClick('clear')
+  } else if (key === '(' || key === ')') {
+    handleClick(key)
+  } else if (key.toLowerCase() === 'p') {
+    handleClick('Math.PI')
+  } else if (key.toLowerCase() === 'e') {
+    handleClick('Math.E')
+  }
+  // 可以根据需要添加更多的键盘映射
+}
+
+defineExpose({ handleKeyDown })
 </script>
 
 <style scoped>

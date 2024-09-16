@@ -81,6 +81,24 @@ const handleEnter = (event: KeyboardEvent) => {
   }
 }
 
+const handleKeyDown = (event: KeyboardEvent) => {
+  const key = event.key
+
+  if (/^[0-9.]$/.test(key)) {
+    handleClick(key)
+  } else if (['+', '-', '*', '/'].includes(key)) {
+    handleClick(key)
+  } else if (key === 'Enter') {
+    handleClick('=')
+  } else if (key === 'Backspace') {
+    handleClick('delete')
+  } else if (key === 'Escape') {
+    handleClick('clear')
+  }
+}
+
+defineExpose({ handleKeyDown })
+
 onMounted(() => {
   window.addEventListener('keydown', handleEnter)
 })

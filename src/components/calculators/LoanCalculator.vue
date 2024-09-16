@@ -74,9 +74,8 @@ const reset = () => {
   totalInterest.value = '0'
 }
 
-const handleEnter = (event: KeyboardEvent) => {
+const handleKeyDown = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
-    event.preventDefault()
     calculate()
   }
 }
