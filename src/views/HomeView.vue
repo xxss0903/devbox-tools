@@ -24,7 +24,7 @@ const tools = [
   {
     name: '计算器',
     route: 'Calculator',
-    image: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
+    image: 'https://img.icons8.com/?size=100&id=41LOFTWPsRas&format=png&color=000000'
   }
   // 添加更多工具...
 ]
