@@ -17,9 +17,7 @@
       </div>
       <div class="calculator-content">
         <StandardCalculator v-if="selectedType === 'standard'" />
-        <div v-else-if="selectedType === 'scientific'" class="calculator-wrapper">
-          <!-- ... 科学计算器的内容 ... -->
-        </div>
+        <ScientificCalculator v-else-if="selectedType === 'scientific'" />
         <div v-else-if="selectedType === 'loan'" class="calculator-wrapper">
           <!-- 贷款计算器的内容 -->
           <p>贷款计算器功能正在开发中...</p>
@@ -33,6 +31,7 @@
 import { ref } from 'vue'
 import NavigationBar from '@/components/NavigationBar.vue'
 import StandardCalculator from '@/components/calculators/StandardCalculator.vue'
+import ScientificCalculator from '@/components/calculators/ScientificCalculator.vue'
 
 const selectedType = ref('standard')
 
