@@ -1,25 +1,24 @@
 <template>
-  <div>
+  <div class="calculator-page">
     <NavigationBar title="计算器" />
     <div class="calculator-container">
       <div class="calculator-sidebar">
         <h3>计算器类型</h3>
         <ul>
-          <li v-for="type in calculatorTypes" :key="type.id" @click="selectCalculator(type.id)" :class="{ active: selectedType === type.id }">
+          <li 
+            v-for="type in calculatorTypes" 
+            :key="type.id" 
+            @click="selectCalculator(type.id)" 
+            :class="{ active: selectedType === type.id }"
+          >
             {{ type.name }}
           </li>
         </ul>
       </div>
       <div class="calculator-content">
-        <div v-if="selectedType === 'standard'" class="calculator-wrapper">
-          <input type="text" :value="display" readonly class="display" />
-          <div class="buttons">
-            <button v-for="btn in standardButtons" :key="btn" @click="handleClick(btn)" class="btn">{{ btn }}</button>
-          </div>
-        </div>
+        <StandardCalculator v-if="selectedType === 'standard'" />
         <div v-else-if="selectedType === 'scientific'" class="calculator-wrapper">
-          <!-- 科学计算器的内容 -->
-          <p>科学计算器功能正在开发中...</p>
+          <!-- ... 科学计算器的内容 ... -->
         </div>
         <div v-else-if="selectedType === 'loan'" class="calculator-wrapper">
           <!-- 贷款计算器的内容 -->
@@ -33,9 +32,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import NavigationBar from '@/components/NavigationBar.vue'
+import StandardCalculator from '@/components/calculators/StandardCalculator.vue'
 
-const display = ref('')
-const standardButtons = ['7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', '0', '.', '=', '+', 'C']
 const selectedType = ref('standard')
 
 const calculatorTypes = [
@@ -48,40 +46,33 @@ const selectCalculator = (typeId: string) => {
   selectedType.value = typeId
 }
 
-const handleClick = (value: string) => {
-  if (value === '=') {
-    try {
-      display.value = eval(display.value).toString()
-    } catch (e) {
-      display.value = '错误'
-    }
-  } else if (value === 'C') {
-    display.value = ''
-  } else {
-    display.value += value
-  }
-}
+// ... 保留科学计算器相关的代码 ...
 </script>
 
 <style scoped>
+.calculator-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .calculator-container {
   display: flex;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  overflow: hidden;
 }
 
 .calculator-sidebar {
   width: 200px;
-  padding-right: 20px;
-  border-right: 1px solid #ddd;
+  background-color: #f0f0f0;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .calculator-sidebar h3 {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #333;
 }
 
 .calculator-sidebar ul {
@@ -91,52 +82,31 @@ const handleClick = (value: string) => {
 
 .calculator-sidebar li {
   padding: 10px;
+  margin-bottom: 5px;
   cursor: pointer;
+  border-radius: 5px;
   transition: background-color 0.3s;
 }
 
-.calculator-sidebar li:hover, .calculator-sidebar li.active {
+.calculator-sidebar li:hover {
   background-color: #e0e0e0;
 }
 
+.calculator-sidebar li.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
 .calculator-content {
-  flex-grow: 1;
-  padding-left: 20px;
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .calculator-wrapper {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-}
-
-.display {
+  max-width: 400px;
   width: 100%;
-  margin-bottom: 15px;
-  padding: 10px;
-  font-size: 20px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.buttons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.btn {
-  padding: 15px;
-  font-size: 18px;
-  cursor: pointer;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.btn:hover {
-  background-color: #45a049;
 }
 </style>
