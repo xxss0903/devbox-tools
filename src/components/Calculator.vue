@@ -1,5 +1,5 @@
 <template>
-  <div class="calculator-page">
+  <div class="calculator-wrapper">
     <NavigationBar title="计算器" />
     <div class="calculator-container">
       <div class="calculator-sidebar">
@@ -15,13 +15,10 @@
           </li>
         </ul>
       </div>
-      <div class="calculator-content">
+      <div class="calculator-display">
         <StandardCalculator v-if="selectedType === 'standard'" />
         <ScientificCalculator v-else-if="selectedType === 'scientific'" />
-        <div v-else-if="selectedType === 'loan'" class="calculator-wrapper">
-          <!-- 贷款计算器的内容 -->
-          <p>贷款计算器功能正在开发中...</p>
-        </div>
+        <LoanCalculator v-else-if="selectedType === 'loan'" />
       </div>
     </div>
   </div>
@@ -32,6 +29,7 @@ import { ref } from 'vue'
 import NavigationBar from '@/components/NavigationBar.vue'
 import StandardCalculator from '@/components/calculators/StandardCalculator.vue'
 import ScientificCalculator from '@/components/calculators/ScientificCalculator.vue'
+import LoanCalculator from '@/components/calculators/LoanCalculator.vue'
 
 const selectedType = ref('standard')
 
@@ -44,15 +42,14 @@ const calculatorTypes = [
 const selectCalculator = (typeId: string) => {
   selectedType.value = typeId
 }
-
-// ... 保留科学计算器相关的代码 ...
 </script>
 
 <style scoped>
-.calculator-page {
+.calculator-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 .calculator-container {
@@ -66,6 +63,7 @@ const selectCalculator = (typeId: string) => {
   background-color: #f0f0f0;
   padding: 20px;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
 }
 
 .calculator-sidebar h3 {
@@ -96,16 +94,28 @@ const selectCalculator = (typeId: string) => {
   color: white;
 }
 
-.calculator-content {
+.calculator-display {
   flex: 1;
   padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  overflow-y: auto;
 }
 
-.calculator-wrapper {
-  max-width: 400px;
-  width: 100%;
+@media (max-width: 768px) {
+  .calculator-container {
+    flex-direction: column;
+  }
+
+  .calculator-sidebar {
+    width: 100%;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .calculator-display {
+    align-items: center;
+  }
 }
 </style>
