@@ -1,21 +1,35 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import router from './router'  // 直接导入 router 实例
+import router from './router'
 
 const route = useRoute()
 
 const searchQuery = ref('')
 
+interface CustomModule {
+  title: string
+  value: string
+  url: string
+  parent: string
+}
+
 const titles = ref([
-  { title: '常用工具', value: 'Home' },
-  { title: '图片工具', value: 'ImageTools' },
-  { title: 'PDF工具', value: 'Home' }, // 暂时导航到Home
-  { title: '颜色工具', value: 'ColorTools' },
-  { title: 'Android工具', value: 'AndroidTools' }
+  { title: '常用工具', value: '/', children: [] },  // 修改这里，将 'Home' 改为 '/'
+  { title: '图片工具', value: '/image-tools', children: [] },
+  { title: 'PDF工具', value: '/pdf-tools', children: [] },  // 如果有 PDF 工具的路由，否则可以暂时保持为 '/'
+  { title: '颜色工具', value: '/color-tools', children: [] },
+  { title: 'Android工具', value: '/android-tools', children: [] }
 ])
 
+const customModules = ref<CustomModule[]>([])
+
 const activeIndex = ref(0)
+const activeSubIndex = ref(-1)
+const showAddModuleModal = ref(false)
+const newModuleTitle = ref('')
+const newModuleUrl = ref('')
+const newModuleParent = ref('')
 
 const allRoutes = computed(() => {
   return router.getRoutes().filter((route) => route.meta?.searchable !== false)
@@ -33,23 +47,79 @@ const filteredRoutes = computed(() => {
 })
 
 const navigateTo = (path: string) => {
-  router.push(path)
+  if (path.startsWith('http')) {
+    window.open(path, '_blank')
+  } else {
+    router.push(path)
+  }
   searchQuery.value = ''
 }
 
-// 根据当前路由更新activeIndex
 const updateActiveIndex = () => {
-  const currentRouteName = route.name as string
-  const index = titles.value.findIndex((title) => title.value === currentRouteName)
+  const currentPath = route.path
+  const index = titles.value.findIndex((title) => title.value === currentPath)
   if (index !== -1) {
     activeIndex.value = index
+    activeSubIndex.value = -1
+  } else {
+    for (let i = 0; i < titles.value.length; i++) {
+      const subIndex = titles.value[i].children.findIndex((child: any) => child.url === currentPath)
+      if (subIndex !== -1) {
+        activeIndex.value = i
+        activeSubIndex.value = subIndex
+        break
+      }
+    }
   }
 }
 
-// 监听路由变化
-router.afterEach(updateActiveIndex)
+const openAddModuleModal = () => {
+  showAddModuleModal.value = true
+}
 
-// 初始化activeIndex
+const addCustomModule = () => {
+  if (newModuleTitle.value && newModuleUrl.value && newModuleParent.value) {
+    const newModule = {
+      title: newModuleTitle.value,
+      value: `custom-${Date.now()}`,
+      url: newModuleUrl.value,
+      parent: newModuleParent.value
+    }
+    customModules.value.push(newModule)
+    const parentIndex = titles.value.findIndex(title => title.value === newModuleParent.value)
+    if (parentIndex !== -1) {
+      titles.value[parentIndex].children.push(newModule)
+    }
+    newModuleTitle.value = ''
+    newModuleUrl.value = ''
+    newModuleParent.value = ''
+    showAddModuleModal.value = false
+    saveCustomModules()
+  }
+}
+
+const saveCustomModules = () => {
+  localStorage.setItem('customModules', JSON.stringify(customModules.value))
+}
+
+const loadCustomModules = () => {
+  const savedModules = localStorage.getItem('customModules')
+  if (savedModules) {
+    customModules.value = JSON.parse(savedModules)
+    customModules.value.forEach(module => {
+      const parentIndex = titles.value.findIndex(title => title.value === module.parent)
+      if (parentIndex !== -1) {
+        titles.value[parentIndex].children.push(module)
+      }
+    })
+  }
+}
+
+onMounted(() => {
+  loadCustomModules()
+})
+
+router.afterEach(updateActiveIndex)
 updateActiveIndex()
 </script>
 
@@ -81,6 +151,19 @@ updateActiveIndex()
             :class="{ active: index === activeIndex }"
           >
             {{ title.title }}
+            <ul v-if="title.children.length > 0">
+              <li
+                v-for="(child, childIndex) in title.children"
+                :key="`${index}-${childIndex}`"
+                @click.stop="navigateTo(child.url)"
+                :class="{ active: index === activeIndex && childIndex === activeSubIndex }"
+              >
+                {{ child.title }}
+              </li>
+            </ul>
+          </li>
+          <li class="add-module" @click="openAddModuleModal">
+            + 添加自定义模块
           </li>
         </ul>
       </div>
@@ -91,6 +174,23 @@ updateActiveIndex()
           </transition>
         </router-view>
       </div>
+    </div>
+  </div>
+
+  <!-- 添加自定义模块的模态框 -->
+  <div v-if="showAddModuleModal" class="modal">
+    <div class="modal-content">
+      <h2>添加自定义模块</h2>
+      <input v-model="newModuleTitle" placeholder="模块标题" />
+      <input v-model="newModuleUrl" placeholder="工具网址" />
+      <select v-model="newModuleParent">
+        <option value="">选择父模块</option>
+        <option v-for="title in titles" :key="title.value" :value="title.value">
+          {{ title.title }}
+        </option>
+      </select>
+      <button @click="addCustomModule">添加</button>
+      <button @click="showAddModuleModal = false">取消</button>
     </div>
   </div>
 </template>
@@ -187,5 +287,59 @@ updateActiveIndex()
 
 .search-results li:hover {
   background-color: #e9ecef;
+}
+
+.add-module {
+  cursor: pointer;
+  color: #3498db;
+  padding: 15px 20px;
+}
+
+.add-module:hover {
+  background-color: #e9ecef;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  padding: 20px;
+  border-radius: 5px;
+  width: 300px;
+}
+
+.modal-content input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+
+.modal-content select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+
+.modal-content button {
+  margin-right: 10px;
+}
+
+.title-list li ul {
+  margin-left: 20px;
+}
+
+.title-list li ul li {
+  padding: 10px 15px;
 }
 </style>
