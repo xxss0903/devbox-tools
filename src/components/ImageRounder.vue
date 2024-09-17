@@ -221,9 +221,9 @@ const getImageUrl = (file: File) => {
 }
 
 .content-wrapper {
-  flex: 1;
   overflow-y: auto;
   padding: 20px;
+  height: 80%;
 }
 
 .content {
