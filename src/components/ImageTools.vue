@@ -82,8 +82,10 @@ const allImageTools = computed(() => {
 })
 
 // 注入编辑和删除函数
-const openEditModuleModal = inject('openEditModuleModal') as (module: CustomModule) => void
 const deleteModule = inject('deleteModule') as (module: CustomModule) => void
+
+// 修改 openAddModuleModal 的类型
+const openAddModuleModal = inject('openAddModuleModal') as (parent: string) => void
 
 // 修改 navigateTo 函数
 const navigateTo = (routeName: string) => {
@@ -119,21 +121,11 @@ const hideContextMenu = () => {
   contextMenu.value.show = false
 }
 
-const editCustomTool = () => {
-  if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
-    openEditModuleModal(contextMenu.value.tool as CustomModule)
-  }
-  hideContextMenu()
-}
-
 const deleteCustomTool = () => {
   if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
     if (confirm('确定要删除这个自定义模块吗？')) {
-      deleteModule(contextMenu.value.tool)
-      // 删除后立即更新 customTools
+      deleteModule(contextMenu.value.tool as CustomModule)
       updateCustomTools()
-      // 强制重新计算 allImageTools
-      // allImageTools.value = [...defaultImageTools, ...customTools.value]
     }
   }
   hideContextMenu()
@@ -145,6 +137,12 @@ const goBack = () => {
 
 const handleModulesUpdated = () => {
   updateCustomTools()
+}
+
+const addCustomModule = () => {
+  if (openAddModuleModal) {
+    openAddModuleModal('/image-tools') // 传入父模块的值
+  }
 }
 
 onMounted(() => {
@@ -167,6 +165,11 @@ onUnmounted(() => {
         :onClick="() => navigateTo(tool.route)"
         @contextmenu="showContextMenu($event, tool)"
       />
+      <!-- 添加自定义模块按钮 -->
+      <div class="add-custom-module" @click="addCustomModule">
+        <span>+</span>
+        <span>添加自定义模块</span>
+      </div>
     </ToolsContainer>
 
     <!-- 右键菜单 -->
@@ -177,7 +180,6 @@ onUnmounted(() => {
       @click.stop
     >
       <div v-if="contextMenu.tool?.route.startsWith('custom-')">
-        <button @click="editCustomTool">编辑</button>
         <button @click="deleteCustomTool">删除</button>
       </div>
     </div>
@@ -210,5 +212,32 @@ onUnmounted(() => {
 
 .context-menu button:hover {
   background-color: #f0f0f0;
+}
+
+.add-custom-module {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-custom-module:hover {
+  background-color: #f0f0f0;
+}
+
+.add-custom-module span:first-child {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.add-custom-module span:last-child {
+  font-size: 12px;
+  text-align: center;
 }
 </style>

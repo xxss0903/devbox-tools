@@ -33,10 +33,6 @@ const showAddModuleModal = ref(false)
 const newModuleTitle = ref('')
 const newModuleUrl = ref('')
 const newModuleParent = ref('')
-const showEditModuleModal = ref(false)
-const editingModule = ref<CustomModule | null>(null)
-const editModuleTitle = ref('')
-const editModuleUrl = ref('')
 
 const allRoutes = computed(() => {
   return router.getRoutes().filter((route) => route.meta?.searchable !== false)
@@ -82,7 +78,8 @@ const updateActiveIndex = () => {
   }
 }
 
-const openAddModuleModal = () => {
+const openAddModuleModal = (parent: string) => {
+  newModuleParent.value = parent
   showAddModuleModal.value = true
 }
 
@@ -102,35 +99,16 @@ const addCustomModule = () => {
     newModuleParent.value = ''
     showAddModuleModal.value = false
     saveModules()
-  }
-}
-
-const openEditModuleModal = (module: CustomModule) => {
-  editingModule.value = module
-  console.log('editingModule', editingModule.value)
-  editModuleTitle.value = module.title
-  editModuleUrl.value = module.url
-  showEditModuleModal.value = true
-}
-
-const saveEditModule = () => {
-  if (editingModule.value && editModuleTitle.value && editModuleUrl.value) {
-    editingModule.value.title = editModuleTitle.value
-    editingModule.value.url = editModuleUrl.value
-    showEditModuleModal.value = false
-    saveModules()
+    // 触发一个自定义事件，通知子组件更新
+    window.dispatchEvent(new CustomEvent('modules-updated'))
   }
 }
 
 const deleteModule = (moduleToDelete: CustomModule) => {
   titles.value = titles.value.map((title) => ({
     ...title,
-    children: title.children.filter((child) => {
-      console.log('filter child', child.title, moduleToDelete)
-      return child.title !== moduleToDelete.name
-    })
+    children: title.children.filter((child) => child.value !== moduleToDelete.value)
   }))
-  console.log('deleteModule', moduleToDelete, titles.value)
   saveModules()
   // 触发一个自定义事件，通知子组件更新
   window.dispatchEvent(new CustomEvent('modules-updated'))
@@ -165,8 +143,8 @@ updateActiveIndex()
 
 // 提供 titles 给子组件使用
 provide('titles', titles)
-provide('openEditModuleModal', openEditModuleModal)
 provide('deleteModule', deleteModule)
+provide('openAddModuleModal', openAddModuleModal)
 
 // 添加一个新的计算属性来获取当前选中模块的子模块
 const currentChildren = computed(() => {
@@ -235,14 +213,14 @@ const navigateToChild = (child: CustomModule) => {
     </div>
   </div>
 
-  <!-- 添加编辑自定义模块的模态框 -->
-  <div v-if="showEditModuleModal" class="modal">
+  <!-- 添加自定义模块的模态框 -->
+  <div v-if="showAddModuleModal" class="modal">
     <div class="modal-content">
-      <h2>编辑自定义模块</h2>
-      <input v-model="editModuleTitle" placeholder="模块标题" />
-      <input v-model="editModuleUrl" placeholder="工具网址" />
-      <button @click="saveEditModule">保存</button>
-      <button @click="showEditModuleModal = false">取消</button>
+      <h2>添加自定义模块</h2>
+      <input v-model="newModuleTitle" placeholder="模块标题" />
+      <input v-model="newModuleUrl" placeholder="工具网址" />
+      <button @click="addCustomModule">添加</button>
+      <button @click="showAddModuleModal = false">取消</button>
     </div>
   </div>
 </template>
