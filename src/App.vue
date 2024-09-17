@@ -42,7 +42,11 @@ const filteredRoutes = computed(() => {
 
 const navigateTo = (path: string) => {
   if (path.startsWith('http')) {
-    window.open(path, '_blank')
+    const width = 1024 // 设置宽度
+    const height = 768 // 设置高度
+    const left = (screen.width - width) / 2
+    const top = (screen.height - height) / 2
+    window.open(path, '_blank', `width=${width},height=${height},left=${left},top=${top}`)
   } else {
     router.push(path)
   }
@@ -147,7 +151,11 @@ const currentChildren = computed(() => {
 // 添加一个新的函数来处理子模块的导航
 const navigateToChild = (child: CustomModule) => {
   if (child.url.startsWith('http')) {
-    window.open(child.url, '_blank')
+    const width = 1024 // 设置宽度
+    const height = 768 // 设置高度
+    const left = (screen.width - width) / 2
+    const top = (screen.height - height) / 2
+    window.open(child.url, '_blank', `width=${width},height=${height},left=${left},top=${top}`)
   } else {
     router.push(child.url)
   }

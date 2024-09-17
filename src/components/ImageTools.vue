@@ -98,7 +98,15 @@ const navigateTo = (routeName: string) => {
   if (routeName.startsWith('custom-')) {
     const customTool = customTools.value.find((tool) => tool.route === routeName)
     if (customTool) {
-      window.open(customTool.url, '_blank')
+      const width = 1024 // 设置宽度
+      const height = 768 // 设置高度
+      const left = (screen.width - width) / 2
+      const top = (screen.height - height) / 2
+      window.open(
+        customTool.url,
+        '_blank',
+        `width=${width},height=${height},left=${left},top=${top}`
+      )
     }
   } else {
     router.push({ name: routeName })
