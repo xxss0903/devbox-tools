@@ -105,9 +105,10 @@ const addCustomModule = () => {
 }
 
 const deleteModule = (moduleToDelete: CustomModule) => {
+  console.log('appvue delete module', moduleToDelete.name)
   titles.value = titles.value.map((title) => ({
     ...title,
-    children: title.children.filter((child) => child.value !== moduleToDelete.value)
+    children: title.children.filter((child) => child.title !== moduleToDelete.name)
   }))
   saveModules()
   // 触发一个自定义事件，通知子组件更新

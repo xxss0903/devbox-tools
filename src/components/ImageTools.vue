@@ -124,7 +124,9 @@ const hideContextMenu = () => {
 const deleteCustomTool = () => {
   if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
     if (confirm('确定要删除这个自定义模块吗？')) {
-      deleteModule(contextMenu.value.tool as CustomModule)
+      let deleteModuleData = contextMenu.value.tool as CustomModule
+      console.log('delete module', deleteModuleData)
+      deleteModule(deleteModuleData)
       updateCustomTools()
     }
   }
