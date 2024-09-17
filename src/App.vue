@@ -15,9 +15,9 @@ interface CustomModule {
 }
 
 const titles = ref([
-  { title: '常用工具', value: '/', children: [] },  // 修改这里，将 'Home' 改为 '/'
+  { title: '常用工具', value: '/', children: [] }, // 修改这里，将 'Home' 改为 '/'
   { title: '图片工具', value: '/image-tools', children: [] },
-  { title: 'PDF工具', value: '/pdf-tools', children: [] },  // 如果有 PDF 工具的路由，否则可以暂时保持为 '/'
+  { title: 'PDF工具', value: '/pdf-tools', children: [] }, // 如果有 PDF 工具的路由，否则可以暂时保持为 '/'
   { title: '颜色工具', value: '/color-tools', children: [] },
   { title: 'Android工具', value: '/android-tools', children: [] }
 ])
@@ -39,10 +39,12 @@ const filteredRoutes = computed(() => {
   if (!searchQuery.value) return []
   const query = searchQuery.value.toLowerCase()
   return allRoutes.value.filter((route) => {
-    const keywords = route.meta?.keywords as string[] || []
-    return keywords.some(keyword => keyword.toLowerCase().includes(query)) ||
-           route.name?.toString().toLowerCase().includes(query) ||
-           (route.meta?.title as string)?.toLowerCase().includes(query)
+    const keywords = (route.meta?.keywords as string[]) || []
+    return (
+      keywords.some((keyword) => keyword.toLowerCase().includes(query)) ||
+      route.name?.toString().toLowerCase().includes(query) ||
+      (route.meta?.title as string)?.toLowerCase().includes(query)
+    )
   })
 })
 
@@ -86,7 +88,7 @@ const addCustomModule = () => {
       parent: newModuleParent.value
     }
     customModules.value.push(newModule)
-    const parentIndex = titles.value.findIndex(title => title.value === newModuleParent.value)
+    const parentIndex = titles.value.findIndex((title) => title.value === newModuleParent.value)
     if (parentIndex !== -1) {
       titles.value[parentIndex].children.push(newModule)
     }
@@ -106,8 +108,8 @@ const loadCustomModules = () => {
   const savedModules = localStorage.getItem('customModules')
   if (savedModules) {
     customModules.value = JSON.parse(savedModules)
-    customModules.value.forEach(module => {
-      const parentIndex = titles.value.findIndex(title => title.value === module.parent)
+    customModules.value.forEach((module) => {
+      const parentIndex = titles.value.findIndex((title) => title.value === module.parent)
       if (parentIndex !== -1) {
         titles.value[parentIndex].children.push(module)
       }
@@ -121,6 +123,14 @@ onMounted(() => {
 
 router.afterEach(updateActiveIndex)
 updateActiveIndex()
+
+// 添加一个新的计算属性来获取当前选中模块的子模块
+const currentChildren = computed(() => {
+  if (activeIndex.value >= 0 && activeIndex.value < titles.value.length) {
+    return titles.value[activeIndex.value].children
+  }
+  return []
+})
 </script>
 
 <template>
@@ -128,18 +138,10 @@ updateActiveIndex()
     <div class="container">
       <div class="title-list">
         <div class="search-bar">
-          <input
-            v-model="searchQuery"
-            placeholder="搜索功能..."
-            type="text"
-          />
+          <input v-model="searchQuery" placeholder="搜索功能..." type="text" />
         </div>
         <ul v-if="searchQuery" class="search-results">
-          <li
-            v-for="route in filteredRoutes"
-            :key="route.path"
-            @click="navigateTo(route.path)"
-          >
+          <li v-for="route in filteredRoutes" :key="route.path" @click="navigateTo(route.path)">
             {{ route.meta?.title || route.name }}
           </li>
         </ul>
@@ -151,20 +153,8 @@ updateActiveIndex()
             :class="{ active: index === activeIndex }"
           >
             {{ title.title }}
-            <ul v-if="title.children.length > 0">
-              <li
-                v-for="(child, childIndex) in title.children"
-                :key="`${index}-${childIndex}`"
-                @click.stop="navigateTo(child.url)"
-                :class="{ active: index === activeIndex && childIndex === activeSubIndex }"
-              >
-                {{ child.title }}
-              </li>
-            </ul>
           </li>
-          <li class="add-module" @click="openAddModuleModal">
-            + 添加自定义模块
-          </li>
+          <li class="add-module" @click="openAddModuleModal">+ 添加自定义模块</li>
         </ul>
       </div>
       <div class="content-area">
@@ -173,6 +163,21 @@ updateActiveIndex()
             <component :is="Component" />
           </transition>
         </router-view>
+
+        <!-- 添加子模块显示区域 -->
+        <div v-if="currentChildren.length > 0" class="sub-modules">
+          <h3>子模块</h3>
+          <ul>
+            <li
+              v-for="(child, childIndex) in currentChildren"
+              :key="childIndex"
+              @click="navigateTo(child.url)"
+              :class="{ active: childIndex === activeSubIndex }"
+            >
+              {{ child.title }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -232,7 +237,9 @@ updateActiveIndex()
   color: #34495e;
   padding: 15px 20px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
   border-radius: 8px;
 }
 
@@ -306,7 +313,7 @@ updateActiveIndex()
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -341,5 +348,39 @@ updateActiveIndex()
 
 .title-list li ul li {
   padding: 10px 15px;
+}
+
+/* 添加子模块显示区域的样式 */
+.sub-modules {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.sub-modules h3 {
+  margin-bottom: 10px;
+  color: #34495e;
+}
+
+.sub-modules ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sub-modules li {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border-radius: 4px;
+}
+
+.sub-modules li:hover {
+  background-color: #e9ecef;
+}
+
+.sub-modules li.active {
+  background-color: #3498db;
+  color: #ffffff;
 }
 </style>
