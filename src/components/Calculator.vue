@@ -19,6 +19,7 @@
         <StandardCalculator v-if="selectedType === 'standard'" ref="standardCalculator" />
         <ScientificCalculator v-else-if="selectedType === 'scientific'" ref="scientificCalculator" />
         <LoanCalculator v-else-if="selectedType === 'loan'" ref="loanCalculator" />
+        <UnitConverter v-else-if="selectedType === 'unit'" ref="unitConverter" />
       </div>
     </div>
   </div>
@@ -30,6 +31,7 @@ import NavigationBar from '@/components/NavigationBar.vue'
 import StandardCalculator from '@/components/calculators/StandardCalculator.vue'
 import ScientificCalculator from '@/components/calculators/ScientificCalculator.vue'
 import LoanCalculator from '@/components/calculators/LoanCalculator.vue'
+import UnitConverter from '@/components/calculators/UnitConverter.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -38,11 +40,13 @@ const selectedType = ref('standard')
 const standardCalculator = ref(null)
 const scientificCalculator = ref(null)
 const loanCalculator = ref(null)
+const unitConverter = ref(null)
 
 const calculatorTypes = [
   { id: 'standard', name: '普通计算器' },
   { id: 'scientific', name: '科学计算器' },
   { id: 'loan', name: '贷款计算器' },
+  { id: 'unit', name: '单位转换器' },
 ]
 
 const goBack = () => {
@@ -64,6 +68,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
     currentCalculator = scientificCalculator.value
   } else if (selectedType.value === 'loan') {
     currentCalculator = loanCalculator.value
+  } else if (selectedType.value === 'unit') {
+    currentCalculator = unitConverter.value
   }
 
   if (currentCalculator && currentCalculator.handleKeyDown) {
