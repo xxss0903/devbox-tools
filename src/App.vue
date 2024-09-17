@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import router from './router'  // 直接导入 router 实例
 
-const router = useRouter()
 const route = useRoute()
+
+const searchQuery = ref('')
 
 const titles = ref([
   { title: '常用工具', value: 'Home' },
@@ -15,9 +17,24 @@ const titles = ref([
 
 const activeIndex = ref(0)
 
-const navigateTo = (index: number) => {
-  activeIndex.value = index
-  router.push({ name: titles.value[index].value })
+const allRoutes = computed(() => {
+  return router.getRoutes().filter((route) => route.meta?.searchable !== false)
+})
+
+const filteredRoutes = computed(() => {
+  if (!searchQuery.value) return []
+  const query = searchQuery.value.toLowerCase()
+  return allRoutes.value.filter((route) => {
+    const keywords = route.meta?.keywords as string[] || []
+    return keywords.some(keyword => keyword.toLowerCase().includes(query)) ||
+           route.name?.toString().toLowerCase().includes(query) ||
+           (route.meta?.title as string)?.toLowerCase().includes(query)
+  })
+})
+
+const navigateTo = (path: string) => {
+  router.push(path)
+  searchQuery.value = ''
 }
 
 // 根据当前路由更新activeIndex
@@ -40,11 +57,27 @@ updateActiveIndex()
   <div class="outer-container">
     <div class="container">
       <div class="title-list">
-        <ul>
+        <div class="search-bar">
+          <input
+            v-model="searchQuery"
+            placeholder="搜索功能..."
+            type="text"
+          />
+        </div>
+        <ul v-if="searchQuery" class="search-results">
+          <li
+            v-for="route in filteredRoutes"
+            :key="route.path"
+            @click="navigateTo(route.path)"
+          >
+            {{ route.meta?.title || route.name }}
+          </li>
+        </ul>
+        <ul v-else>
           <li
             v-for="(title, index) in titles"
             :key="index"
-            @click="navigateTo(index)"
+            @click="navigateTo(title.value)"
             :class="{ active: index === activeIndex }"
           >
             {{ title.title }}
@@ -99,9 +132,7 @@ updateActiveIndex()
   color: #34495e;
   padding: 15px 20px;
   cursor: pointer;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
   border-radius: 8px;
 }
 
@@ -129,5 +160,32 @@ updateActiveIndex()
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.search-bar {
+  margin-bottom: 15px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+}
+
+.search-results {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.search-results li {
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.search-results li:hover {
+  background-color: #e9ecef;
 }
 </style>
