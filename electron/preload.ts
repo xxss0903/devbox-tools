@@ -62,7 +62,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onClipboardUpdate: (callback: (content: string) => void) =>
     ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
   onClipboardImageUpdate: (callback: (dataUrl: string) => void) =>
-    ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl))
+    ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
+  deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date),
 })
 
 console.log('electronAPI exposed')

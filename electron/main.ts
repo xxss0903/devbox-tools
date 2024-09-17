@@ -543,3 +543,16 @@ ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
   const img = nativeImage.createFromDataURL(dataURL)
   clipboard.writeImage(img)
 })
+
+// 添加删除日记条目的方法
+ipcMain.handle('delete-diary-entry', async (event, date) => {
+  try {
+    const db = await getDatabase()
+    await db.run('DELETE FROM diary_entries WHERE date = ?', [date])
+    console.log(`日记条目已删除: ${date}`)
+    return { success: true, message: '日记条目已成功删除' }
+  } catch (error) {
+    console.error('删除日记条目时出错:', error)
+    return { success: false, message: '删除日记条目时出错' }
+  }
+})

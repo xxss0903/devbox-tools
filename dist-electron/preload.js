@@ -50,6 +50,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
         return electron_1.ipcRenderer.invoke('handle-file-drop', filePaths);
     },
     onClipboardUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
-    onClipboardImageUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl))
+    onClipboardImageUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
+    deleteDiaryEntry: (date) => electron_1.ipcRenderer.invoke('delete-diary-entry', date),
 });
 console.log('electronAPI exposed');

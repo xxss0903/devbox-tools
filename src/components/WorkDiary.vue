@@ -4,8 +4,9 @@
       <button class="back-button" @click="goBack">返回</button>
       <h2 class="detail-title">工作日记</h2>
       <button @click="saveDiary" class="save-button">保存</button>
-      <button @click="clearDatabase" class="clear-button">清空数据库</button>
+      <button @click="clearDatabase" class="clear-button">清空日志</button>
       <button @click="generateWeeklySummary" class="summary-button">生成周报</button>
+      <button @click="deleteDiaryEntry" class="delete-button">删除当前日记</button>
     </div>
     <div class="work-diary-content">
       <div class="left-panel">
@@ -273,6 +274,22 @@ const generateWeeklySummary = async () => {
 
 const closeSummaryModal = () => {
   showSummaryModal.value = false
+}
+
+
+const deleteDiaryEntry = async () => {
+  if (confirm('确定要删除当前日期的日记吗？此操作不可逆！')) {
+    try {
+      let dateStr = moment(date.value).format('YYYY-MM-DD')
+      await window.electronAPI.deleteDiaryEntry(dateStr)
+      await loadDiaryEntries()
+      content.value = ''
+      todos.value = []
+      console.log('日记已删除')
+    } catch (error) {
+      console.error('删除日记时出错:', error)
+    }
+  }
 }
 </script>
 
@@ -957,5 +974,20 @@ const closeSummaryModal = () => {
 
 .close-button:hover {
   background-color: #2980b9;
+}
+
+
+.delete-button {
+  padding: 8px 16px;
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
 }
 </style>
