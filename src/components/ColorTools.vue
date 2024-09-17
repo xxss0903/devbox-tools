@@ -18,7 +18,9 @@ const currentModule = computed(() => {
 })
 
 // 使用 ref 来存储自定义工具
-const customTools = ref<CustomModule[]>([])
+const customTools = ref<CustomModule[]>([
+  { title: '配色卡', value: '配色卡', url: 'https://peiseka.com/index-index-peisepan.html' }
+])
 
 // 更新自定义工具的函数
 const updateCustomTools = () => {
