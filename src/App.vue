@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import router from './router'
 
@@ -11,18 +11,21 @@ interface CustomModule {
   title: string
   value: string
   url: string
-  parent: string
 }
 
-const titles = ref([
-  { title: '常用工具', value: '/', children: [] }, // 修改这里，将 'Home' 改为 '/'
+interface TitleModule {
+  title: string
+  value: string
+  children: CustomModule[]
+}
+
+const titles = ref<TitleModule[]>([
+  { title: '常用工具', value: '/', children: [] },
   { title: '图片工具', value: '/image-tools', children: [] },
-  { title: 'PDF工具', value: '/pdf-tools', children: [] }, // 如果有 PDF 工具的路由，否则可以暂时保持为 '/'
+  { title: 'PDF工具', value: '/pdf-tools', children: [] },
   { title: '颜色工具', value: '/color-tools', children: [] },
   { title: 'Android工具', value: '/android-tools', children: [] }
 ])
-
-const customModules = ref<CustomModule[]>([])
 
 const activeIndex = ref(0)
 const activeSubIndex = ref(-1)
@@ -81,13 +84,11 @@ const openAddModuleModal = () => {
 
 const addCustomModule = () => {
   if (newModuleTitle.value && newModuleUrl.value && newModuleParent.value) {
-    const newModule = {
+    const newModule: CustomModule = {
       title: newModuleTitle.value,
       value: `custom-${Date.now()}`,
-      url: newModuleUrl.value,
-      parent: newModuleParent.value
+      url: newModuleUrl.value
     }
-    customModules.value.push(newModule)
     const parentIndex = titles.value.findIndex((title) => title.value === newModuleParent.value)
     if (parentIndex !== -1) {
       titles.value[parentIndex].children.push(newModule)
@@ -96,33 +97,39 @@ const addCustomModule = () => {
     newModuleUrl.value = ''
     newModuleParent.value = ''
     showAddModuleModal.value = false
-    saveCustomModules()
+    saveModules()
   }
 }
 
-const saveCustomModules = () => {
-  localStorage.setItem('customModules', JSON.stringify(customModules.value))
+const saveModules = () => {
+  localStorage.setItem('modules', JSON.stringify(titles.value))
 }
 
-const loadCustomModules = () => {
-  const savedModules = localStorage.getItem('customModules')
+const loadModules = () => {
+  const savedModules = localStorage.getItem('modules')
   if (savedModules) {
-    customModules.value = JSON.parse(savedModules)
-    customModules.value.forEach((module) => {
-      const parentIndex = titles.value.findIndex((title) => title.value === module.parent)
-      if (parentIndex !== -1) {
-        titles.value[parentIndex].children.push(module)
-      }
-    })
+    titles.value = JSON.parse(savedModules)
   }
 }
+
+// 监听 titles 的变化，当发生变化时保存到 localStorage
+watch(
+  titles,
+  () => {
+    saveModules()
+  },
+  { deep: true }
+)
 
 onMounted(() => {
-  loadCustomModules()
+  loadModules()
 })
 
 router.afterEach(updateActiveIndex)
 updateActiveIndex()
+
+// 提供 titles 给子组件使用
+provide('titles', titles)
 
 // 添加一个新的计算属性来获取当前选中模块的子模块
 const currentChildren = computed(() => {
@@ -131,6 +138,16 @@ const currentChildren = computed(() => {
   }
   return []
 })
+
+// 添加一个新的函数来处理子模块的导航
+const navigateToChild = (child: CustomModule) => {
+  if (child.url.startsWith('http')) {
+    window.open(child.url, '_blank')
+  } else {
+    router.push(child.url)
+  }
+  activeSubIndex.value = currentChildren.value.findIndex((c) => c.value === child.value)
+}
 </script>
 
 <template>
@@ -170,8 +187,8 @@ const currentChildren = computed(() => {
           <ul>
             <li
               v-for="(child, childIndex) in currentChildren"
-              :key="childIndex"
-              @click="navigateTo(child.url)"
+              :key="child.value"
+              @click="navigateToChild(child)"
               :class="{ active: childIndex === activeSubIndex }"
             >
               {{ child.title }}
