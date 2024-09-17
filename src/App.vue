@@ -33,6 +33,10 @@ const showAddModuleModal = ref(false)
 const newModuleTitle = ref('')
 const newModuleUrl = ref('')
 const newModuleParent = ref('')
+const showEditModuleModal = ref(false)
+const editingModule = ref<CustomModule | null>(null)
+const editModuleTitle = ref('')
+const editModuleUrl = ref('')
 
 const allRoutes = computed(() => {
   return router.getRoutes().filter((route) => route.meta?.searchable !== false)
@@ -101,6 +105,29 @@ const addCustomModule = () => {
   }
 }
 
+const openEditModuleModal = (module: CustomModule) => {
+  editingModule.value = module
+  editModuleTitle.value = module.title
+  editModuleUrl.value = module.url
+  showEditModuleModal.value = true
+}
+
+const saveEditModule = () => {
+  if (editingModule.value && editModuleTitle.value && editModuleUrl.value) {
+    editingModule.value.title = editModuleTitle.value
+    editingModule.value.url = editModuleUrl.value
+    showEditModuleModal.value = false
+    saveModules()
+  }
+}
+
+const deleteModule = (moduleToDelete: CustomModule) => {
+  titles.value.forEach((title) => {
+    title.children = title.children.filter((child) => child.value !== moduleToDelete.value)
+  })
+  saveModules()
+}
+
 const saveModules = () => {
   localStorage.setItem('modules', JSON.stringify(titles.value))
 }
@@ -130,6 +157,8 @@ updateActiveIndex()
 
 // 提供 titles 给子组件使用
 provide('titles', titles)
+provide('openEditModuleModal', openEditModuleModal)
+provide('deleteModule', deleteModule)
 
 // 添加一个新的计算属性来获取当前选中模块的子模块
 const currentChildren = computed(() => {
@@ -213,6 +242,17 @@ const navigateToChild = (child: CustomModule) => {
       </select>
       <button @click="addCustomModule">添加</button>
       <button @click="showAddModuleModal = false">取消</button>
+    </div>
+  </div>
+
+  <!-- 添加编辑自定义模块的模态框 -->
+  <div v-if="showEditModuleModal" class="modal">
+    <div class="modal-content">
+      <h2>编辑自定义模块</h2>
+      <input v-model="editModuleTitle" placeholder="模块标题" />
+      <input v-model="editModuleUrl" placeholder="工具网址" />
+      <button @click="saveEditModule">保存</button>
+      <button @click="showEditModuleModal = false">取消</button>
     </div>
   </div>
 </template>

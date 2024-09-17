@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
-import { inject, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
 import ToolItem from './ToolItem.vue'
 import ToolsContainer from './ToolsContainer.vue'
 
@@ -12,14 +12,17 @@ const titles = inject('titles') as Ref<TitleModule[]>
 
 // 计算当前路由对应的模块
 const currentModule = computed(() => {
-  return titles.value.find((title) => title.value === '/image-tools') || titles.value[0]
+  return (
+    titles.value.find((title: TitleModule) => title.value === '/image-tools') || titles.value[0]
+  )
 })
 
 // 获取当前模块的子模块
 const customTools = computed(() => {
-  return currentModule.value.children.map((child) => ({
+  return currentModule.value.children.map((child: CustomModule) => ({
     name: child.title,
     route: child.value,
+    url: child.url,
     image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000' // 默认图标，您可以根据需要修改
   }))
 })
@@ -72,15 +75,58 @@ const allImageTools = computed(() => {
   return [...defaultImageTools, ...customTools.value]
 })
 
+// 注入编辑和删除函数
+const openEditModuleModal = inject('openEditModuleModal') as (module: CustomModule) => void
+const deleteModule = inject('deleteModule') as (module: CustomModule) => void
+
+// 修改 navigateTo 函数
 const navigateTo = (routeName: string) => {
   if (routeName.startsWith('custom-')) {
     const customTool = customTools.value.find((tool) => tool.route === routeName)
     if (customTool) {
-      window.open(customTool.route, '_blank')
+      window.open(customTool.url, '_blank')
     }
   } else {
     router.push({ name: routeName })
   }
+}
+
+// 右键菜单相关
+const contextMenu = ref({
+  show: false,
+  x: 0,
+  y: 0,
+  tool: null as (typeof allImageTools.value)[0] | null
+})
+
+const showContextMenu = (event: MouseEvent, tool: (typeof allImageTools.value)[0]) => {
+  event.preventDefault()
+  contextMenu.value = {
+    show: true,
+    x: event.clientX,
+    y: event.clientY,
+    tool
+  }
+}
+
+const hideContextMenu = () => {
+  contextMenu.value.show = false
+}
+
+const editCustomTool = () => {
+  if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
+    openEditModuleModal(contextMenu.value.tool as CustomModule)
+  }
+  hideContextMenu()
+}
+
+const deleteCustomTool = () => {
+  if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
+    if (confirm('确定要删除这个自定义模块吗？')) {
+      deleteModule(contextMenu.value.tool as CustomModule)
+    }
+  }
+  hideContextMenu()
 }
 
 const goBack = () => {
@@ -96,6 +142,44 @@ const goBack = () => {
       :title="tool.name"
       :imageSrc="tool.image"
       :onClick="() => navigateTo(tool.route)"
+      @contextmenu="showContextMenu($event, tool)"
     />
   </ToolsContainer>
+
+  <!-- 右键菜单 -->
+  <div
+    v-if="contextMenu.show"
+    class="context-menu"
+    :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
+    @click.stop
+  >
+    <div v-if="contextMenu.tool?.route.startsWith('custom-')">
+      <button @click="editCustomTool">编辑</button>
+      <button @click="deleteCustomTool">删除</button>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.context-menu button:hover {
+  background-color: #f0f0f0;
+}
+</style>

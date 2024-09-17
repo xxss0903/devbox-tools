@@ -8,8 +8,9 @@ defineProps<{
 
 <template>
   <div class="tool-item" @click="onClick">
-    <img :src="imageSrc" :alt="title" class="tool-image">
-    <h3 class="tool-title">{{ title }}</h3>
+    <img :src="imageSrc" :alt="title" />
+    <span>{{ title }}</span>
+    <slot name="actions"></slot>
   </div>
 </template>
 
