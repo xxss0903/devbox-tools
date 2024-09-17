@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
-import { inject, computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { inject, computed, ref, watch, onMounted, onUnmounted, type Ref } from 'vue'
 import ToolItem from './ToolItem.vue'
 import ToolsContainer from './ToolsContainer.vue'
+import type { CustomModule, TitleModule } from '../types/modules'
 
 const router = useRouter()
 const route = useRoute()
@@ -24,7 +25,7 @@ const customTools = ref<CustomModule[]>([
 
 // 更新自定义工具的函数
 const updateCustomTools = () => {
-  customTools.value = currentModule.value.children.map((child) => ({
+  customTools.value = currentModule.value.children.map((child: any) => ({
     name: child.title,
     route: child.value,
     url: child.url,

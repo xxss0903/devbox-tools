@@ -2,22 +2,11 @@
 import { ref, computed, onMounted, watch, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import router from './router'
+import type { CustomModule, TitleModule } from './types/modules'
 
 const route = useRoute()
 
 const searchQuery = ref('')
-
-interface CustomModule {
-  title: string
-  value: string
-  url: string
-}
-
-interface TitleModule {
-  title: string
-  value: string
-  children: CustomModule[]
-}
 
 const titles = ref<TitleModule[]>([
   { title: '常用工具', value: '/', children: [] },
