@@ -115,7 +115,11 @@ const dockMenu = electron_1.Menu.buildFromTemplate([
         ]
     }
 ]);
-electron_1.app.dock.setMenu(dockMenu);
+// 根据macOS进行条件判断
+if (process.platform === 'darwin') {
+    electron_1.app.dock.setMenu(dockMenu);
+    electron_1.app.setName('铁牛工具箱');
+}
 electron_1.app.setName('铁牛工具箱');
 async function createWindow() {
     win = new electron_1.BrowserWindow({

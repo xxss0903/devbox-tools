@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
-import { inject, computed, ref } from 'vue'
+import { inject, computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import ToolItem from './ToolItem.vue'
 import ToolsContainer from './ToolsContainer.vue'
 
@@ -17,15 +17,21 @@ const currentModule = computed(() => {
   )
 })
 
-// 获取当前模块的子模块
-const customTools = computed(() => {
-  return currentModule.value.children.map((child: CustomModule) => ({
+// 修改这里，使用 ref 而不是 computed
+const customTools = ref([])
+
+// 添加一个函数来更新 customTools
+const updateCustomTools = () => {
+  customTools.value = currentModule.value.children.map((child: CustomModule) => ({
     name: child.title,
     route: child.value,
     url: child.url,
-    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000' // 默认图标，您可以根据需要修改
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
   }))
-})
+}
+
+// 在 currentModule 更新时调用 updateCustomTools
+watch(() => currentModule.value, updateCustomTools, { immediate: true })
 
 const defaultImageTools = [
   {
@@ -123,7 +129,11 @@ const editCustomTool = () => {
 const deleteCustomTool = () => {
   if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
     if (confirm('确定要删除这个自定义模块吗？')) {
-      deleteModule(contextMenu.value.tool as CustomModule)
+      deleteModule(contextMenu.value.tool)
+      // 删除后立即更新 customTools
+      updateCustomTools()
+      // 强制重新计算 allImageTools
+      // allImageTools.value = [...defaultImageTools, ...customTools.value]
     }
   }
   hideContextMenu()
@@ -132,35 +142,54 @@ const deleteCustomTool = () => {
 const goBack = () => {
   router.push({ name: 'Home' })
 }
+
+const handleModulesUpdated = () => {
+  updateCustomTools()
+}
+
+onMounted(() => {
+  window.addEventListener('modules-updated', handleModulesUpdated)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('modules-updated', handleModulesUpdated)
+})
 </script>
 
 <template>
-  <ToolsContainer title="图片工具" @goBack="goBack">
-    <ToolItem
-      v-for="tool in allImageTools"
-      :key="tool.name"
-      :title="tool.name"
-      :imageSrc="tool.image"
-      :onClick="() => navigateTo(tool.route)"
-      @contextmenu="showContextMenu($event, tool)"
-    />
-  </ToolsContainer>
+  <div class="image-tools-container">
+    <ToolsContainer title="图片工具" @goBack="goBack">
+      <ToolItem
+        v-for="tool in allImageTools"
+        :key="tool.name"
+        :title="tool.name"
+        :imageSrc="tool.image"
+        :onClick="() => navigateTo(tool.route)"
+        @contextmenu="showContextMenu($event, tool)"
+      />
+    </ToolsContainer>
 
-  <!-- 右键菜单 -->
-  <div
-    v-if="contextMenu.show"
-    class="context-menu"
-    :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
-    @click.stop
-  >
-    <div v-if="contextMenu.tool?.route.startsWith('custom-')">
-      <button @click="editCustomTool">编辑</button>
-      <button @click="deleteCustomTool">删除</button>
+    <!-- 右键菜单 -->
+    <div
+      v-if="contextMenu.show"
+      class="context-menu"
+      :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
+      @click.stop
+    >
+      <div v-if="contextMenu.tool?.route.startsWith('custom-')">
+        <button @click="editCustomTool">编辑</button>
+        <button @click="deleteCustomTool">删除</button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.image-tools-container {
+  width: 100%;
+  height: 100%;
+}
+
 .context-menu {
   position: fixed;
   background: white;

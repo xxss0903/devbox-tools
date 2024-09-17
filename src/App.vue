@@ -107,6 +107,7 @@ const addCustomModule = () => {
 
 const openEditModuleModal = (module: CustomModule) => {
   editingModule.value = module
+  console.log('editingModule', editingModule.value)
   editModuleTitle.value = module.title
   editModuleUrl.value = module.url
   showEditModuleModal.value = true
@@ -122,10 +123,17 @@ const saveEditModule = () => {
 }
 
 const deleteModule = (moduleToDelete: CustomModule) => {
-  titles.value.forEach((title) => {
-    title.children = title.children.filter((child) => child.value !== moduleToDelete.value)
-  })
+  titles.value = titles.value.map((title) => ({
+    ...title,
+    children: title.children.filter((child) => {
+      console.log('filter child', child.title, moduleToDelete)
+      return child.title !== moduleToDelete.name
+    })
+  }))
+  console.log('deleteModule', moduleToDelete, titles.value)
   saveModules()
+  // 触发一个自定义事件，通知子组件更新
+  window.dispatchEvent(new CustomEvent('modules-updated'))
 }
 
 const saveModules = () => {
@@ -200,7 +208,6 @@ const navigateToChild = (child: CustomModule) => {
           >
             {{ title.title }}
           </li>
-          <li class="add-module" @click="openAddModuleModal">+ 添加自定义模块</li>
         </ul>
       </div>
       <div class="content-area">
@@ -225,23 +232,6 @@ const navigateToChild = (child: CustomModule) => {
           </ul>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- 添加自定义模块的模态框 -->
-  <div v-if="showAddModuleModal" class="modal">
-    <div class="modal-content">
-      <h2>添加自定义模块</h2>
-      <input v-model="newModuleTitle" placeholder="模块标题" />
-      <input v-model="newModuleUrl" placeholder="工具网址" />
-      <select v-model="newModuleParent">
-        <option value="">选择父模块</option>
-        <option v-for="title in titles" :key="title.value" :value="title.value">
-          {{ title.title }}
-        </option>
-      </select>
-      <button @click="addCustomModule">添加</button>
-      <button @click="showAddModuleModal = false">取消</button>
     </div>
   </div>
 
@@ -353,16 +343,6 @@ const navigateToChild = (child: CustomModule) => {
   background-color: #e9ecef;
 }
 
-.add-module {
-  cursor: pointer;
-  color: #3498db;
-  padding: 15px 20px;
-}
-
-.add-module:hover {
-  background-color: #e9ecef;
-}
-
 .modal {
   position: fixed;
   z-index: 1000;
@@ -397,14 +377,6 @@ const navigateToChild = (child: CustomModule) => {
 
 .modal-content button {
   margin-right: 10px;
-}
-
-.title-list li ul {
-  margin-left: 20px;
-}
-
-.title-list li ul li {
-  padding: 10px 15px;
 }
 
 /* 添加子模块显示区域的样式 */
