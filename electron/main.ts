@@ -53,12 +53,23 @@ async function getDatabase(): Promise<Database> {
     driver: sqlite3.Database
   })
 
+  // 创建现有的diary_entries表
   await db.exec(`
     CREATE TABLE IF NOT EXISTS diary_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT UNIQUE,
       content TEXT,
       todos TEXT
+    )
+  `)
+
+  // 创建clipboard_history表
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS clipboard_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT,
+      content TEXT,
+      timestamp INTEGER
     )
   `)
 
@@ -334,32 +345,23 @@ async function checkAndUpdateClipboard() {
 
   console.log('get latestcontent 1:', latestItem)
 
-  if (latestItem.type === 'text') {
-    lastClipboardContent = latestItem.content
-  } else if (latestItem.type === 'image') {
-    lastClipboardContent = latestItem.content
+  if(latestItem) {
+    if (latestItem.type === 'text') {
+      lastClipboardContent = latestItem.content
+    } else if (latestItem.type === 'image') {
+      lastClipboardContent = latestItem.content
+    }
   }
 }
 
 async function watchClipboard(win: BrowserWindow) {
-  // 添加监听系统剪贴板的功能
   const db = await getDatabase()
-  // 监听剪贴板变化
   setInterval(async () => {
     const currentContent = clipboard.readText()
+    console.log('currentContent', currentContent)
     if (currentContent && currentContent !== lastClipboardContent) {
-      if (currentContent) {
-        console.log('watchClipboard currenttext', currentContent)
-        console.log('latest text', lastClipboardContent)
-        lastClipboardContent = currentContent
-        await db.run(
-          'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-          'text',
-          currentContent,
-          Date.now()
-        )
-        win?.webContents.send('clipboard-update', currentContent)
-      }
+      lastClipboardContent = currentContent
+      await updateClipboardHistory(win, 'text', currentContent)
     }
 
     const image = clipboard.readImage()
@@ -367,17 +369,33 @@ async function watchClipboard(win: BrowserWindow) {
       const dataURL = image.toDataURL()
       if (dataURL !== lastClipboardContent) {
         lastClipboardContent = dataURL
-        await db.run(
-          'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-          'image',
-          dataURL,
-          Date.now()
-        )
-        win?.webContents.send('clipboard-image-update', dataURL)
+        await updateClipboardHistory(win, 'image', dataURL)
         console.log('watchClipboard interval 1000 image update')
       }
     }
-  }, 1000) // 每秒检查一次剪贴板，3秒检查一次
+  }, 1000)
+}
+
+async function updateClipboardHistory(win: BrowserWindow, type: string, content: string) {
+  try {
+    const db = await getDatabase()
+    await db.run(
+      'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+      type,
+      content,
+      Date.now()
+    )
+    console.log('剪贴板内容已添加到历史记录')
+    
+    // 获取最新的剪贴板历史记录
+    const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50')
+    
+    // 通知渲染进程更新剪贴板历史，并发送最新的历史记录
+    win?.webContents.send('clipboard-history-update', history)
+    console.log('最新的剪贴板历史记录已发送到渲染进程')
+  } catch (error) {
+    console.error('更新剪贴板历史记录时出错:', error)
+  }
 }
 
 ipcMain.handle('handle-file-drop', async (event, filePaths) => {
@@ -489,22 +507,6 @@ ipcMain.handle('clear-clipboard-history', async () => {
   const db = await getDatabase()
   await db.run('DELETE FROM clipboard_history')
 })
-
-async function updateClipboardHistory(event: any) {
-  try {
-    const clipboardContent = clipboard.readText()
-    const db = await getDatabase()
-    await db.run(
-      'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-      'text',
-      clipboardContent,
-      Date.now()
-    )
-    console.log('剪贴板内容已添加到历史记录')
-  } catch (error) {
-    console.error('更新剪贴板历史记录时出错:', error)
-  }
-}
 
 // IPC 处理器
 ipcMain.on('request-clipboard-history', async (event: any) => {
