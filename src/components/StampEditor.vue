@@ -1,69 +1,132 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { fabric } from 'fabric'
 import NavigationBar from './NavigationBar.vue'
 
 const stampCanvas = ref<fabric.Canvas | null>(null)
-const companyName = ref('公司名称') // 公司名称输入框的绑定
+const companyName = ref('个人实用科技有限公司') // 默认公司名称
 const circleSize = ref(50) // 圆形大小的绑定
+const centerText = ref('我是抬头字') // 中心文字
+const starSize = ref(30) // 五角星大小
+const canvasHistory = ref<string[]>([])
 
 onMounted(() => {
   stampCanvas.value = new fabric.Canvas('stamp-canvas', {
-    width: 300,
-    height: 300,
+    width: 400,
+    height: 400,
     backgroundColor: 'white'
   })
+  saveCanvasState() // 保存初始状态
 })
 
+const saveCanvasState = () => {
+  if (stampCanvas.value) {
+    const json = JSON.stringify(stampCanvas.value.toJSON())
+    canvasHistory.value.push(json)
+  }
+}
+
 const drawStamp = () => {
-  const circle = new fabric.Circle({
+  if (!stampCanvas.value) return
+
+  stampCanvas.value.clear()
+
+  const centerX = 200
+  const centerY = 200
+
+  // 绘制外圆
+  const outerCircle = new fabric.Circle({
     radius: circleSize.value,
     fill: 'transparent',
     stroke: 'red',
     strokeWidth: 2,
-    left: 100,
-    top: 100,
-           originX: 'center',
-                        originY: 'center'
-  });
-
-  const radius = circleSize.value; // 文字距离圆心的半径
-  const angleStep = 180 / companyName.value.length; // 每个字符的角度
-
-  // 创建一个文本组以放置公司名称
-  const textGroup = new fabric.Group([], {
-    left: 100,
-    top: 100,
+    left: centerX,
+    top: centerY,
     originX: 'center',
     originY: 'center'
-  });
+  })
 
-  for (let i = 0; i < companyName.value.length; i++) {
-    const char = new fabric.Text(companyName.value[i], {
-      left: 100,
-      top: 100,
-                        fontFamily:'SumSun',
-                        fontSize: 14,
-                        fill:'red',
-                        angle:-36,
-                        originX: 'center',
-                        originY: 'center'
-    });
+  // 绘制内圆
+  const innerCircle = new fabric.Circle({
+    radius: circleSize.value - 10,
+    fill: 'transparent',
+    stroke: 'red',
+    strokeWidth: 1,
+    left: centerX,
+    top: centerY,
+    originX: 'center',
+    originY: 'center'
+  })
 
-    const angle = angleStep * i; // 当前字符的角度
-    const x = (radius - 20) * Math.cos((angle * Math.PI) / 180); // 计算 x 坐标
-    const y = (radius - 20) * Math.sin((angle * Math.PI) / 180); // 计算 y 坐标
+  // 绘制五角星
+  const star = new fabric.Path(
+    'M 0 -50 L 14.5 -15.5 L 47.5 -15.5 L 23.5 5.5 L 38 40 L 0 20 L -38 40 L -23.5 5.5 L -47.5 -15.5 L -14.5 -15.5 Z',
+    {
+      fill: 'red',
+      left: centerX,
+      top: centerY,
+      scaleX: starSize.value / 100,
+      scaleY: starSize.value / 100,
+      originX: 'center',
+      originY: 'center'
+    }
+  )
 
-    char.set({ left: x, top: y, angle: angle - 90 }); // 设置字符位置和角度
-    textGroup.add(char); // 将字符添加到文本组
-  }
+  // 绘制公司名称
+  const textRadius = circleSize.value - 15
+  const textPath = new fabric.Path(
+    `M ${centerX - textRadius}, ${centerY} A ${textRadius},${textRadius} 0 1,1 ${centerX + textRadius},${centerY}`,
+    {
+      fill: 'transparent',
+      stroke: 'transparent'
+    }
+  )
 
-  stampCanvas.value?.add(textGroup); // 添加文本组到画布
-  stampCanvas.value?.add(circle); // 添加圆圈到画布
+  const companyText = new fabric.Text(companyName.value, {
+    fontSize: 16,
+    fill: 'red',
+    fontFamily: 'SimSun',
+    originX: 'center',
+    originY: 'center',
+    left: centerX,
+    top: centerY
+  })
+
+  companyText.set({
+    path: textPath,
+    pathSide: 'left',
+    pathStartOffset: 0
+  })
+
+  // 绘制中心文字
+  const centerTextField = new fabric.Text(centerText.value, {
+    fontSize: 20,
+    fill: 'red',
+    fontFamily: 'SimSun',
+    left: centerX,
+    top: centerY + 30,
+    originX: 'center',
+    originY: 'center'
+  })
+
+  stampCanvas.value.add(outerCircle, innerCircle, star, companyText, centerTextField)
+  stampCanvas.value.renderAll()
+  saveCanvasState()
 }
 
 const clearCanvas = () => {
-  stampCanvas.value?.clear(); // 清除画布上的所有内容
+  stampCanvas.value?.clear() // 清除画布上的所有内容
+  saveCanvasState() // 在清除后保存状态
+}
+
+const undo = () => {
+  if (canvasHistory.value.length > 1) {
+    canvasHistory.value.pop() // 移除当前状态
+    const previousState = canvasHistory.value[canvasHistory.value.length - 1]
+    stampCanvas.value?.loadFromJSON(JSON.parse(previousState), () => {
+      stampCanvas.value?.renderAll()
+    })
+  }
 }
 </script>
 
@@ -72,16 +135,21 @@ const clearCanvas = () => {
     <NavigationBar title="印章编辑器" />
     <div class="toolbar">
       <input v-model="companyName" placeholder="输入公司名称" class="text-input" />
+      <input v-model="centerText" placeholder="输入中心文字" class="text-input" />
       <input v-model.number="circleSize" type="number" placeholder="圆形大小" class="size-input" />
+      <input v-model.number="starSize" type="number" placeholder="五角星大小" class="size-input" />
       <button @click="drawStamp" class="tool-button">绘制印章</button>
       <button @click="clearCanvas" class="tool-button">清除所有</button>
+      <button @click="undo" class="tool-button">撤销</button>
     </div>
-    <canvas id="stamp-canvas" class="canvas-full"></canvas> <!-- 添加类以撑满 -->
+    <canvas id="stamp-canvas" class="canvas-full"></canvas>
+    <!-- 添加类以撑满 -->
   </div>
 </template>
 
 <style scoped>
-.text-input, .size-input {
+.text-input,
+.size-input {
   margin-right: 10px;
   padding: 5px;
 }
