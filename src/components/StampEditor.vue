@@ -13,6 +13,7 @@ const stampType = ref('公章')
 const legalPerson = ref('张三')
 const stampCode = ref('1234567890123')
 const showStampCode = ref(true)
+const showInnerCircle = ref(true) // 新增: 控制是否显示内圆的开关
 
 const circleSize = computed(() => {
   const size = stampType.value === '公章' ? 45 : 40
@@ -64,17 +65,20 @@ const drawStamp = () => {
     originY: 'center'
   })
 
-  // 绘制内圆
-  const innerCircle = new fabric.Circle({
-    radius: circleSize.value * 0.8,
-    fill: 'transparent',
-    stroke: 'red',
-    strokeWidth: borderWidth.value / 2,
-    left: centerX,
-    top: centerY,
-    originX: 'center',
-    originY: 'center'
-  })
+  // 绘制内圆 (如果开关打开)
+  let innerCircle
+  if (showInnerCircle.value) {
+    innerCircle = new fabric.Circle({
+      radius: circleSize.value - borderWidth.value * 2,
+      fill: 'transparent',
+      stroke: 'red',
+      strokeWidth: borderWidth.value / 2,
+      left: centerX,
+      top: centerY,
+      originX: 'center',
+      originY: 'center'
+    })
+  }
 
   // 绘制五角星
   const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
@@ -140,7 +144,9 @@ const drawStamp = () => {
     })
   }
 
-  stampCanvas.value.add(outerCircle, innerCircle, star)
+  stampCanvas.value.add(outerCircle)
+  if (innerCircle) stampCanvas.value.add(innerCircle)
+  stampCanvas.value.add(star)
   stampCanvas.value.renderAll()
 }
 
@@ -227,6 +233,10 @@ onMounted(() => {
       <label>
         <input type="checkbox" v-model="showStampCode" @change="drawStamp" />
         显示印章编码
+      </label>
+      <label>
+        <input type="checkbox" v-model="showInnerCircle" @change="drawStamp" />
+        显示内圆
       </label>
       <button @click="clearCanvas" class="tool-button">清除所有</button>
       <button @click="undo" class="tool-button">撤销</button>
