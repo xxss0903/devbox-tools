@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { fabric } from 'fabric'
 import NavigationBar from './NavigationBar.vue'
+import { drawOfficialStamp } from './stamps/OfficialStamp'
+import { drawContractStamp } from './stamps/ContractStamp' // 新增
 
 const STANDARD_SIZE_MM = 45 // 标准印章直径，单位毫米
 const CANVAS_SIZE = 400 // 画布尺寸，单位像素
@@ -50,103 +52,35 @@ const drawStamp = () => {
 
   stampCanvas.value.clear()
 
-  const centerX = CANVAS_SIZE / 2
-  const centerY = CANVAS_SIZE / 2
-
-  // 绘制外圆
-  const outerCircle = new fabric.Circle({
-    radius: circleSize.value,
-    fill: 'transparent',
-    stroke: 'red',
-    strokeWidth: borderWidth.value,
-    left: centerX,
-    top: centerY,
-    originX: 'center',
-    originY: 'center'
-  })
-
-  // 绘制内圆 (如果开关打开)
-  let innerCircle
-  if (showInnerCircle.value) {
-    innerCircle = new fabric.Circle({
-      radius: circleSize.value - borderWidth.value * 2,
-      fill: 'transparent',
-      stroke: 'red',
-      strokeWidth: borderWidth.value / 2,
-      left: centerX,
-      top: centerY,
-      originX: 'center',
-      originY: 'center'
+  if (stampType.value === '公章') {
+    drawOfficialStamp(stampCanvas.value, {
+      companyName: companyName.value,
+      centerText: centerText.value,
+      stampCode: stampCode.value,
+      showStampCode: showStampCode.value,
+      showInnerCircle: showInnerCircle.value,
+      circleSize: circleSize.value,
+      starSize: starSize.value,
+      borderWidth: borderWidth.value,
+      calculateFontSize: calculateFontSize.value
     })
+  } else if (stampType.value === '合同专用章') {
+    drawContractStamp(stampCanvas.value, {
+      companyName: companyName.value,
+      centerText: centerText.value,
+      stampCode: stampCode.value,
+      showStampCode: showStampCode.value,
+      showInnerCircle: showInnerCircle.value,
+      circleSize: circleSize.value,
+      starSize: starSize.value,
+      borderWidth: borderWidth.value,
+      calculateFontSize: calculateFontSize.value
+    })
+  } else {
+    // 其他类型印章的绘制逻辑
+    // ...
   }
 
-  // 绘制五角星
-  const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
-  const star = new fabric.Path(starPath, {
-    fill: 'red',
-    left: centerX,
-    top: centerY,
-    scaleX: starSize.value,
-    scaleY: starSize.value,
-    originX: 'center',
-    originY: 'center'
-  })
-
-  // 绘制公司名称
-  const textRadius = circleSize.value * 0.75
-  const chars = companyName.value.split('')
-  const totalAngle = 270 * (Math.PI / 180) // 270度转换为弧度
-  const anglePerChar = totalAngle / chars.length
-
-  chars.forEach((char, index) => {
-    const angle = Math.PI - Math.PI / 4 + anglePerChar * (index + 0.5) // 从左侧开始，增加PI/2
-    const x = centerX + textRadius * Math.cos(angle)
-    const y = centerY + textRadius * Math.sin(angle)
-
-    const charText = new fabric.Text(char, {
-      fontSize: calculateFontSize.value,
-      fill: 'red',
-      fontFamily: 'SimSun',
-      left: x,
-      top: y,
-      originX: 'center',
-      originY: 'center',
-      angle: (angle + Math.PI / 2) * (180 / Math.PI) // 将文字旋转垂直于圆周
-    })
-
-    stampCanvas.value.add(charText)
-  })
-
-  // 绘制印章编码
-  if (showStampCode.value && stampCode.value) {
-    const stampCodeFontSize = circleSize.value * 0.05
-    const stampCodeRadius = circleSize.value * 0.9
-    const stampCodeChars = stampCode.value.split('')
-    const stampCodeAnglePerChar = Math.PI / 2 / (stampCodeChars.length + 1) // +1 为了在两端留出一些空间
-
-    stampCodeChars.forEach((char, index) => {
-      const angle = (Math.PI * 7) / 4 + Math.PI - stampCodeAnglePerChar * (index + 1) // 从右侧开始，顺时针旋转
-      const x = centerX + stampCodeRadius * Math.cos(angle)
-      const y = centerY + stampCodeRadius * Math.sin(angle)
-
-      const charText = new fabric.Text(char, {
-        fontSize: stampCodeFontSize,
-        fill: 'red',
-        fontFamily: 'Arial',
-        left: x,
-        top: y,
-        originX: 'center',
-        originY: 'center',
-        angle: (angle - Math.PI / 2) * (180 / Math.PI) // 将文字旋转垂直于圆周，顺时针方向
-      })
-
-      stampCanvas.value.add(charText)
-    })
-  }
-
-  stampCanvas.value.add(outerCircle)
-  if (innerCircle) stampCanvas.value.add(innerCircle)
-  stampCanvas.value.add(star)
   stampCanvas.value.renderAll()
 }
 
