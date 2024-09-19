@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { fabric } from 'fabric'
+import NavigationBar from './NavigationBar.vue'
 
 const stampCanvas = ref<fabric.Canvas | null>(null)
+const companyName = ref('公司名称') // 公司名称输入框的绑定
+const circleSize = ref(50) // 圆形大小的绑定
 
 onMounted(() => {
   stampCanvas.value = new fabric.Canvas('stamp-canvas', {
@@ -12,85 +15,79 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  stampCanvas.value?.dispose()
-})
-
-const addText = () => {
-  const text = new fabric.IText('印章文字', {
-    left: 50,
-    top: 50,
-    fontSize: 20,
-    fill: 'red'
-  })
-  stampCanvas.value?.add(text)
-}
-
-const addCircle = () => {
+const drawStamp = () => {
   const circle = new fabric.Circle({
-    radius: 50,
+    radius: circleSize.value,
     fill: 'transparent',
     stroke: 'red',
     strokeWidth: 2,
     left: 100,
-    top: 100
-  })
-  stampCanvas.value?.add(circle)
+    top: 100,
+           originX: 'center',
+                        originY: 'center'
+  });
+
+  const radius = circleSize.value; // 文字距离圆心的半径
+  const angleStep = 180 / companyName.value.length; // 每个字符的角度
+
+  // 创建一个文本组以放置公司名称
+  const textGroup = new fabric.Group([], {
+    left: 100,
+    top: 100,
+    originX: 'center',
+    originY: 'center'
+  });
+
+  for (let i = 0; i < companyName.value.length; i++) {
+    const char = new fabric.Text(companyName.value[i], {
+      left: 100,
+      top: 100,
+                        fontFamily:'SumSun',
+                        fontSize: 14,
+                        fill:'red',
+                        angle:-36,
+                        originX: 'center',
+                        originY: 'center'
+    });
+
+    const angle = angleStep * i; // 当前字符的角度
+    const x = (radius - 20) * Math.cos((angle * Math.PI) / 180); // 计算 x 坐标
+    const y = (radius - 20) * Math.sin((angle * Math.PI) / 180); // 计算 y 坐标
+
+    char.set({ left: x, top: y, angle: angle - 90 }); // 设置字符位置和角度
+    textGroup.add(char); // 将字符添加到文本组
+  }
+
+  stampCanvas.value?.add(textGroup); // 添加文本组到画布
+  stampCanvas.value?.add(circle); // 添加圆圈到画布
 }
 
-const saveStamp = () => {
-  if (stampCanvas.value) {
-    const dataURL = stampCanvas.value.toDataURL({
-      format: 'png',
-      quality: 1
-    })
-    // 这里可以添加保存逻辑,例如发送到服务器或保存到本地
-    console.log('印章已保存:', dataURL)
-  }
+const clearCanvas = () => {
+  stampCanvas.value?.clear(); // 清除画布上的所有内容
 }
 </script>
 
 <template>
   <div class="stamp-editor">
+    <NavigationBar title="印章编辑器" />
     <div class="toolbar">
-      <button @click="addText" class="tool-button">添加文字</button>
-      <button @click="addCircle" class="tool-button">添加圆形</button>
-      <button @click="saveStamp" class="tool-button">保存印章</button>
+      <input v-model="companyName" placeholder="输入公司名称" class="text-input" />
+      <input v-model.number="circleSize" type="number" placeholder="圆形大小" class="size-input" />
+      <button @click="drawStamp" class="tool-button">绘制印章</button>
+      <button @click="clearCanvas" class="tool-button">清除所有</button>
     </div>
-    <canvas id="stamp-canvas"></canvas>
+    <canvas id="stamp-canvas" class="canvas-full"></canvas> <!-- 添加类以撑满 -->
   </div>
 </template>
 
 <style scoped>
-.stamp-editor {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
+.text-input, .size-input {
+  margin-right: 10px;
+  padding: 5px;
 }
 
-.toolbar {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-.tool-button {
-  padding: 8px 12px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.tool-button:hover {
-  background-color: #45a049;
-}
-
-#stamp-canvas {
-  border: 1px solid #ccc;
-  max-width: 100%;
+.canvas-full {
+  width: 100%;
+  height: 100%;
 }
 </style>
