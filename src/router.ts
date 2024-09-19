@@ -17,6 +17,7 @@ import ClipboardManager from './components/ClipboardManager.vue'
 import ImageRounder from './components/ImageRounder.vue'
 import SvgEditor from './components/SvgEditor.vue'
 import Calculator from './components/Calculator.vue'
+import StampEditor from './components/StampEditor.vue'
 
 const routes = [
   {
@@ -126,6 +127,12 @@ const routes = [
     name: 'Calculator',
     component: Calculator,
     meta: { title: '计算器', searchable: true, keywords: ['calculator', '计算器'] }
+  },
+  {
+    path: '/stamp-editor',
+    name: 'StampEditor',
+    component: StampEditor,
+    meta: { title: '印章编辑器', searchable: true, keywords: ['stamp', 'editor', '印章', '编辑器'] }
   },
 ]
 

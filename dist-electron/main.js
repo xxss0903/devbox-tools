@@ -298,11 +298,9 @@ async function watchClipboard(win) {
     const db = await getDatabase();
     setInterval(async () => {
         const currentContent = electron_1.clipboard.readText();
-        console.log('currentContent', currentContent);
         if (currentContent && currentContent !== lastClipboardContent) {
             lastClipboardContent = currentContent;
             await updateClipboardHistory(win, 'text', currentContent);
-            win?.webContents.send('clipboard-update', currentContent);
         }
         const image = electron_1.clipboard.readImage();
         if (!image.isEmpty()) {
@@ -310,7 +308,6 @@ async function watchClipboard(win) {
             if (dataURL !== lastClipboardContent) {
                 lastClipboardContent = dataURL;
                 await updateClipboardHistory(win, 'image', dataURL);
-                win?.webContents.send('clipboard-image-update', dataURL);
                 console.log('watchClipboard interval 1000 image update');
             }
         }

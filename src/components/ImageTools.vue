@@ -73,6 +73,11 @@ const defaultImageTools = [
     name: 'Svg渲染',
     route: 'SvgEditor',
     image: 'https://img.icons8.com/?size=100&id=57475&format=png&color=000000'
+  },
+  {
+    name: '印章编辑器',
+    route: 'StampEditor',
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
   }
 ]
 

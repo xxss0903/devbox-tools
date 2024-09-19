@@ -358,7 +358,6 @@ async function watchClipboard(win: BrowserWindow) {
   const db = await getDatabase()
   setInterval(async () => {
     const currentContent = clipboard.readText()
-    console.log('currentContent', currentContent)
     if (currentContent && currentContent !== lastClipboardContent) {
       lastClipboardContent = currentContent
       await updateClipboardHistory(win, 'text', currentContent)
