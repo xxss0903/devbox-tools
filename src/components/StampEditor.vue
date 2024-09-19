@@ -118,10 +118,10 @@ const drawStamp = () => {
     const stampCodeFontSize = circleSize.value * 0.05
     const stampCodeRadius = circleSize.value * 0.9
     const stampCodeChars = stampCode.value.split('')
-    const stampCodeAnglePerChar = Math.PI / stampCodeChars.length
+    const stampCodeAnglePerChar = Math.PI / 2 / (stampCodeChars.length + 1) // +1 为了在两端留出一些空间
 
     stampCodeChars.forEach((char, index) => {
-      const angle = Math.PI / 2 + stampCodeAnglePerChar * (index + 0.5)
+      const angle = (Math.PI * 7) / 4 + Math.PI - stampCodeAnglePerChar * (index + 1) // 从右侧开始，顺时针旋转
       const x = centerX + stampCodeRadius * Math.cos(angle)
       const y = centerY + stampCodeRadius * Math.sin(angle)
 
@@ -133,7 +133,7 @@ const drawStamp = () => {
         top: y,
         originX: 'center',
         originY: 'center',
-        angle: (angle + Math.PI) * (180 / Math.PI) // 将文字旋转垂直于圆周
+        angle: (angle - Math.PI / 2) * (180 / Math.PI) // 将文字旋转垂直于圆周，顺时针方向
       })
 
       stampCanvas.value.add(charText)
