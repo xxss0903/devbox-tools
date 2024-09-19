@@ -95,7 +95,7 @@ const drawStamp = () => {
   const anglePerChar = totalAngle / chars.length
 
   chars.forEach((char, index) => {
-    const angle = -Math.PI / 2 + anglePerChar * (index + 0.5) // 从左侧开始,-90度
+    const angle = Math.PI - Math.PI / 4 + anglePerChar * (index + 0.5) // 从左侧开始，增加PI/2
     const x = centerX + textRadius * Math.cos(angle)
     const y = centerY + textRadius * Math.sin(angle)
 
