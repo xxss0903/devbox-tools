@@ -3,7 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { fabric } from 'fabric'
 import NavigationBar from './NavigationBar.vue'
 import { drawOfficialStamp } from './stamps/OfficialStamp'
-import { drawContractStamp } from './stamps/ContractStamp' // 新增
+import { drawContractStamp } from './stamps/ContractStamp'
+import { drawInvoiceStamp } from './stamps/InvoiceStamp' // 新增
 
 const STANDARD_SIZE_MM = 45 // 标准印章直径，单位毫米
 const CANVAS_SIZE = 400 // 画布尺寸，单位像素
@@ -15,12 +16,15 @@ const stampType = ref('公章')
 const legalPerson = ref('张三')
 const stampCode = ref('1234567890123')
 const showStampCode = ref(true)
-const showInnerCircle = ref(true) // 新增: 控制是否显示内圆的开关
+const showInnerCircle = ref(false) // 新增: 控制是否显示内圆的开关
 
 const circleSize = computed(() => {
   const size = stampType.value === '公章' ? 45 : 40
   return (size * PIXELS_PER_MM) / 2
 })
+const ellipseWidth = computed(() => 40 * PIXELS_PER_MM)
+const ellipseHeight = computed(() => 30 * PIXELS_PER_MM)
+const invoiceStampBorderWidth = computed(() => 1 * PIXELS_PER_MM)
 
 const starSize = computed(() => (9 * PIXELS_PER_MM) / 2) // 五角星外接圆半径
 const borderWidth = computed(() => circleSize.value * 0.025)
@@ -75,6 +79,16 @@ const drawStamp = () => {
       starSize: starSize.value,
       borderWidth: borderWidth.value,
       calculateFontSize: calculateFontSize.value
+    })
+  } else if (stampType.value === '发票专用章') {
+    drawInvoiceStamp(stampCanvas.value, {
+      stampCode: stampCode.value,
+      showStampCode: showStampCode.value,
+      showInnerCircle: showInnerCircle.value,
+      ellipseWidth: ellipseWidth.value, // 椭圆的宽度
+      ellipseHeight: ellipseHeight.value, // 椭圆的高度
+      borderWidth: invoiceStampBorderWidth.value, // 线条的宽度
+      companyName: companyName.value // 新增
     })
   } else {
     // 其他类型印章的绘制逻辑
