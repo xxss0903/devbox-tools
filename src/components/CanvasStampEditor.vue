@@ -20,15 +20,18 @@ import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
-const MM_PER_PIXEL = 10 // 毫米换算像素
+const MM_PER_PIXEL = 5 // 毫米换算像素
 
 const RULER_WIDTH = 40
 const RULER_HEIGHT = 40
+
+const offscreenCanvas = ref<HTMLCanvasElement | null>(null)
 
 const goBack = () => {
   router.back()
 }
 
+// 绘制五角星
 const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
   const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
   const pathData = starPath.split(/(?=[MLZ])/)
@@ -77,31 +80,72 @@ const drawCircle = (
 // 绘制文字
 const drawCompanyName = (
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
+  centerX: number,
+  centerY: number,
+  radius: number,
   text: string,
-  size: number
+  fontSize: number
 ) => {
-  ctx.font = `${size}px SimSun`
+  ctx.save()
+  ctx.font = `${fontSize}px SimSun`
   ctx.fillStyle = 'red'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, x, y)
+
+  const totalAngle = Math.PI * 1.5 // 270度
+  const startAngle = Math.PI - 0.175 * Math.PI // 开始于45度位置
+  const characters = text.split('')
+  const anglePerChar = totalAngle / characters.length
+
+  characters.forEach((char, index) => {
+    const angle = startAngle + anglePerChar * index
+    const x = centerX + Math.cos(angle) * (radius - fontSize / 2)
+    const y = centerY + Math.sin(angle) * (radius - fontSize / 2)
+
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(angle + Math.PI / 2) // 旋转文字以适应圆弧
+    ctx.fillText(char, 0, 0)
+    ctx.restore()
+  })
+
+  ctx.restore()
 }
 
-// 绘制印章编码
+// 修改 drawCode 函数
 const drawCode = (
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
+  centerX: number,
+  centerY: number,
+  radius: number,
   text: string,
-  size: number
+  fontSize: number
 ) => {
-  ctx.font = `${size}px Arial`
+  ctx.save()
+  ctx.font = `${fontSize}px Arial`
   ctx.fillStyle = 'red'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, x, y)
+
+  const startAngle = 0.7 * Math.PI //
+  const endAngle = 0.3 * Math.PI //
+  const totalAngle = startAngle - endAngle
+  const characters = text.split('')
+  const anglePerChar = totalAngle / (characters.length - 1)
+
+  characters.forEach((char, index) => {
+    const angle = startAngle - anglePerChar * index
+    const x = centerX + Math.cos(angle) * (radius - fontSize / 2)
+    const y = centerY + Math.sin(angle) * (radius - fontSize / 2)
+
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
+    ctx.fillText(char, 0, 0)
+    ctx.restore()
+  })
+
+  ctx.restore()
 }
 
 const drawRectangle = (
@@ -123,11 +167,20 @@ const drawStamp = () => {
   if (!canvas) return
   const ctx = canvas.getContext('2d')
   if (!ctx) return
+  let companyName = '绘制印章有限责任公司'
+  let companyFontSize = 7 * MM_PER_PIXEL
+  let code = '1234567890123'
+  let codeFontSize = 2 * MM_PER_PIXEL
+
+  // 清除整个画布
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   // 印章标准字段
   let circleRadius = 21 // 圆形半径，直径是乘以2，单位mm
   let circleBorderWidth = 1.2 // 圆形边框宽度，单位mm
   let circleBorderColor = 'red' // 圆形边框颜色
+  let starDiameter = 14 // 五角星直径，单位mm
+  let starRadius = (starDiameter / 2) * MM_PER_PIXEL // 五角星半径，单位像素
 
   // 1. 设置画布背景
   ctx.fillStyle = 'white'
@@ -138,11 +191,11 @@ const drawStamp = () => {
   const centerY = canvas.height / 2
 
   // 3. 绘制矩形
-  const rectangleWidth = circleRadius * 2 * MM_PER_PIXEL
-  const rectangleHeight = circleRadius * 2 * MM_PER_PIXEL
-  const rectangleX = centerX - rectangleWidth / 2
-  const rectangleY = centerY - rectangleHeight / 2
-  drawRectangle(ctx, rectangleX, rectangleY, rectangleWidth, rectangleHeight)
+  // const rectangleWidth = circleRadius * 2 * MM_PER_PIXEL
+  // const rectangleHeight = circleRadius * 2 * MM_PER_PIXEL
+  // const rectangleX = centerX - rectangleWidth / 2
+  // const rectangleY = centerY - rectangleHeight / 2
+  // drawRectangle(ctx, rectangleX, rectangleY, rectangleWidth, rectangleHeight)
 
   // 4. 绘制圆形
   drawCircle(
@@ -152,6 +205,29 @@ const drawStamp = () => {
     circleRadius * MM_PER_PIXEL,
     circleBorderWidth * MM_PER_PIXEL,
     circleBorderColor
+  )
+
+  // 绘制公司名称
+  drawCompanyName(
+    ctx,
+    centerX,
+    centerY,
+    (circleRadius - 0.8) * MM_PER_PIXEL,
+    companyName,
+    companyFontSize
+  )
+
+  // 绘制五角星
+  drawStar(ctx, centerX, centerY, starRadius)
+
+  // 绘制印章编码
+  drawCode(
+    ctx,
+    centerX,
+    centerY,
+    (circleRadius - 0.8) * MM_PER_PIXEL, // 稍微缩小半径，使编码位于圆内
+    code,
+    codeFontSize
   )
 
   // 5. 绘制水平标尺
@@ -229,13 +305,15 @@ const onMouseMove = (event: MouseEvent) => {
   if (!canvas) return
 
   const rect = canvas.getBoundingClientRect()
-  const x = event.clientX - rect.left - RULER_WIDTH
-  const y = event.clientY - rect.top - RULER_HEIGHT
-  const mmX = Math.round(x / MM_PER_PIXEL)
-  const mmY = Math.round(y / MM_PER_PIXEL)
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+  const mmX = Math.round((x - RULER_WIDTH) / MM_PER_PIXEL)
+  const mmY = Math.round((y - RULER_HEIGHT) / MM_PER_PIXEL)
 
+  // 只在需要时重绘主要内容
   drawStamp()
   highlightRulerPosition(mmX, mmY)
+  drawCrossLines(x, y)
 }
 
 const onMouseLeave = () => {
@@ -253,20 +331,61 @@ const highlightRulerPosition = (mmX: number, mmY: number) => {
 
   // 高亮水平标尺
   ctx.fillStyle = 'red'
-  ctx.fillRect(x - 1, 0, 2, RULER_HEIGHT)
+  ctx.fillRect(RULER_WIDTH, y - 1, canvas.width - RULER_WIDTH, 2)
 
   // 高亮垂直标尺
-  ctx.fillRect(0, y - 1, RULER_WIDTH, 2)
+  ctx.fillRect(x - 1, RULER_HEIGHT, 2, canvas.height - RULER_HEIGHT)
 
   // 显示坐标
-  ctx.fillStyle = 'white'
+  ctx.fillStyle = 'black'
   ctx.font = 'bold 12px Arial'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText(`${mmX}mm, ${mmY}mm`, 5, RULER_HEIGHT + 5)
+  ctx.fillText(`${mmX}mm, ${mmY}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
+}
+
+const drawCrossLines = (x: number, y: number) => {
+  const canvas = offscreenCanvas.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // 清除之前绘制的内容
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  ctx.beginPath()
+  ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'
+  ctx.lineWidth = 1
+
+  // 绘制水平线
+  ctx.moveTo(RULER_WIDTH, y)
+  ctx.lineTo(canvas.width, y)
+
+  // 绘制垂直线
+  ctx.moveTo(x, RULER_HEIGHT)
+  ctx.lineTo(x, canvas.height)
+
+  ctx.stroke()
+
+  // 将离屏canvas的内容绘制到主canvas上
+  const mainCanvas = stampCanvas.value
+  if (mainCanvas) {
+    const mainCtx = mainCanvas.getContext('2d')
+    if (mainCtx) {
+      mainCtx.drawImage(canvas, 0, 0)
+    }
+  }
 }
 
 onMounted(() => {
+  // 创建离屏canvas
+  offscreenCanvas.value = document.createElement('canvas')
+  const canvas = stampCanvas.value
+  if (canvas && offscreenCanvas.value) {
+    offscreenCanvas.value.width = canvas.width
+    offscreenCanvas.value.height = canvas.height
+  }
+
   drawStamp()
 })
 </script>
