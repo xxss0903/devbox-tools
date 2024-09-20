@@ -17,9 +17,10 @@ import ClipboardManager from './components/ClipboardManager.vue'
 import ImageRounder from './components/ImageRounder.vue'
 import SvgEditor from './components/SvgEditor.vue'
 import Calculator from './components/Calculator.vue'
-import StampEditor from './components/StampEditor.vue'
+import CanvasStampEditor from './components/CanvasStampEditor.vue'
 
 const routes = [
+
   {
     path: '/',
     name: 'Home',
@@ -131,7 +132,7 @@ const routes = [
   {
     path: '/stamp-editor',
     name: 'StampEditor',
-    component: StampEditor,
+    component: CanvasStampEditor,
     meta: { title: '印章编辑器', searchable: true, keywords: ['stamp', 'editor', '印章', '编辑器'] }
   },
 ]
