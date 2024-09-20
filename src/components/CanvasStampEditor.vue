@@ -1,6 +1,41 @@
 <template>
   <div class="container">
     <NavigationBar title="公章编辑器" @goBack="goBack" />
+    <div class="editor-controls">
+      <label>
+        公司名称:
+        <input v-model="companyName" />
+      </label>
+      <label>
+        印章编码:
+        <input v-model="code" />
+      </label>
+      <label>
+        公司名称字体大小 (mm):
+        <input type="number" v-model.number="companyFontSizeMM" />
+      </label>
+      <label>
+        印章编码字体大小 (mm):
+        <input type="number" v-model.number="codeFontSizeMM" />
+      </label>
+      <label>
+        圆形半径 (mm):
+        <input type="number" v-model.number="circleRadius" />
+      </label>
+      <label>
+        圆形边框宽度 (mm):
+        <input type="number" v-model.number="circleBorderWidth" />
+      </label>
+      <label>
+        圆形边框颜色:
+        <input type="color" v-model="circleBorderColor" />
+      </label>
+      <label>
+        五角星直径 (mm):
+        <input type="number" v-model.number="starDiameter" />
+      </label>
+      <button @click="updateStamp">刷新印章</button>
+    </div>
     <div class="canvas-container">
       <canvas
         ref="stampCanvas"
@@ -14,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
@@ -22,10 +57,20 @@ const router = useRouter()
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
 const MM_PER_PIXEL = 5 // 毫米换算像素
 
-const RULER_WIDTH = 40
-const RULER_HEIGHT = 40
+const RULER_WIDTH = 80
+const RULER_HEIGHT = 80
 
 const offscreenCanvas = ref<HTMLCanvasElement | null>(null)
+
+// 添加响应式数据
+const companyName = ref('绘制印章有限责任公司')
+const code = ref('1234567890123')
+const companyFontSizeMM = ref(7)
+const codeFontSizeMM = ref(2)
+const circleRadius = ref(21)
+const circleBorderWidth = ref(1.2)
+const circleBorderColor = ref('#ff0000')
+const starDiameter = ref(14)
 
 const goBack = () => {
   router.back()
@@ -167,20 +212,9 @@ const drawStamp = () => {
   if (!canvas) return
   const ctx = canvas.getContext('2d')
   if (!ctx) return
-  let companyName = '绘制印章有限责任公司'
-  let companyFontSize = 7 * MM_PER_PIXEL
-  let code = '1234567890123'
-  let codeFontSize = 2 * MM_PER_PIXEL
 
   // 清除整个画布
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-  // 印章标准字段
-  let circleRadius = 21 // 圆形半径，直径是乘以2，单位mm
-  let circleBorderWidth = 1.2 // 圆形边框宽度，单位mm
-  let circleBorderColor = 'red' // 圆形边框颜色
-  let starDiameter = 14 // 五角星直径，单位mm
-  let starRadius = (starDiameter / 2) * MM_PER_PIXEL // 五角星半径，单位像素
 
   // 1. 设置画布背景
   ctx.fillStyle = 'white'
@@ -190,53 +224,45 @@ const drawStamp = () => {
   const centerX = canvas.width / 2
   const centerY = canvas.height / 2
 
-  // 3. 绘制矩形
-  // const rectangleWidth = circleRadius * 2 * MM_PER_PIXEL
-  // const rectangleHeight = circleRadius * 2 * MM_PER_PIXEL
-  // const rectangleX = centerX - rectangleWidth / 2
-  // const rectangleY = centerY - rectangleHeight / 2
-  // drawRectangle(ctx, rectangleX, rectangleY, rectangleWidth, rectangleHeight)
-
-  // 4. 绘制圆形
+  // 3. 绘制圆形
   drawCircle(
     ctx,
     centerX,
     centerY,
-    circleRadius * MM_PER_PIXEL,
-    circleBorderWidth * MM_PER_PIXEL,
-    circleBorderColor
+    circleRadius.value * MM_PER_PIXEL,
+    circleBorderWidth.value * MM_PER_PIXEL,
+    circleBorderColor.value
   )
 
-  // 绘制公司名称
+  // 4. 绘制公司名称
   drawCompanyName(
     ctx,
     centerX,
     centerY,
-    (circleRadius - 0.8) * MM_PER_PIXEL,
-    companyName,
-    companyFontSize
+    (circleRadius.value - 0.8) * MM_PER_PIXEL,
+    companyName.value,
+    companyFontSizeMM.value * MM_PER_PIXEL
   )
 
-  // 绘制五角星
+  // 5. 绘制五角星
+  const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
   drawStar(ctx, centerX, centerY, starRadius)
 
-  // 绘制印章编码
+  // 6. 绘制印章编码
   drawCode(
     ctx,
     centerX,
     centerY,
-    (circleRadius - 0.8) * MM_PER_PIXEL, // 稍微缩小半径，使编码位于圆内
-    code,
-    codeFontSize
+    (circleRadius.value - 0.8) * MM_PER_PIXEL,
+    code.value,
+    codeFontSizeMM.value * MM_PER_PIXEL
   )
 
-  // 5. 绘制水平标尺
+  // 7. 绘制水平标尺
   drawRuler(ctx, canvas.width, RULER_HEIGHT, true)
 
-  // 6. 绘制垂直标尺
+  // 8. 绘制垂直标尺
   drawRuler(ctx, canvas.height, RULER_WIDTH, false)
-
-  // ... 其他绘制代码 ...
 }
 
 const drawRuler = (
@@ -377,6 +403,10 @@ const drawCrossLines = (x: number, y: number) => {
   }
 }
 
+const updateStamp = () => {
+  drawStamp()
+}
+
 onMounted(() => {
   // 创建离屏canvas
   offscreenCanvas.value = document.createElement('canvas')
@@ -388,9 +418,48 @@ onMounted(() => {
 
   drawStamp()
 })
+
+// // 监听所有响应式数据的变化
+// watch(
+//   [
+//     companyName,
+//     code,
+//     companyFontSizeMM,
+//     codeFontSizeMM,
+//     circleRadius,
+//     circleBorderWidth,
+//     circleBorderColor,
+//     starDiameter
+//   ],
+//   () => {
+//     drawStamp()
+//   }
+// )
 </script>
 
 <style scoped>
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.editor-controls {
+  padding: 10px;
+  background-color: #f0f0f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.editor-controls label {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-controls input {
+}
 .container {
   display: flex;
   flex-direction: column;
