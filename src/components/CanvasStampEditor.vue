@@ -31,6 +31,10 @@
         <input type="color" v-model="circleBorderColor" />
       </label>
       <label>
+        绘制五角星:
+        <input type="checkbox" v-model="shouldDrawStar" />
+      </label>
+      <label>
         五角星直径 (mm):
         <input type="number" v-model.number="starDiameter" />
       </label>
@@ -46,6 +50,11 @@
         文字分布因子:
         <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
         {{ textDistributionFactor }}
+      </label>
+      <label>
+        编码文字分布因子:
+        <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
+        {{ codeDistributionFactor }}
       </label>
       <label>
         文字边距 (mm):
@@ -100,7 +109,8 @@ const agingIntensity = ref(50)
 const textDistributionFactor = ref(20)
 const textMarginMM = ref(1) // 默认值为1mm
 const codeMarginMM = ref(1) // 默认值为1mm
-
+const codeDistributionFactor = ref(20) // 默认值可以根据需要调整
+const shouldDrawStar = ref(true) // 默认绘制五角星
 const goBack = () => {
   router.back()
 }
@@ -370,11 +380,14 @@ const drawCode = (
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  const startAngle = 0.7 * Math.PI //
-  const endAngle = 0.3 * Math.PI //
-  const totalAngle = startAngle - endAngle
   const characters = text.split('')
-  const anglePerChar = totalAngle / (characters.length - 1)
+  const characterCount = characters.length
+
+  // 动态调整总角度
+  const totalAngle = Math.PI * (characterCount / codeDistributionFactor.value) * 0.5
+  const startAngle = Math.PI / 2 + totalAngle / 2
+  const endAngle = Math.PI / 2 - totalAngle / 2
+  const anglePerChar = totalAngle / (characterCount - 1)
 
   characters.forEach((char, index) => {
     const angle = startAngle - anglePerChar * index
@@ -445,8 +458,10 @@ const drawStamp = () => {
   )
 
   // 5. 绘制五角星
-  const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
-  drawStar(ctx, centerX, centerY, starRadius)
+  if (shouldDrawStar.value) {
+    const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
+    drawStar(ctx, centerX, centerY, starRadius)
+  }
 
   // 6. 绘制印章编码
   drawCode(
@@ -624,22 +639,28 @@ onMounted(() => {
   drawStamp()
 })
 
-// // 监听所有响应式数据的变化
-// watch(
-//   [
-//     companyName,
-//     code,
-//     companyFontSizeMM,
-//     codeFontSizeMM,
-//     circleRadius,
-//     circleBorderWidth,
-//     circleBorderColor,
-//     starDiameter
-//   ],
-//   () => {
-//     drawStamp()
-//   }
-// )
+// 监听所有响应式数据的变化
+watch(
+  [
+    companyName,
+    code,
+    companyFontSizeMM,
+    codeFontSizeMM,
+    circleRadius,
+    circleBorderWidth,
+    circleBorderColor,
+    starDiameter,
+    codeDistributionFactor,
+    textDistributionFactor,
+    textMarginMM,
+    codeMarginMM,
+    agingIntensity,
+    shouldDrawStar
+  ],
+  () => {
+    drawStamp()
+  }
+)
 </script>
 
 <style scoped>
