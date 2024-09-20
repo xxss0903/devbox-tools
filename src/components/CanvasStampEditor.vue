@@ -47,6 +47,10 @@
         <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
         {{ textDistributionFactor }}
       </label>
+      <label>
+        文字边距 (mm):
+        <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
+      </label>
       <button @click="updateStamp">刷新印章</button>
       <button @click="saveStampAsPNG">保存印章</button>
     </div>
@@ -90,6 +94,7 @@ const applyAging = ref(false)
 // 添加新的响应式数据
 const agingIntensity = ref(50)
 const textDistributionFactor = ref(20)
+const textMarginMM = ref(1) // 默认值为1mm
 
 const goBack = () => {
   router.back()
@@ -330,8 +335,10 @@ const drawCompanyName = (
 
   characters.forEach((char, index) => {
     const angle = startAngle + anglePerChar * (index + 0.5)
-    const x = centerX + Math.cos(angle) * (radius - fontSize / 2)
-    const y = centerY + Math.sin(angle) * (radius - fontSize / 2)
+    const x =
+      centerX + Math.cos(angle) * (radius - fontSize / 2 - textMarginMM.value * MM_PER_PIXEL)
+    const y =
+      centerY + Math.sin(angle) * (radius - fontSize / 2 - textMarginMM.value * MM_PER_PIXEL)
 
     ctx.save()
     ctx.translate(x, y)
@@ -425,7 +432,7 @@ const drawStamp = () => {
     ctx,
     centerX,
     centerY,
-    (circleRadius.value - 0.8) * MM_PER_PIXEL,
+    circleRadius.value * MM_PER_PIXEL,
     companyName.value,
     companyFontSizeMM.value * MM_PER_PIXEL
   )
