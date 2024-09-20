@@ -7,6 +7,10 @@
         <input v-model="companyName" />
       </label>
       <label>
+        底部文字:
+        <input type="text" v-model="bottomText" />
+      </label>
+      <label>
         印章编码:
         <input v-model="code" />
       </label>
@@ -37,6 +41,22 @@
       <label>
         五角星直径 (mm):
         <input type="number" v-model.number="starDiameter" />
+      </label>
+      <label>
+        底部文字大小 (mm):
+        <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
+      </label>
+      <label>
+        底部文字字符间距:
+        <input type="number" v-model.number="bottomTextLetterSpacing" min="-1" max="1" step="0.1" />
+      </label>
+      <label>
+        五角星垂直位置:
+        <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
+      </label>
+      <label>
+        底部文字垂直位置:
+        <input type="number" v-model.number="bottomTextPositionY" min="-10" max="10" step="0.1" />
       </label>
       <label>
         做旧效果:
@@ -111,6 +131,13 @@ const textMarginMM = ref(1) // 默认值为1mm
 const codeMarginMM = ref(1) // 默认值为1mm
 const codeDistributionFactor = ref(20) // 默认值可以根据需要调整
 const shouldDrawStar = ref(true) // 默认绘制五角星
+const bottomText = ref('合同专用章')
+
+const bottomTextFontSizeMM = ref(4) // 底部文字大小，默认 4mm
+const bottomTextLetterSpacing = ref(0) // 底部文字字符间距，默认 0
+const starPositionY = ref(0) // 五角星垂直位置调整，默认 0
+const bottomTextPositionY = ref(0) // 底部文字垂直位置调整，默认 0
+
 const goBack = () => {
   router.back()
 }
@@ -279,7 +306,7 @@ const saveStamp = () => {
 }
 
 // 绘制五角星
-const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+const drawStarShape = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
   const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
   const pathData = starPath.split(/(?=[MLZ])/)
 
@@ -420,6 +447,41 @@ const drawRectangle = (
   ctx.stroke()
 }
 
+const drawBottomText = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  text: string,
+  fontSize: number,
+  letterSpacing: number,
+  positionY: number
+) => {
+  ctx.save()
+  ctx.font = `${fontSize}px SimSun`
+  ctx.fillStyle = 'red'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  // 计算文字位置（在五角星正下方）
+  const textY = centerY + radius * 0.5 + positionY * MM_PER_PIXEL
+
+  if (letterSpacing === 0) {
+    ctx.fillText(text, centerX, textY)
+  } else {
+    const chars = text.split('')
+    const totalWidth = ctx.measureText(text).width + (chars.length - 1) * letterSpacing
+    let startX = centerX - totalWidth / 2
+
+    chars.forEach((char) => {
+      ctx.fillText(char, startX, textY)
+      startX += ctx.measureText(char).width + letterSpacing
+    })
+  }
+
+  ctx.restore()
+}
+
 const drawStamp = () => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -459,9 +521,26 @@ const drawStamp = () => {
 
   // 5. 绘制五角星
   if (shouldDrawStar.value) {
+    // const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
+    // drawStar(ctx, centerX, centerY, starRadius)
     const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
-    drawStar(ctx, centerX, centerY, starRadius)
+    const starY = centerY + starPositionY.value * MM_PER_PIXEL
+    drawStarShape(ctx, centerX, starY, starRadius)
   }
+
+  // 6. 绘制底部文字
+  // 6. 绘制底部文字
+  const bottomFontSize = bottomTextFontSizeMM.value * MM_PER_PIXEL
+  drawBottomText(
+    ctx,
+    centerX,
+    centerY,
+    circleRadius.value * MM_PER_PIXEL,
+    bottomText.value,
+    bottomFontSize,
+    bottomTextLetterSpacing.value * MM_PER_PIXEL,
+    bottomTextPositionY.value
+  )
 
   // 6. 绘制印章编码
   drawCode(
@@ -655,7 +734,12 @@ watch(
     textMarginMM,
     codeMarginMM,
     agingIntensity,
-    shouldDrawStar
+    shouldDrawStar,
+    bottomText,
+    bottomTextFontSizeMM,
+    bottomTextLetterSpacing,
+    starPositionY,
+    bottomTextPositionY
   ],
   () => {
     drawStamp()
