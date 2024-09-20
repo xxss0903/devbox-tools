@@ -51,6 +51,10 @@
         文字边距 (mm):
         <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
       </label>
+      <label>
+        编码边距 (mm):
+        <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
+      </label>
       <button @click="updateStamp">刷新印章</button>
       <button @click="saveStampAsPNG">保存印章</button>
     </div>
@@ -95,6 +99,7 @@ const applyAging = ref(false)
 const agingIntensity = ref(50)
 const textDistributionFactor = ref(20)
 const textMarginMM = ref(1) // 默认值为1mm
+const codeMarginMM = ref(1) // 默认值为1mm
 
 const goBack = () => {
   router.back()
@@ -373,8 +378,10 @@ const drawCode = (
 
   characters.forEach((char, index) => {
     const angle = startAngle - anglePerChar * index
-    const x = centerX + Math.cos(angle) * (radius - fontSize / 2)
-    const y = centerY + Math.sin(angle) * (radius - fontSize / 2)
+    const x =
+      centerX + Math.cos(angle) * (radius - fontSize / 2 - codeMarginMM.value * MM_PER_PIXEL)
+    const y =
+      centerY + Math.sin(angle) * (radius - fontSize / 2 - codeMarginMM.value * MM_PER_PIXEL)
 
     ctx.save()
     ctx.translate(x, y)
@@ -446,7 +453,7 @@ const drawStamp = () => {
     ctx,
     centerX,
     centerY,
-    (circleRadius.value - 0.8) * MM_PER_PIXEL,
+    circleRadius.value * MM_PER_PIXEL,
     code.value,
     codeFontSizeMM.value * MM_PER_PIXEL
   )
