@@ -42,6 +42,11 @@
         做旧强度:
         <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
       </label>
+      <label>
+        文字分布因子:
+        <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
+        {{ textDistributionFactor }}
+      </label>
       <button @click="updateStamp">刷新印章</button>
       <button @click="saveStampAsPNG">保存印章</button>
     </div>
@@ -84,6 +89,7 @@ const starDiameter = ref(14)
 const applyAging = ref(false)
 // 添加新的响应式数据
 const agingIntensity = ref(50)
+const textDistributionFactor = ref(20)
 
 const goBack = () => {
   router.back()
@@ -313,13 +319,17 @@ const drawCompanyName = (
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  const totalAngle = Math.PI * 1.5 // 270度
-  const startAngle = Math.PI - 0.175 * Math.PI // 开始于45度位置
   const characters = text.split('')
-  const anglePerChar = totalAngle / characters.length
+  const characterCount = characters.length
+
+  // 调整起始和结束角度，使文字始终均匀分布在上半部分
+  const totalAngle = Math.PI * (1 + characterCount / textDistributionFactor.value) // 动态调整总角度
+  const startAngle = Math.PI + (Math.PI - totalAngle) / 2
+  const endAngle = startAngle + totalAngle
+  const anglePerChar = totalAngle / characterCount
 
   characters.forEach((char, index) => {
-    const angle = startAngle + anglePerChar * index
+    const angle = startAngle + anglePerChar * (index + 0.5)
     const x = centerX + Math.cos(angle) * (radius - fontSize / 2)
     const y = centerY + Math.sin(angle) * (radius - fontSize / 2)
 
