@@ -4,11 +4,8 @@ import { fabric } from 'fabric'
 import NavigationBar from './NavigationBar.vue'
 import { drawOfficialStamp } from './stamps/OfficialStamp'
 import { drawContractStamp } from './stamps/ContractStamp'
-import { drawInvoiceStamp } from './stamps/InvoiceStamp' // 新增
-
-const STANDARD_SIZE_MM = 45 // 标准印章直径，单位毫米
-const CANVAS_SIZE = 400 // 画布尺寸，单位像素
-const PIXELS_PER_MM = CANVAS_SIZE / (STANDARD_SIZE_MM * 1.2) // 每毫米对应的像素数，留出一些边距
+import { drawInvoiceStamp } from './stamps/InvoiceStamp'
+import { CanvasConfig, PIXELS_PER_MM, StampTypeConfig, mmToPixels } from './stamps/StampConfigs'
 
 const companyName = ref('个人实用科技有限公司')
 const centerText = ref('我是抬头字')
@@ -19,26 +16,23 @@ const showStampCode = ref(true)
 const showInnerCircle = ref(false) // 新增: 控制是否显示内圆的开关
 
 const circleSize = computed(() => {
-  const size = stampType.value === '公章' ? 45 : 40
+  const size = stampType.value === '公章' ? StampTypeConfig.official.size : StampTypeConfig.contract.size
   return (size * PIXELS_PER_MM) / 2
 })
-const ellipseWidth = computed(() => 40 * PIXELS_PER_MM)
-const ellipseHeight = computed(() => 30 * PIXELS_PER_MM)
-const invoiceStampBorderWidth = computed(() => 1 * PIXELS_PER_MM)
+const ellipseWidth = computed(() => mmToPixels(StampTypeConfig.invoice.ellipseWidth))
+const ellipseHeight = computed(() => mmToPixels(StampTypeConfig.invoice.ellipseHeight))
+const invoiceStampBorderWidth = computed(() => mmToPixels(StampTypeConfig.invoice.borderWidth))
 
-const starSize = computed(() => (9 * PIXELS_PER_MM) / 2) // 五角星外接圆半径
+const starSize = computed(() => mmToPixels(9) / 2) // 五角星外接圆半径
 const borderWidth = computed(() => circleSize.value * 0.025)
 
-const companyFontSize = computed(() => {
-  // 文字高度为6.5mm-8mm，取中间值7.25mm
-  return 7.25 * PIXELS_PER_MM
-})
+const companyFontSize = computed(() => mmToPixels(7.25))
 
 const centerFontSize = computed(() => {
   if (stampType.value === '公章') {
-    return 5 * PIXELS_PER_MM // 将公章的抬头字大小从7mm减小到5mm
+    return mmToPixels(StampTypeConfig.official.centerTextSize)
   } else {
-    return 4 * PIXELS_PER_MM // 其他类型的印章稍微减小中心文字大小
+    return mmToPixels(StampTypeConfig.contract.centerTextSize)
   }
 })
 
@@ -137,8 +131,8 @@ const undo = () => {
 
 onMounted(() => {
   stampCanvas.value = new fabric.Canvas('stamp-canvas', {
-    width: CANVAS_SIZE,
-    height: CANVAS_SIZE,
+    width: CanvasConfig.canvasContainerSize,
+    height: CanvasConfig.canvasContainerSize,
     backgroundColor: 'white'
   })
   drawStamp() // 初始绘制印章

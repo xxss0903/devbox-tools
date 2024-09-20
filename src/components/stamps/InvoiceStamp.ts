@@ -11,7 +11,7 @@ interface InvoiceStampOptions {
 }
 
 const STANDARD_SIZE_MM = 45 // 标准印章直径，单位毫米
-const CANVAS_SIZE = 400 // 画布尺寸，单位像素
+const CANVAS_SIZE = 200 // 画布尺寸，单位像素
 const PIXELS_PER_MM = CANVAS_SIZE / (STANDARD_SIZE_MM * 1.2) // 每毫米对应的像素数，留出一些边距
 
 export const drawInvoiceStamp = (canvas: fabric.Canvas, options: InvoiceStampOptions) => {
