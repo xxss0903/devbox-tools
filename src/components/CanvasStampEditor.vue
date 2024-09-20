@@ -34,6 +34,14 @@
         五角星直径 (mm):
         <input type="number" v-model.number="starDiameter" />
       </label>
+      <label>
+        做旧效果:
+        <input type="checkbox" v-model="applyAging" />
+      </label>
+      <label v-if="applyAging">
+        做旧强度:
+        <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
+      </label>
       <button @click="updateStamp">刷新印章</button>
     </div>
     <div class="canvas-container">
@@ -71,9 +79,77 @@ const circleRadius = ref(21)
 const circleBorderWidth = ref(1.2)
 const circleBorderColor = ref('#ff0000')
 const starDiameter = ref(14)
+// 做旧效果
+const applyAging = ref(false)
+// 添加新的响应式数据
+const agingIntensity = ref(50)
 
 const goBack = () => {
   router.back()
+}
+
+const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  const imageData = ctx.getImageData(0, 0, width, height)
+  const data = imageData.data
+
+  const centerX = width / 2
+  const centerY = height / 2
+  const radius = (circleRadius.value + 1) * MM_PER_PIXEL
+
+  const addCircularNoise = (x: number, y: number, size: number, intensity: number) => {
+    const radiusSquared = (size * size) / 4
+    for (let dy = -size / 2; dy < size / 2; dy++) {
+      for (let dx = -size / 2; dx < size / 2; dx++) {
+        if (dx * dx + dy * dy <= radiusSquared) {
+          const nx = Math.round(x + dx)
+          const ny = Math.round(y + dy)
+          const nIndex = (ny * width + nx) * 4
+          if (nIndex >= 0 && nIndex < data.length) {
+            data[nIndex] = Math.min(255, data[nIndex] + intensity)
+            data[nIndex + 1] = Math.min(255, data[nIndex + 1] + intensity)
+            data[nIndex + 2] = Math.min(255, data[nIndex + 2] + intensity)
+          }
+        }
+      }
+    }
+  }
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4
+
+      const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
+      if (distanceFromCenter <= radius) {
+        if (data[index] > 200 && data[index + 1] < 50 && data[index + 2] < 50) {
+          const intensityFactor = agingIntensity.value / 100
+
+          // 添加小型圆形噪点
+          if (Math.random() < 0.4 * intensityFactor) {
+            const noiseSize = Math.random() * 3 + 1 // 噪点大小从1到4像素不等
+            const noise = Math.random() * 200 * intensityFactor
+            addCircularNoise(x, y, noiseSize, noise)
+          }
+
+          // 添加大型圆形噪点
+          if (Math.random() < 0.05 * intensityFactor) {
+            const strongNoiseSize = Math.random() * 5 + 2 // 更大的噪点，2到7像素不等
+            const strongNoise = Math.random() * 250 * intensityFactor + 5
+            addCircularNoise(x, y, strongNoiseSize, strongNoise)
+          }
+
+          // 随机添加褪色效果
+          if (Math.random() < 0.2 * intensityFactor) {
+            const fade = Math.random() * 50 * intensityFactor
+            data[index] = Math.min(255, data[index] + fade)
+            data[index + 1] = Math.min(255, data[index + 1] + fade)
+            data[index + 2] = Math.min(255, data[index + 2] + fade)
+          }
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
 }
 
 // 绘制五角星
@@ -257,6 +333,11 @@ const drawStamp = () => {
     code.value,
     codeFontSizeMM.value * MM_PER_PIXEL
   )
+
+  // 在绘制完所有内容后，添加做旧效果
+  if (applyAging.value) {
+    addAgingEffect(ctx, canvas.width, canvas.height)
+  }
 
   // 7. 绘制水平标尺
   drawRuler(ctx, canvas.width, RULER_HEIGHT, true)
