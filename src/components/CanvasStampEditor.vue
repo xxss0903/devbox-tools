@@ -43,12 +43,13 @@
         <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
       </label>
       <button @click="updateStamp">刷新印章</button>
+      <button @click="saveStampAsPNG">保存印章</button>
     </div>
     <div class="canvas-container">
       <canvas
         ref="stampCanvas"
-        width="460"
-        height="460"
+        width="600"
+        height="600"
         @mousemove="onMouseMove"
         @mouseleave="onMouseLeave"
       ></canvas>
@@ -63,7 +64,7 @@ import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
-const MM_PER_PIXEL = 5 // 毫米换算像素
+const MM_PER_PIXEL = 10 // 毫米换算像素
 
 const RULER_WIDTH = 80
 const RULER_HEIGHT = 80
@@ -150,6 +151,105 @@ const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: nu
   }
 
   ctx.putImageData(imageData, 0, 0)
+}
+const saveStampAsPNG = () => {
+  const canvas = stampCanvas.value
+  if (!canvas) return
+
+  // 设置固定的输出尺寸
+  const outputSize = 512
+
+  // 创建一个新的 canvas 元素，大小为 512x512
+  const saveCanvas = document.createElement('canvas')
+  saveCanvas.width = outputSize
+  saveCanvas.height = outputSize
+  const saveCtx = saveCanvas.getContext('2d')
+  if (!saveCtx) return
+
+  // 设置保存 canvas 的背景为白色
+  saveCtx.fillStyle = 'white'
+  saveCtx.fillRect(0, 0, outputSize, outputSize)
+
+  // 计算原始 canvas 中印章的位置和大小
+  const originalStampSize = (circleRadius.value * 2 + 2) * MM_PER_PIXEL
+  const sourceX = (canvas.width - originalStampSize) / 2
+  const sourceY = (canvas.height - originalStampSize) / 2
+
+  // 计算在新 canvas 中的绘制位置和大小
+  const margin = outputSize * 0.1 // 10% 的边距
+  const drawSize = outputSize - 2 * margin
+
+  // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并调整大小
+  saveCtx.drawImage(
+    canvas,
+    sourceX,
+    sourceY,
+    originalStampSize,
+    originalStampSize,
+    margin,
+    margin,
+    drawSize,
+    drawSize
+  )
+
+  // 将新的 canvas 转换为 PNG 数据 URL
+  const dataURL = saveCanvas.toDataURL('image/png')
+
+  // 创建一个临时的 <a> 元素来触发下载
+  const link = document.createElement('a')
+  link.href = dataURL
+  link.download = '印章.png'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+const saveStamp = () => {
+  const canvas = stampCanvas.value
+  if (!canvas) return
+  const scaleFactor = 1 // 可以根据需要调整，更大的值会产生更高分辨率的图像
+  const tempMMPerPixel = MM_PER_PIXEL * scaleFactor
+
+  // 增加边距，确保完整包含印章
+  const margin = 2 * tempMMPerPixel // 10mm 的边距
+  const stampSize = (circleRadius.value * 2 + 1) * tempMMPerPixel // 增加 20mm 的总边距
+  const saveCanvas = document.createElement('canvas')
+  saveCanvas.width = stampSize
+  saveCanvas.height = stampSize
+  const saveCtx = saveCanvas.getContext('2d')
+  if (!saveCtx) return
+
+  // 设置保存 canvas 的背景为白色
+  saveCtx.fillStyle = 'white'
+  saveCtx.fillRect(0, 0, stampSize, stampSize)
+
+  // 计算原始 canvas 中印章的位置和大小
+  const originalStampSize = (circleRadius.value + 1) * 2 * tempMMPerPixel
+  const sourceX = (canvas.width - originalStampSize) / 2
+  const sourceY = (canvas.height - originalStampSize) / 2
+
+  // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并居中
+  saveCtx.drawImage(
+    canvas,
+    sourceX,
+    sourceY,
+    originalStampSize,
+    originalStampSize,
+    margin,
+    margin,
+    stampSize - 2 * margin,
+    stampSize - 2 * margin
+  )
+
+  // 将新的 canvas 转换为 PNG 数据 URL
+  const dataURL = saveCanvas.toDataURL('image/png')
+
+  // 创建一个临时的 <a> 元素来触发下载
+  const link = document.createElement('a')
+  link.href = dataURL
+  link.download = '印章.png'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 // 绘制五角星
@@ -561,5 +661,19 @@ canvas {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #45a049;
 }
 </style>
