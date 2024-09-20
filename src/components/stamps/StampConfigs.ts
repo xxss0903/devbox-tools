@@ -15,11 +15,16 @@ export function mmToPixels(mm: number): number {
   return mm * PIXELS_PER_MM;
 }
 
-
-
 // 将像素转换为毫米
 export function pixelsToMM(pixels: number): number {
   return pixels / PIXELS_PER_MM;
+}
+
+// 根据文字高度计算字体大小
+export function calculateFontSizeByHeight(heightMM: number): number {
+  const heightPixels = mmToPixels(heightMM);
+  // 一般来说,字体大小设置为高度的70-80%左右会得到较好的效果
+  return heightPixels;
 }
 
 // 印章类型配置
@@ -29,16 +34,12 @@ export const StampTypeConfig = {
     borderWidth: 1.5, // 边框宽度(毫米)
     textHeight: 8, // 边缘文字高度(毫米)
     codeHeight: 1.2, // 印章编码高度(毫米)
-    codeTextWidth: 1, // 印章编码文字宽度(毫米)
-    centerTextSize: 7, // 中心文字大小(毫米)
+    centerTextHeight: 7, // 中心文字高度(毫米)
     starSize: 16, // 五角星直径大小(毫米)
     borderOffset: 1.5, // 边框偏移量(毫米)
-    titleTextSize: 8, // 标题文字大小(毫米)
     codeBorderOffset: 1, // 印章编码边框偏移量(毫米)
-    codeTextCenter: 2, // 印章编码文字中心偏移量(毫米)
-    titleFont: "宋体", // 标题字体
+    titleFont: "SimSun", // 标题字体
     codeTextFont: "Arial", // 编码的字体
-    perPixelSize: CanvasConfig.canvasSize / 45, // 每像素大小
   },
   financial: {
     size: 38, // 标准尺寸(毫米)
