@@ -254,8 +254,11 @@ const saveStampAsPNG = () => {
   if (!saveCtx) return
 
   // 设置保存 canvas 的背景为白色
-  saveCtx.fillStyle = 'white'
-  saveCtx.fillRect(0, 0, outputSize, outputSize)
+  //   saveCtx.fillStyle = 'white'
+  //   saveCtx.fillRect(0, 0, outputSize, outputSize)
+
+  // 清除画布，使背景透明
+  saveCtx.clearRect(0, 0, outputSize, outputSize)
 
   // 计算原始 canvas 中印章的位置和大小
   const originalStampSize = (circleRadius.value * 2 + 2) * MM_PER_PIXEL
@@ -354,6 +357,7 @@ const drawEllipse = (
   ctx.lineWidth = borderWidth
   ctx.stroke()
 }
+
 const drawCompanyName = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
@@ -479,16 +483,40 @@ const drawStamp = () => {
   // 清除整个画布
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+  // 创建离屏 canvas
+  const offscreenCanvas = document.createElement('canvas')
+  offscreenCanvas.width = canvas.width
+  offscreenCanvas.height = canvas.height
+  const offscreenCtx = offscreenCanvas.getContext('2d')
+  if (!offscreenCtx) return
+
+  // 在离屏 canvas 上绘制印章
+  const centerX = canvas.width / 2
+  const centerY = canvas.height / 2
+  const radius = circleRadius.value * MM_PER_PIXEL
+  const radiusX = 20 * MM_PER_PIXEL // 长轴半径
+  const radiusY = 15 * MM_PER_PIXEL // 短轴半径
+
+  // 绘制椭圆边框
+  offscreenCtx.beginPath()
+  offscreenCtx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2)
+  offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
+  offscreenCtx.lineWidth = circleBorderWidth.value * MM_PER_PIXEL
+  offscreenCtx.stroke()
+
+  // 绘制其他元素（公司名称、底部文字、编码等）
+  offscreenCtx.fillStyle = 'white' // 使用白色，稍后会变成红色
+
   // 1. 设置画布背景
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   // 2. 计算圆心位置
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
+  //   const centerX = canvas.width / 2
+  //   const centerY = canvas.height / 2
 
   drawEllipse(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     20 * MM_PER_PIXEL,
@@ -509,7 +537,7 @@ const drawStamp = () => {
 
   // 在 drawStamp 函数中调用 drawCompanyName 时，传入椭圆的长轴和短轴半径
   drawCompanyName(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     20 * MM_PER_PIXEL, // 长轴半径
@@ -523,7 +551,7 @@ const drawStamp = () => {
   const taxNumberTotalWidth = 26 * MM_PER_PIXEL
   const taxNumberCharWidth = 1.3 * MM_PER_PIXEL
   drawTaxNumber(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     taxNumber.value,
@@ -535,7 +563,7 @@ const drawStamp = () => {
   // 6. 绘制底部文字
   const bottomFontSize = bottomTextFontSizeMM.value * MM_PER_PIXEL
   drawBottomText(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
@@ -555,7 +583,7 @@ const drawStamp = () => {
   //     codeFontSizeMM.value * MM_PER_PIXEL
   //   )
   drawCode(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     20 * MM_PER_PIXEL, // 长轴半径
@@ -564,9 +592,18 @@ const drawStamp = () => {
     codeFontSizeMM.value * MM_PER_PIXEL
   )
 
+  // 将离屏 canvas 的内容作为蒙版应用到主 canvas
+  ctx.save()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.fillStyle = circleBorderColor.value // 使用设置的印章颜色
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.globalCompositeOperation = 'destination-in'
+  ctx.drawImage(offscreenCanvas, 0, 0)
+  ctx.restore()
+
   // 在绘制完所有内容后，添加做旧效果
   if (applyAging.value) {
-    addAgingEffect(ctx, canvas.width, canvas.height)
+    addAgingEffect(offscreenCtx, canvas.width, canvas.height)
   }
 
   // 7. 绘制水平标尺
