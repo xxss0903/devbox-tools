@@ -621,11 +621,12 @@ const drawRuler = (
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
 
-  for (let i = 0; i <= rulerLength - rulerSize; i += MM_PER_PIXEL) {
+  for (let i = 0; i <= rulerLength - rulerSize; i += MM_PER_PIXEL / 10) {
     const pos = i + rulerSize
-    const mm = Math.round(i * mmPerPixel)
+    const mm = Math.round(i * mmPerPixel * 10) / 10
 
-    if (mm % 5 === 0) {
+    if (mm % 1 === 0) {
+      // 整数毫米
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
@@ -646,15 +647,29 @@ const drawRuler = (
         ctx.fillText(mm.toString(), 0, 0)
       }
       ctx.restore()
-    } else {
+    } else if (mm % 0.5 === 0) {
+      // 0.5毫米刻度
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
-        ctx.lineTo(pos, rulerSize / 4)
+        ctx.lineTo(pos, rulerSize / 3)
       } else {
         ctx.moveTo(0, pos)
-        ctx.lineTo(rulerSize / 4, pos)
+        ctx.lineTo(rulerSize / 3, pos)
       }
+      ctx.lineWidth = 0.5
+      ctx.stroke()
+    } else {
+      // 0.1毫米刻度
+      ctx.beginPath()
+      if (isHorizontal) {
+        ctx.moveTo(pos, 0)
+        ctx.lineTo(pos, rulerSize / 6)
+      } else {
+        ctx.moveTo(0, pos)
+        ctx.lineTo(rulerSize / 6, pos)
+      }
+      ctx.lineWidth = 0.5
       ctx.stroke()
     }
   }
@@ -667,17 +682,13 @@ const onMouseMove = (event: MouseEvent) => {
   const rect = canvas.getBoundingClientRect()
   const x = event.clientX - rect.left
   const y = event.clientY - rect.top
-  const mmX = Math.round((x - RULER_WIDTH) / MM_PER_PIXEL)
-  const mmY = Math.round((y - RULER_HEIGHT) / MM_PER_PIXEL)
+  const mmX = Math.round(((x - RULER_WIDTH) / MM_PER_PIXEL) * 10) / 10
+  const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
 
   // 只在需要时重绘主要内容
   drawStamp()
   highlightRulerPosition(mmX, mmY)
   drawCrossLines(x, y)
-}
-
-const onMouseLeave = () => {
-  drawStamp()
 }
 
 const highlightRulerPosition = (mmX: number, mmY: number) => {
@@ -701,7 +712,7 @@ const highlightRulerPosition = (mmX: number, mmY: number) => {
   ctx.font = 'bold 12px Arial'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText(`${mmX}mm, ${mmY}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
+  ctx.fillText(`${mmX.toFixed(1)}mm, ${mmY.toFixed(1)}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
 }
 
 const drawCrossLines = (x: number, y: number) => {
@@ -735,6 +746,10 @@ const drawCrossLines = (x: number, y: number) => {
       mainCtx.drawImage(canvas, 0, 0)
     }
   }
+}
+
+const onMouseLeave = () => {
+  drawStamp()
 }
 
 const updateStamp = () => {
