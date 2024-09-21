@@ -88,6 +88,47 @@
         </label>
       </div>
       <div class="control-group">
+        <h3>防伪纹路设置</h3>
+        <label>
+          启用防伪纹路:
+          <input type="checkbox" v-model="securityPatternEnabled" />
+        </label>
+        <label>
+          纹路数量:
+          <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1" />
+        </label>
+        <label>
+          纹路长度 (mm):
+          <input
+            type="range"
+            v-model.number="securityPatternLength"
+            min="0.1"
+            max="20"
+            step="0.1"
+          />
+        </label>
+        <label>
+          纹路宽度 (mm):
+          <input
+            type="range"
+            v-model.number="securityPatternWidth"
+            min="0.05"
+            max="0.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          纹路倾斜角度范围 (度):
+          <input
+            type="range"
+            v-model.number="securityPatternAngleRange"
+            min="0"
+            max="90"
+            step="5"
+          />
+        </label>
+      </div>
+      <div class="control-group">
         <h3>字体设置</h3>
         <label>
           公司名称字体大小 (mm):
@@ -217,6 +258,12 @@ const bottomTextPositionY = ref(0) // 底部文字垂直位置调整，默认 0
 const companyNameCompression = ref(1)
 const bottomTextCompression = ref(1)
 const codeCompression = ref(1)
+// 防伪纹路
+const securityPatternEnabled = ref(true)
+const securityPatternWidth = ref(0.1) // 纹路宽度，单位为毫米
+const securityPatternCount = ref(5) // 防伪纹路数量
+const securityPatternLength = ref(0.5) // 纹路长度，单位为毫米
+const securityPatternAngleRange = ref(30) // 纹路倾斜角度范围，单位为度
 
 const goBack = () => {
   router.back()
@@ -284,6 +331,49 @@ const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: nu
   }
 
   ctx.putImageData(imageData, 0, 0)
+}
+
+// 修改防伪纹路绘制函数
+const drawSecurityPattern = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radiusX: number,
+  radiusY: number
+) => {
+  if (!securityPatternEnabled.value) return
+
+  ctx.save()
+  ctx.strokeStyle = '#FFFFFF' // 设置纹路颜色为白色
+  ctx.lineWidth = securityPatternWidth.value * MM_PER_PIXEL
+  ctx.globalCompositeOperation = 'destination-out' // 使用擦除模式
+
+  const angleRangeRad = (securityPatternAngleRange.value * Math.PI) / 180
+
+  for (let i = 0; i < securityPatternCount.value; i++) {
+    const angle = Math.random() * Math.PI * 2
+    const x = centerX + radiusX * Math.cos(angle)
+    const y = centerY + radiusY * Math.sin(angle)
+
+    // 计算椭圆在该点的法线角度
+    const normalAngle = Math.atan2(radiusY * Math.cos(angle), radiusX * Math.sin(angle))
+
+    // 在法线角度基础上添加随机倾斜
+    const lineAngle = normalAngle + (Math.random() - 0.5) * angleRangeRad
+
+    const length = securityPatternLength.value * MM_PER_PIXEL
+    const startX = x - (length / 2) * Math.cos(lineAngle)
+    const startY = y - (length / 2) * Math.sin(lineAngle)
+    const endX = x + (length / 2) * Math.cos(lineAngle)
+    const endY = y + (length / 2) * Math.sin(lineAngle)
+
+    ctx.beginPath()
+    ctx.moveTo(startX, startY)
+    ctx.lineTo(endX, endY)
+    ctx.stroke()
+  }
+
+  ctx.restore()
 }
 
 const saveStampAsPNG = () => {
@@ -613,6 +703,15 @@ const drawStamp = () => {
     circleBorderColor.value
   )
 
+  // 在椭圆边框上绘制防伪纹路
+  drawSecurityPattern(
+    offscreenCtx,
+    centerX,
+    centerY,
+    circleRadius.value * MM_PER_PIXEL,
+    circleRadius.value * MM_PER_PIXEL * 0.75
+  )
+
   // 4. 绘制公司名称
   drawCompanyName(
     offscreenCtx,
@@ -888,7 +987,12 @@ watch(
     companyNameCompression,
     bottomTextCompression,
     codeCompression,
-    bottomTextLetterSpacing
+    bottomTextLetterSpacing,
+    securityPatternEnabled,
+    securityPatternWidth,
+    securityPatternCount,
+    securityPatternLength,
+    securityPatternAngleRange
   ],
   () => {
     drawStamp()

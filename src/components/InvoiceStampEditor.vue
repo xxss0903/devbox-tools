@@ -135,7 +135,13 @@
         </label>
         <label>
           纹路长度 (mm):
-          <input type="range" v-model.number="securityPatternLength" min="0.1" max="5" step="0.1" />
+          <input
+            type="range"
+            v-model.number="securityPatternLength"
+            min="0.1"
+            max="20"
+            step="0.1"
+          />
         </label>
         <label>
           纹路宽度 (mm):
