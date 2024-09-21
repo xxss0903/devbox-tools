@@ -285,12 +285,13 @@ const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: nu
 
   ctx.putImageData(imageData, 0, 0)
 }
+
 const saveStampAsPNG = () => {
   const canvas = stampCanvas.value
   if (!canvas) return
 
   // 设置固定的输出尺寸
-  const outputSize = 512
+  const outputSize = 1024
 
   // 创建一个新的 canvas 元素，大小为 512x512
   const saveCanvas = document.createElement('canvas')
@@ -299,9 +300,8 @@ const saveStampAsPNG = () => {
   const saveCtx = saveCanvas.getContext('2d')
   if (!saveCtx) return
 
-  // 设置保存 canvas 的背景为白色
-  saveCtx.fillStyle = 'white'
-  saveCtx.fillRect(0, 0, outputSize, outputSize)
+  // 清除画布，使背景透明
+  saveCtx.clearRect(0, 0, outputSize, outputSize)
 
   // 计算原始 canvas 中印章的位置和大小
   const originalStampSize = (circleRadius.value * 2 + 2) * MM_PER_PIXEL
@@ -325,7 +325,7 @@ const saveStampAsPNG = () => {
     drawSize
   )
 
-  // 将新的 canvas 转换为 PNG 数据 URL
+  // 将新的 canvas 转换为 PNG 数据 URL，指定 alpha 通道
   const dataURL = saveCanvas.toDataURL('image/png')
 
   // 创建一个临时的 <a> 元素来触发下载
@@ -336,6 +336,7 @@ const saveStampAsPNG = () => {
   link.click()
   document.body.removeChild(link)
 }
+
 const saveStamp = () => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -576,17 +577,35 @@ const drawStamp = () => {
   // 清除整个画布
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+  // 创建离屏 canvas
+  const offscreenCanvas = document.createElement('canvas')
+  offscreenCanvas.width = canvas.width
+  offscreenCanvas.height = canvas.height
+  const offscreenCtx = offscreenCanvas.getContext('2d')
+  if (!offscreenCtx) return
+
+  // 在离屏 canvas 上绘制印章
+  const centerX = canvas.width / 2
+  const centerY = canvas.height / 2
+  const radius = circleRadius.value * MM_PER_PIXEL
+
+  // 绘制圆形边框
+  offscreenCtx.beginPath()
+  offscreenCtx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+  offscreenCtx.lineWidth = circleBorderWidth.value * MM_PER_PIXEL
+  offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
+  offscreenCtx.stroke()
+
+  // 绘制其他元素（公司名称、底部文字、编码等）
+  offscreenCtx.fillStyle = 'white' // 使用白色，稍后会变成红色
+
   // 1. 设置画布背景
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  // 2. 计算圆心位置
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
-
   // 3. 绘制圆形
   drawCircle(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
@@ -596,7 +615,7 @@ const drawStamp = () => {
 
   // 4. 绘制公司名称
   drawCompanyName(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
@@ -610,14 +629,14 @@ const drawStamp = () => {
     // drawStar(ctx, centerX, centerY, starRadius)
     const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
     const starY = centerY + starPositionY.value * MM_PER_PIXEL
-    drawStarShape(ctx, centerX, starY, starRadius)
+    drawStarShape(offscreenCtx, centerX, starY, starRadius)
   }
 
   // 6. 绘制底部文字
   // 6. 绘制底部文字
   const bottomFontSize = bottomTextFontSizeMM.value * MM_PER_PIXEL
   drawBottomText(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
@@ -629,7 +648,7 @@ const drawStamp = () => {
 
   // 6. 绘制印章编码
   drawCode(
-    ctx,
+    offscreenCtx,
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
@@ -637,10 +656,24 @@ const drawStamp = () => {
     codeFontSizeMM.value * MM_PER_PIXEL
   )
 
-  // 在绘制完所有内容后，添加做旧效果
+  // 将离屏 canvas 的内容作为蒙版应用到主 canvas
+  ctx.save()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.fillStyle = circleBorderColor.value // 使用设置的印章颜色
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.globalCompositeOperation = 'destination-in'
+  ctx.drawImage(offscreenCanvas, 0, 0)
+  ctx.restore()
+
+  // 如果需要，在这里添加做旧效果
   if (applyAging.value) {
     addAgingEffect(ctx, canvas.width, canvas.height)
   }
+
+  // // 在绘制完所有内容后，添加做旧效果
+  // if (applyAging.value) {
+  //   addAgingEffect(ctx, canvas.width, canvas.height)
+  // }
 
   // 7. 绘制水平标尺
   drawRuler(ctx, canvas.width, RULER_HEIGHT, true)
