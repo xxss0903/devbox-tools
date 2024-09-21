@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <div class="editor-controls" ref="editorControls">
+      <!-- 顶部固定按钮 -->
       <div
         class="button-group"
         style="position: sticky; top: 0; z-index: 1000; background-color: white; padding: 10px"
@@ -8,40 +9,125 @@
         <button @click="updateStamp()">刷新印章</button>
         <button @click="saveStampAsPNG">保存印章</button>
       </div>
-      <div class="control-group">
-        <h3>标尺设置</h3>
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="showFullRuler" />
-          显示完整标尺
+
+      <!-- 印章基本设置 -->
+      <div class="control-group" id="stamp-settings">
+        <h3>印章基本设置</h3>
+        <label
+          >印章宽度 (mm):
+          <input type="number" v-model.number="drawStampWidth" min="1" max="50" step="1"
+        /></label>
+        <label
+          >印章高度 (mm):
+          <input type="number" v-model.number="drawStampHeight" min="1" max="50" step="1"
+        /></label>
+        <label
+          >圆形边框宽度 (mm): <input type="number" step="0.1" v-model.number="circleBorderWidth"
+        /></label>
+        <label>圆形边框颜色: <input type="color" v-model="circleBorderColor" /></label>
+      </div>
+
+      <!-- 公司名称设置 -->
+      <div class="control-group" id="company-name-settings">
+        <h3>公司名称设置</h3>
+        <label>公司名称: <input v-model="companyName" /></label>
+        <label
+          >字体大小 (mm): <input type="number" v-model.number="companyFontSizeMM" step="0.1"
+        /></label>
+        <label>
+          <span>压缩比例：{{ companyNameCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="companyNameCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>分布因子：{{ textDistributionFactor.toFixed(1) }}</span>
+          <input
+            type="range"
+            v-model.number="textDistributionFactor"
+            min="1"
+            max="100"
+            step="0.5"
+          />
+        </label>
+        <label>
+          <span>边距 (mm): </span>
+          <input type="number" v-model.number="textMarginMM" min="-10" max="10" step="0.05" />
         </label>
       </div>
-      <div class="control-group" id="basic-info">
-        <h3>基本信息</h3>
+
+      <!-- 底部文字设置 -->
+      <div class="control-group" id="bottom-text-settings">
+        <h3>底部文字设置</h3>
+        <label>底部文字: <input type="text" v-model="bottomText" /></label>
+        <label
+          >字体大小 (mm):
+          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1"
+        /></label>
         <label>
-          公司名称:
-          <input v-model="companyName" />
+          <span>压缩比例：{{ bottomTextCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="bottomTextCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
         </label>
         <label>
-          底部文字:
-          <input type="text" v-model="bottomText" />
+          <span>字符间距 (mm)：{{ bottomTextLetterSpacing.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="bottomTextLetterSpacing"
+            min="-1"
+            max="5"
+            step="0.05"
+          />
         </label>
         <label>
-          印章编码:
-          <input v-model="code" />
-        </label>
-        <label>
-          税号:
-          <input v-model="taxNumber" />
-        </label>
-        <label>
-          印章宽度 (mm):
-          <input type="number" v-model.number="drawStampWidth" min="1" max="50" step="1" />
-        </label>
-        <label>
-          印章高度 (mm):
-          <input type="number" v-model.number="drawStampHeight" min="1" max="50" step="1" />
+          垂直位置调整 (mm):
+          <input type="number" v-model.number="bottomTextPositionY" min="-10" max="10" step="0.1" />
         </label>
       </div>
+
+      <!-- 印章编码设置 -->
+      <div class="control-group" id="code-settings">
+        <h3>印章编码设置</h3>
+        <label>印章编码: <input v-model="code" /></label>
+        <label
+          >字体大小 (mm): <input type="number" v-model.number="codeFontSizeMM" step="0.1"
+        /></label>
+        <label>
+          <span>压缩比例：{{ codeCompression.toFixed(2) }}</span>
+          <input type="range" v-model.number="codeCompression" min="0.5" max="1.5" step="0.05" />
+        </label>
+        <label>
+          <span>分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
+          <input
+            type="range"
+            v-model.number="codeDistributionFactor"
+            min="10"
+            max="40"
+            step="0.5"
+          />
+        </label>
+        <label>
+          边距 (mm):
+          <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
+        </label>
+      </div>
+
+      <!-- 税号设置 -->
+      <div class="control-group" id="tax-number-settings">
+        <h3>税号设置</h3>
+        <label>税号: <input v-model="taxNumber" /></label>
+      </div>
+
+      <!-- 五角星设置 -->
       <div class="control-group" id="star-settings">
         <h3>五角星设置</h3>
         <label class="checkbox-label">
@@ -53,166 +139,63 @@
           <input type="number" v-model.number="starDiameter" step="0.1" />
         </label>
         <label v-if="shouldDrawStar">
-          五角星垂直位置:
+          五角星垂直位置 (mm):
           <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
         </label>
       </div>
-      <div class="control-group" id="stamp-settings">
-        <h3>文字压缩设置</h3>
-        <label>
-          <span>公司名称压缩：{{ companyNameCompression.toFixed(2) }}</span>
-          <input
-            type="range"
-            v-model.number="companyNameCompression"
-            min="0.5"
-            max="1.5"
-            step="0.05"
-          />
-        </label>
-        <label>
-          <span>公司名称分布因子：{{ textDistributionFactor.toFixed(1) }}</span>
-          <input
-            type="range"
-            v-model.number="textDistributionFactor"
-            min="1"
-            max="100"
-            step="0.5"
-          />
-        </label>
-        <label>
-          <span>公司名称边距 (mm): </span>
-          <input type="number" v-model.number="textMarginMM" min="-10" max="10" step="0.05" />
-        </label>
-        <label>
-          <span>底部文字压缩：{{ bottomTextCompression.toFixed(2) }}</span>
-          <input
-            type="range"
-            v-model.number="bottomTextCompression"
-            min="0.5"
-            max="1.5"
-            step="0.05"
-          />
-        </label>
-        <label>
-          <span>底部文字间隔：{{ bottomTextLetterSpacing.toFixed(2) }}mm</span>
-          <input
-            type="range"
-            v-model.number="bottomTextLetterSpacing"
-            min="-1"
-            max="5"
-            step="0.05"
-          />
-        </label>
-        <label>
-          <span>编码文字压缩：{{ codeCompression.toFixed(2) }}</span>
-          <input type="range" v-model.number="codeCompression" min="0.5" max="1.5" step="0.05" />
-        </label>
 
-        <label>
-          <span>编码文字分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
-          <input
-            type="range"
-            v-model.number="codeDistributionFactor"
-            min="10"
-            max="40"
-            step="0.5"
-          />
-        </label>
-
-        <label>
-          编码边距 (mm):
-          <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
-        </label>
-        <h3>高级设置</h3>
-        <label>
-          <span>文字分布因子:{{ textDistributionFactor }}</span>
-          <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
-        </label>
-        <label>
-          <span>编码文字分布因子:{{ codeDistributionFactor }}</span>
-          <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
-        </label>
-        <label>
-          文字边距 (mm):
-          <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
-        </label>
-        <label>
-          编码边距 (mm):
-          <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
-        </label>
-        <h3>印章设置</h3>
-        <label>
-          圆形半径 (mm):
-          <input type="number" v-model.number="circleRadius" step="0.1" />
-        </label>
-        <label>
-          圆形边框宽度 (mm):
-          <input type="number" step="0.1" v-model.number="circleBorderWidth" />
-        </label>
-        <label>
-          圆形边框颜色:
-          <input type="color" v-model="circleBorderColor" />
-        </label>
-        <h3>字体设置</h3>
-        <label>
-          公司名称字体大小 (mm):
-          <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
-        </label>
-        <label>
-          印章编码字体大小 (mm):
-          <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
-        </label>
-        <label>
-          底部文字大小 (mm):
-          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
-        </label>
-      </div>
-      <div class="control-group">
+      <!-- 防伪纹路设置 -->
+      <div class="control-group" id="security-pattern-settings">
         <h3>防伪纹路设置</h3>
         <label>
           启用防伪纹路:
           <input type="checkbox" v-model="securityPatternEnabled" />
         </label>
         <button @click="drawStamp(true, false)">刷新纹路</button>
-        <label>
-          纹路数量:
-          <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1" />
-        </label>
-        <label>
-          纹路长度 (mm):
-          <input
-            type="range"
-            v-model.number="securityPatternLength"
-            min="0.1"
-            max="20"
-            step="0.1"
-          />
-        </label>
-        <label>
-          纹路宽度 (mm):
+        <label
+          >纹路数量:
+          <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1"
+        /></label>
+        <label
+          >纹路长度 (mm):
+          <input type="range" v-model.number="securityPatternLength" min="0.1" max="20" step="0.1"
+        /></label>
+        <label
+          >纹路宽度 (mm):
           <input
             type="range"
             v-model.number="securityPatternWidth"
             min="0.05"
             max="0.5"
             step="0.05"
-          />
-        </label>
+        /></label>
       </div>
 
-      <div class="control-group">
-        <h3>其他设置</h3>
-        <button @click="drawStamp(false, true)">刷新做旧</button>
+      <!-- 做旧效果设置 -->
+      <div class="control-group" id="aging-effect-settings">
+        <h3>做旧效果</h3>
         <label class="checkbox-label">
           <input type="checkbox" v-model="applyAging" />
-          做旧效果
+          启用做旧效果
         </label>
         <label v-if="applyAging">
           做旧强度:
           <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
         </label>
+        <button @click="drawStamp(false, true)">刷新做旧</button>
+      </div>
+
+      <!-- 标尺设置 -->
+      <div class="control-group" id="ruler-settings">
+        <h3>标尺设置</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="showFullRuler" />
+          显示完整标尺
+        </label>
       </div>
     </div>
+
+    <!-- Canvas 容器 -->
     <div class="canvas-container">
       <canvas
         ref="stampCanvas"
@@ -227,7 +210,6 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
