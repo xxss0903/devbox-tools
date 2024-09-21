@@ -1,90 +1,125 @@
 <template>
   <div class="container">
     <div class="editor-controls">
-      <label>
-        公司名称:
-        <input v-model="companyName" />
-      </label>
-      <label>
-        底部文字:
-        <input type="text" v-model="bottomText" />
-      </label>
-      <label>
-        印章编码:
-        <input v-model="code" />
-      </label>
-      <label>
-        公司名称字体大小 (mm):
-        <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
-      </label>
-      <label>
-        印章编码字体大小 (mm):
-        <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
-      </label>
-      <label>
-        圆形半径 (mm):
-        <input type="number" v-model.number="circleRadius" step="0.1" />
-      </label>
-      <label>
-        圆形边框宽度 (mm):
-        <input type="number" v-model.number="circleBorderWidth" />
-      </label>
-      <label>
-        圆形边框颜色:
-        <input type="color" v-model="circleBorderColor" />
-      </label>
-      <label>
-        绘制五角星:
-        <input type="checkbox" v-model="shouldDrawStar" />
-      </label>
-      <label>
-        五角星直径 (mm):
-        <input type="number" v-model.number="starDiameter" step="0.1" />
-      </label>
-      <label>
-        底部文字大小 (mm):
-        <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
-      </label>
-      <label>
-        底部文字字符间距:
-        <input type="number" v-model.number="bottomTextLetterSpacing" min="-1" max="1" step="0.1" />
-      </label>
-      <label>
-        五角星垂直位置:
-        <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
-      </label>
-      <label>
-        底部文字垂直位置:
-        <input type="number" v-model.number="bottomTextPositionY" min="-10" max="10" step="0.1" />
-      </label>
-      <label>
-        做旧效果:
-        <input type="checkbox" v-model="applyAging" />
-      </label>
-      <label v-if="applyAging">
-        做旧强度:
-        <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
-      </label>
-      <label>
-        文字分布因子:
-        <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
-        {{ textDistributionFactor }}
-      </label>
-      <label>
-        编码文字分布因子:
-        <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
-        {{ codeDistributionFactor }}
-      </label>
-      <label>
-        文字边距 (mm):
-        <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
-      </label>
-      <label>
-        编码边距 (mm):
-        <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
-      </label>
-      <button @click="updateStamp">刷新印章</button>
-      <button @click="saveStampAsPNG">保存印章</button>
+      <div class="button-group">
+        <button @click="updateStamp">刷新印章</button>
+        <button @click="saveStampAsPNG">保存印章</button>
+      </div>
+      <div class="control-group">
+        <h3>基本信息</h3>
+        <label>
+          公司名称:
+          <input v-model="companyName" />
+        </label>
+        <label>
+          底部文字:
+          <input type="text" v-model="bottomText" />
+        </label>
+        <label>
+          印章编码:
+          <input v-model="code" />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3>字体设置</h3>
+        <label>
+          公司名称字体大小 (mm):
+          <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
+        </label>
+        <label>
+          印章编码字体大小 (mm):
+          <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
+        </label>
+        <label>
+          底部文字大小 (mm):
+          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3>印章设置</h3>
+        <label>
+          圆形半径 (mm):
+          <input type="number" v-model.number="circleRadius" step="0.1" />
+        </label>
+        <label>
+          圆形边框宽度 (mm):
+          <input type="number" step="0.1" v-model.number="circleBorderWidth" />
+        </label>
+        <label>
+          圆形边框颜色:
+          <input type="color" v-model="circleBorderColor" />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3>五角星设置</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="shouldDrawStar" />
+          绘制五角星
+        </label>
+        <label v-if="shouldDrawStar">
+          五角星直径 (mm):
+          <input type="number" v-model.number="starDiameter" step="0.1" />
+        </label>
+        <label v-if="shouldDrawStar">
+          五角星垂直位置:
+          <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3>底部文字设置</h3>
+        <label>
+          底部文字字符间距:
+          <input
+            type="number"
+            v-model.number="bottomTextLetterSpacing"
+            min="-1"
+            max="1"
+            step="0.1"
+          />
+        </label>
+        <label>
+          底部文字垂直位置:
+          <input type="number" v-model.number="bottomTextPositionY" min="-10" max="10" step="0.1" />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3>做旧效果</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="applyAging" />
+          应用做旧效果
+        </label>
+        <label v-if="applyAging">
+          做旧强度:
+          <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3>高级设置</h3>
+        <label>
+          文字分布因子:
+          <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
+          {{ textDistributionFactor }}
+        </label>
+        <label>
+          编码文字分布因子:
+          <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
+          {{ codeDistributionFactor }}
+        </label>
+        <label>
+          文字边距 (mm):
+          <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
+        </label>
+        <label>
+          编码边距 (mm):
+          <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
+        </label>
+      </div>
     </div>
     <div class="canvas-container">
       <canvas
@@ -97,7 +132,6 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -772,63 +806,102 @@ watch(
   }
 )
 </script>
-
 <style scoped>
 .container {
   display: flex;
-  flex-direction: column;
   height: 100%;
   overflow: hidden;
 }
 
 .editor-controls {
+  width: 300px;
   padding: 10px;
   background-color: #f0f0f0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  overflow-y: auto;
+  max-height: 70vh;
+  box-sizing: border-box;
+}
+
+.control-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.control-group h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #333;
 }
 
 .editor-controls label {
   display: flex;
   flex-direction: column;
+  margin-bottom: 8px;
+  font-size: 14px;
 }
 
-.editor-controls input {
-}
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.canvas-container {
+.editor-controls input[type='text'],
+.editor-controls input[type='number'],
+.editor-controls input[type='range'] {
   width: 100%;
-  height: 100%;
-  background-color: aliceblue;
-  display: flex;
-  justify-content: center;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.editor-controls input[type='color'] {
+  width: 100%;
+  height: 30px;
+  padding: 0;
+  border: none;
+}
+
+.checkbox-label {
+  flex-direction: row !important;
   align-items: center;
 }
 
-canvas {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+.checkbox-label input {
+  margin-right: 5px;
 }
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
 button {
-  margin-top: 10px;
   padding: 8px 16px;
   background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 button:hover {
   background-color: #45a049;
+}
+
+.canvas-container {
+  flex-grow: 1;
+  background-color: aliceblue;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>
