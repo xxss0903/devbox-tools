@@ -1,8 +1,11 @@
 <template>
   <div class="container">
     <div class="editor-controls">
-      <div class="button-group">
-        <button @click="updateStamp">刷新印章</button>
+      <div
+        class="button-group"
+        style="position: sticky; top: 0; z-index: 1000; background-color: white; padding: 10px"
+      >
+        <button @click="updateStamp(true)">刷新印章</button>
         <button @click="saveStampAsPNG">保存印章</button>
       </div>
 
@@ -124,7 +127,7 @@
         </label>
       </div>
       <div class="control-group">
-        <h3>防伪纹路设置</h3>
+        <h3>防伪纹路设置（点击刷新印章按钮可刷新防伪纹路）</h3>
         <label>
           启用防伪纹路:
           <input type="checkbox" v-model="securityPatternEnabled" />
@@ -162,8 +165,8 @@
           做旧效果
         </label>
         <label v-if="applyAging">
-          做旧强度:
-          <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
+          做旧强度（做旧会随时更新，请注意）:
+          <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
         </label>
       </div>
 
@@ -456,33 +459,41 @@ const drawEllipse = (
   ctx.stroke()
 }
 
-// 修改防伪纹路绘制函数
+// 新增一个响应式变量来存储随机参数
+const securityPatternParams = ref<Array<{ angle: number; lineAngle: number }>>([])
+
 const drawSecurityPattern = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
   radiusX: number,
-  radiusY: number
+  radiusY: number,
+  forceRefresh: boolean = false
 ) => {
   if (!securityPatternEnabled.value) return
 
   ctx.save()
-  ctx.strokeStyle = '#FFFFFF' // 设置纹路颜色为白色
+  ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = securityPatternWidth.value * MM_PER_PIXEL
-  ctx.globalCompositeOperation = 'destination-out' // 使用擦除模式
+  ctx.globalCompositeOperation = 'destination-out'
 
   const angleRangeRad = (securityPatternAngleRange.value * Math.PI) / 180
 
-  for (let i = 0; i < securityPatternCount.value; i++) {
-    const angle = Math.random() * Math.PI * 2
+  // 如果需要刷新或者参数数组为空,则重新生成参数
+  if (forceRefresh || securityPatternParams.value.length === 0) {
+    securityPatternParams.value = []
+    for (let i = 0; i < securityPatternCount.value; i++) {
+      const angle = Math.random() * Math.PI * 2
+      const normalAngle = Math.atan2(radiusY * Math.cos(angle), radiusX * Math.sin(angle))
+      const lineAngle = normalAngle + (Math.random() - 0.5) * angleRangeRad
+      securityPatternParams.value.push({ angle, lineAngle })
+    }
+  }
+
+  // 使用保存的参数绘制纹路
+  securityPatternParams.value.forEach(({ angle, lineAngle }) => {
     const x = centerX + radiusX * Math.cos(angle)
     const y = centerY + radiusY * Math.sin(angle)
-
-    // 计算椭圆在该点的法线角度
-    const normalAngle = Math.atan2(radiusY * Math.cos(angle), radiusX * Math.sin(angle))
-
-    // 在法线角度基础上添加随机倾斜
-    const lineAngle = normalAngle + (Math.random() - 0.5) * angleRangeRad
 
     const length = securityPatternLength.value * MM_PER_PIXEL
     const startX = x - (length / 2) * Math.cos(lineAngle)
@@ -494,7 +505,7 @@ const drawSecurityPattern = (
     ctx.moveTo(startX, startY)
     ctx.lineTo(endX, endY)
     ctx.stroke()
-  }
+  })
 
   ctx.restore()
 }
@@ -621,7 +632,7 @@ const drawBottomText = (
   ctx.restore()
 }
 
-const drawStamp = () => {
+const drawStamp = (refreshRandom: boolean = false) => {
   const canvas = stampCanvas.value
   if (!canvas) return
   const ctx = canvas.getContext('2d')
@@ -678,7 +689,8 @@ const drawStamp = () => {
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
-    circleRadius.value * MM_PER_PIXEL * 0.75
+    circleRadius.value * MM_PER_PIXEL * 0.75,
+    refreshRandom
   )
 
   // 在 drawStamp 函数中调用 drawCompanyName 时，传入椭圆的长轴和短轴半径
@@ -740,7 +752,7 @@ const drawStamp = () => {
 
   // 在绘制完所有内容后，添加做旧效果
   if (applyAging.value) {
-    addAgingEffect(ctx, canvas.width, canvas.height)
+    addAgingEffect(ctx, canvas.width, canvas.height, refreshRandom)
   }
 
   // 7. 绘制水平标尺
@@ -882,7 +894,7 @@ const onMouseMove = (event: MouseEvent) => {
   const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
 
   // 只在需要时重绘主要内容
-  drawStamp()
+  drawStamp(false)
   highlightRulerPosition(mmX, mmY)
   drawCrossLines(x, y)
 }
@@ -945,11 +957,11 @@ const drawCrossLines = (x: number, y: number) => {
 }
 
 const onMouseLeave = () => {
-  drawStamp()
+  drawStamp(false)
 }
 
-const updateStamp = () => {
-  drawStamp()
+const updateStamp = (forceRefresh: boolean = false) => {
+  drawStamp(forceRefresh)
 }
 
 onMounted(() => {
@@ -961,7 +973,7 @@ onMounted(() => {
     offscreenCanvas.value.height = canvas.height
   }
 
-  drawStamp()
+  drawStamp(false)
 })
 
 // 监听所有响应式数据的变化
@@ -1002,7 +1014,7 @@ watch(
     securityPatternWidth
   ],
   () => {
-    drawStamp()
+    drawStamp(false)
   }
 )
 </script>
