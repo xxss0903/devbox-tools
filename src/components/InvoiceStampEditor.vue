@@ -25,7 +25,73 @@
           <input v-model="taxNumber" />
         </label>
       </div>
+      <div class="control-group">
+        <h3>文字压缩设置</h3>
+        <label>
+          <span>公司名称压缩：{{ companyNameCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="companyNameCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>公司名称分布因子：{{ textDistributionFactor.toFixed(1) }}</span>
+          <input
+            type="range"
+            v-model.number="textDistributionFactor"
+            min="1"
+            max="100"
+            step="0.5"
+          />
+        </label>
+        <label>
+          <span>公司名称边距 (mm): </span>
+          <input type="number" v-model.number="textMarginMM" min="-10" max="10" step="0.05" />
+        </label>
+        <label>
+          <span>底部文字压缩：{{ bottomTextCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="bottomTextCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>底部文字间隔：{{ bottomTextLetterSpacing.toFixed(2) }}mm</span>
+          <input
+            type="range"
+            v-model.number="bottomTextLetterSpacing"
+            min="-1"
+            max="5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>编码文字压缩：{{ codeCompression.toFixed(2) }}</span>
+          <input type="range" v-model.number="codeCompression" min="0.5" max="1.5" step="0.05" />
+        </label>
 
+        <label>
+          <span>编码文字分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
+          <input
+            type="range"
+            v-model.number="codeDistributionFactor"
+            min="10"
+            max="40"
+            step="0.5"
+          />
+        </label>
+
+        <label>
+          编码边距 (mm):
+          <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
+        </label>
+      </div>
       <div class="control-group">
         <h3>字体设置</h3>
         <label>
@@ -159,6 +225,9 @@ const bottomTextLetterSpacing = ref(0)
 const starPositionY = ref(0)
 // 底部文字垂直位置调整，默认 0
 const bottomTextPositionY = ref(-5)
+const companyNameCompression = ref(1)
+const bottomTextCompression = ref(1)
+const codeCompression = ref(1)
 
 const goBack = () => {
   router.back()
@@ -379,6 +448,7 @@ const drawCompanyName = (
     ctx.save()
     ctx.translate(x, y)
     ctx.rotate(angle + Math.PI / 2)
+    ctx.scale(companyNameCompression.value, 1) // 应用压缩
     ctx.fillText(char, 0, 0)
     ctx.restore()
   })
@@ -420,6 +490,7 @@ const drawCode = (
     ctx.save()
     ctx.translate(x, y)
     ctx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
+    ctx.scale(codeCompression.value, 1) // 应用压缩
     ctx.fillText(char, 0, 0)
     ctx.restore()
   })
@@ -446,18 +517,22 @@ const drawBottomText = (
   // 计算文字位置（在五角星正下方）
   const textY = centerY + radius * 0.5 + positionY * MM_PER_PIXEL
 
-  if (letterSpacing === 0) {
-    ctx.fillText(text, centerX, textY)
-  } else {
-    const chars = text.split('')
-    const totalWidth = ctx.measureText(text).width + (chars.length - 1) * letterSpacing
-    let startX = centerX - totalWidth / 2
+  ctx.save()
+  ctx.translate(centerX, textY)
+  ctx.scale(bottomTextCompression.value, 1) // 应用压缩
 
-    chars.forEach((char) => {
-      ctx.fillText(char, startX, textY)
-      startX += ctx.measureText(char).width + letterSpacing
-    })
-  }
+  const chars = text.split('')
+  const charWidths = chars.map((char) => ctx.measureText(char).width)
+  const totalWidth =
+    charWidths.reduce((sum, width) => sum + width, 0) +
+    (chars.length - 1) * letterSpacing * MM_PER_PIXEL
+
+  let currentX = -totalWidth / 2 // 从文本的左边缘开始
+
+  chars.forEach((char, index) => {
+    ctx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
+    currentX += charWidths[index] + letterSpacing * MM_PER_PIXEL
+  })
 
   ctx.restore()
 }
@@ -819,7 +894,11 @@ watch(
     bottomTextPositionY,
     taxNumber,
     applyAging,
-    agingIntensity
+    agingIntensity,
+    companyNameCompression,
+    bottomTextCompression,
+    codeCompression,
+    bottomTextLetterSpacing
   ],
   () => {
     drawStamp()
