@@ -132,6 +132,7 @@
           启用防伪纹路:
           <input type="checkbox" v-model="securityPatternEnabled" />
         </label>
+        <button @click="drawStamp(true, false)">刷新纹路</button>
         <label>
           纹路数量:
           <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1" />
@@ -160,12 +161,13 @@
 
       <div class="control-group">
         <h3>其他设置</h3>
+        <button @click="drawStamp(false, true)">刷新做旧</button>
         <label class="checkbox-label">
           <input type="checkbox" v-model="applyAging" />
           做旧效果
         </label>
         <label v-if="applyAging">
-          做旧强度（因为随机的关系，做旧保存的图片和效果图会有不同）:
+          做旧强度:
           <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
         </label>
       </div>
@@ -267,8 +269,6 @@ const securityPatternEnabled = ref(true)
 const securityPatternDensity = ref(0.5)
 const securityPatternWidth = ref(0.1) // 纹路宽度，单位为毫米
 const securityPatternColor = ref('#FF0000')
-const securityPatternOpacity = ref(0.1)
-const securityPatternLineWidth = ref(0.1)
 const securityPatternCount = ref(5) // 防伪纹路数量
 const securityPatternLength = ref(0.5) // 纹路长度，单位为毫米
 const securityPatternAngleRange = ref(30) // 纹路倾斜角度范围，单位为度
@@ -277,7 +277,26 @@ const goBack = () => {
   router.back()
 }
 
-const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+// 新增一个响应式变量来存储做旧效果的参数
+const agingEffectParams = ref<
+  Array<{
+    x: number
+    y: number
+    noiseSize: number
+    noise: number
+    strongNoiseSize: number
+    strongNoise: number
+    fade: number
+    seed: number // 保存随机数字
+  }>
+>([])
+
+const addAgingEffect = (
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  forceRefresh: boolean = false
+) => {
   const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data
 
@@ -285,60 +304,84 @@ const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: nu
   const centerY = height / 2
   const radius = (circleRadius.value + 1) * MM_PER_PIXEL
 
-  const addCircularNoise = (x: number, y: number, size: number, intensity: number) => {
-    const radiusSquared = (size * size) / 4
-    for (let dy = -size / 2; dy < size / 2; dy++) {
-      for (let dx = -size / 2; dx < size / 2; dx++) {
-        if (dx * dx + dy * dy <= radiusSquared) {
-          const nx = Math.round(x + dx)
-          const ny = Math.round(y + dy)
-          const nIndex = (ny * width + nx) * 4
-          if (nIndex >= 0 && nIndex < data.length) {
-            data[nIndex] = Math.min(255, data[nIndex] + intensity)
-            data[nIndex + 1] = Math.min(255, data[nIndex + 1] + intensity)
-            data[nIndex + 2] = Math.min(255, data[nIndex + 2] + intensity)
-          }
-        }
-      }
-    }
-  }
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const index = (y * width + x) * 4
-
-      const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
-      if (distanceFromCenter <= radius) {
-        if (data[index] > 200 && data[index + 1] < 50 && data[index + 2] < 50) {
+  // 如果需要刷新或者参数数组为空,则重新生成参数
+  if (forceRefresh || agingEffectParams.value.length === 0) {
+    agingEffectParams.value = []
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = (y * width + x) * 4
+        const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
+        if (
+          distanceFromCenter <= radius &&
+          data[index] > 200 &&
+          data[index + 1] < 50 &&
+          data[index + 2] < 50
+        ) {
           const intensityFactor = agingIntensity.value / 100
+          let seed = Math.random()
+          agingEffectParams.value.push({
+            x,
 
-          // 添加小型圆形噪点
-          if (Math.random() < 0.4 * intensityFactor) {
-            const noiseSize = Math.random() * 3 + 1 // 噪点大小从1到4像素不等
-            const noise = Math.random() * 200 * intensityFactor
-            addCircularNoise(x, y, noiseSize, noise)
-          }
-
-          // 添加大型圆形噪点
-          if (Math.random() < 0.05 * intensityFactor) {
-            const strongNoiseSize = Math.random() * 5 + 2 // 更大的噪点，2到7像素不等
-            const strongNoise = Math.random() * 250 * intensityFactor + 5
-            addCircularNoise(x, y, strongNoiseSize, strongNoise)
-          }
-
-          // 随机添加褪色效果
-          if (Math.random() < 0.2 * intensityFactor) {
-            const fade = Math.random() * 50 * intensityFactor
-            data[index] = Math.min(255, data[index] + fade)
-            data[index + 1] = Math.min(255, data[index + 1] + fade)
-            data[index + 2] = Math.min(255, data[index + 2] + fade)
-          }
+            y,
+            noiseSize: Math.random() * 3 + 1,
+            noise: Math.random() * 200 * intensityFactor,
+            strongNoiseSize: Math.random() * 5 + 2,
+            strongNoise: Math.random() * 250 * intensityFactor + 5,
+            fade: Math.random() * 50 * intensityFactor,
+            seed: seed
+          })
         }
       }
     }
   }
+
+  // 使用保存的参数应用做旧效果
+  agingEffectParams.value.forEach((param) => {
+    const { x, y, noiseSize, noise, strongNoiseSize, strongNoise, fade, seed } = param
+    const index = (y * width + x) * 4
+
+    if (seed < 0.4) {
+      addCircularNoise(data, width, x, y, noiseSize, noise)
+    }
+
+    if (seed < 0.05) {
+      addCircularNoise(data, width, x, y, strongNoiseSize, strongNoise)
+    }
+
+    if (seed < 0.2) {
+      data[index] = Math.min(255, data[index] + fade)
+      data[index + 1] = Math.min(255, data[index + 1] + fade)
+      data[index + 2] = Math.min(255, data[index + 2] + fade)
+    }
+  })
 
   ctx.putImageData(imageData, 0, 0)
+}
+
+// 辅助函数,用于添加圆形噪点
+const addCircularNoise = (
+  data: Uint8ClampedArray,
+  width: number,
+  x: number,
+  y: number,
+  size: number,
+  intensity: number
+) => {
+  const radiusSquared = (size * size) / 4
+  for (let dy = -size / 2; dy < size / 2; dy++) {
+    for (let dx = -size / 2; dx < size / 2; dx++) {
+      if (dx * dx + dy * dy <= radiusSquared) {
+        const nx = Math.round(x + dx)
+        const ny = Math.round(y + dy)
+        const nIndex = (ny * width + nx) * 4
+        if (nIndex >= 0 && nIndex < data.length) {
+          data[nIndex] = Math.min(255, data[nIndex] + intensity)
+          data[nIndex + 1] = Math.min(255, data[nIndex + 1] + intensity)
+          data[nIndex + 2] = Math.min(255, data[nIndex + 2] + intensity)
+        }
+      }
+    }
+  }
 }
 
 const saveStampAsPNG = () => {
@@ -382,7 +425,7 @@ const saveStampAsPNG = () => {
 
   // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
   if (applyAging.value) {
-    addAgingEffect(saveCtx, outputSize, outputSize)
+    addAgingEffect(saveCtx, outputSize, outputSize, false)
   }
 
   // 将新的 canvas 转换为 PNG 数据 URL
@@ -635,7 +678,7 @@ const drawBottomText = (
   ctx.restore()
 }
 
-const drawStamp = (refreshRandom: boolean = false) => {
+const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean = false) => {
   const canvas = stampCanvas.value
   if (!canvas) return
   const ctx = canvas.getContext('2d')
@@ -693,7 +736,7 @@ const drawStamp = (refreshRandom: boolean = false) => {
     centerY,
     circleRadius.value * MM_PER_PIXEL,
     circleRadius.value * MM_PER_PIXEL * 0.75,
-    refreshRandom
+    refreshSecurityPattern
   )
 
   // 在 drawStamp 函数中调用 drawCompanyName 时，传入椭圆的长轴和短轴半径
@@ -755,7 +798,7 @@ const drawStamp = (refreshRandom: boolean = false) => {
 
   // 在绘制完所有内容后，添加做旧效果
   if (applyAging.value) {
-    addAgingEffect(ctx, canvas.width, canvas.height)
+    addAgingEffect(ctx, canvas.width, canvas.height, refreshOld)
   }
 
   // 7. 绘制水平标尺
@@ -897,7 +940,7 @@ const onMouseMove = (event: MouseEvent) => {
   const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
 
   // 只在需要时重绘主要内容
-  drawStamp(false)
+  drawStamp(false, false)
   highlightRulerPosition(mmX, mmY)
   drawCrossLines(x, y)
 }
@@ -960,11 +1003,11 @@ const drawCrossLines = (x: number, y: number) => {
 }
 
 const onMouseLeave = () => {
-  drawStamp(false)
+  drawStamp(false, false)
 }
 
-const updateStamp = (forceRefresh: boolean = false) => {
-  drawStamp(forceRefresh)
+const updateStamp = () => {
+  drawStamp(false, false)
 }
 
 onMounted(() => {
@@ -976,7 +1019,7 @@ onMounted(() => {
     offscreenCanvas.value.height = canvas.height
   }
 
-  drawStamp(false)
+  drawStamp(false, false)
 })
 
 // 监听所有响应式数据的变化
@@ -1017,7 +1060,7 @@ watch(
     securityPatternWidth
   ],
   () => {
-    drawStamp(false)
+    drawStamp(false, false)
   }
 )
 </script>
