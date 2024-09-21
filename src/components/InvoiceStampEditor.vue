@@ -411,12 +411,12 @@ const saveStampAsPNG = () => {
 
   // 计算原始 canvas 中印章的位置和大小
   const originalStampSize = (circleRadius.value * 2 + 2) * MM_PER_PIXEL
-  const sourceX = (canvas.width - originalStampSize) / 2
-  const sourceY = (canvas.height - originalStampSize) / 2
+  const sourceX = (canvas.width - originalStampSize) / 2 + stampOffsetX.value * MM_PER_PIXEL
+  const sourceY = (canvas.height - originalStampSize) / 2 + stampOffsetY.value * MM_PER_PIXEL
 
-  // 计算在新 canvas 中的绘制位置和大小
-  const margin = outputSize * 0.1 // 10% 的边距
-  const drawSize = outputSize - 2 * margin
+  // 减少边距，这里我们将边距从 10% 减少到 2%
+  const margin = outputSize * 0.01 // 2% 的边距
+  const drawSize = outputSize
 
   // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并调整大小
   saveCtx.drawImage(
