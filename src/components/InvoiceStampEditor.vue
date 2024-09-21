@@ -61,14 +61,6 @@
       <div class="control-group">
         <h3>其他设置</h3>
         <label class="checkbox-label">
-          <input type="checkbox" v-model="shouldDrawStar" />
-          绘制五角星
-        </label>
-        <label v-if="shouldDrawStar">
-          五角星直径 (mm):
-          <input type="number" v-model.number="starDiameter" step="0.1" />
-        </label>
-        <label class="checkbox-label">
           <input type="checkbox" v-model="applyAging" />
           做旧效果
         </label>
@@ -81,14 +73,12 @@
       <div class="control-group">
         <h3>高级设置</h3>
         <label>
-          文字分布因子:
+          <span>文字分布因子:{{ textDistributionFactor }}</span>
           <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
-          {{ textDistributionFactor }}
         </label>
         <label>
-          编码文字分布因子:
+          <span>编码文字分布因子:{{ codeDistributionFactor }}</span>
           <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
-          {{ codeDistributionFactor }}
         </label>
         <label>
           文字边距 (mm):
@@ -158,8 +148,6 @@ const textMarginMM = ref(1) // 默认值为1mm
 const codeMarginMM = ref(1) // 默认值为1mm
 // 编码分布因子，控制印章编码在椭圆下方的分布范围
 const codeDistributionFactor = ref(20) // 默认值可以根据需要调整
-// 是否绘制五角星
-const shouldDrawStar = ref(true) // 默认绘制五角星
 // 印章底部文字
 const bottomText = ref('合同专用章')
 // 底部文字大小，默认 4mm
@@ -525,16 +513,6 @@ const drawStamp = () => {
     circleBorderColor.value
   )
 
-  // 4. 绘制公司名称
-  //   drawCompanyName(
-  //     ctx,
-  //     centerX,
-  //     centerY,
-  //     circleRadius.value * MM_PER_PIXEL,
-  //     companyName.value,
-  //     companyFontSizeMM.value * MM_PER_PIXEL
-  //   )
-
   // 在 drawStamp 函数中调用 drawCompanyName 时，传入椭圆的长轴和短轴半径
   drawCompanyName(
     offscreenCtx,
@@ -573,15 +551,6 @@ const drawStamp = () => {
     bottomTextPositionY.value
   )
 
-  // 6. 绘制印章编码
-  //   drawCode(
-  //     ctx,
-  //     centerX,
-  //     centerY,
-  //     circleRadius.value * MM_PER_PIXEL,
-  //     code.value,
-  //     codeFontSizeMM.value * MM_PER_PIXEL
-  //   )
   drawCode(
     offscreenCtx,
     centerX,
@@ -603,7 +572,7 @@ const drawStamp = () => {
 
   // 在绘制完所有内容后，添加做旧效果
   if (applyAging.value) {
-    addAgingEffect(offscreenCtx, canvas.width, canvas.height)
+    addAgingEffect(ctx, canvas.width, canvas.height)
   }
 
   // 7. 绘制水平标尺
@@ -843,13 +812,14 @@ watch(
     textMarginMM,
     codeMarginMM,
     agingIntensity,
-    shouldDrawStar,
     bottomText,
     bottomTextFontSizeMM,
     bottomTextLetterSpacing,
     starPositionY,
     bottomTextPositionY,
-    taxNumber
+    taxNumber,
+    applyAging,
+    agingIntensity
   ],
   () => {
     drawStamp()
