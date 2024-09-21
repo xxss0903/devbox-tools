@@ -194,33 +194,35 @@
             step="0.05"
         /></label>
       </div>
-
-      <!-- 做旧效果设置 -->
-      <div class="control-group">
-        <h3>做旧效果</h3>
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="applyAging" />
-          启用做旧效果
-        </label>
-        <label v-if="applyAging">
-          做旧强度:
-          <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
-        </label>
-        <button @click="drawStamp(false, true)">刷新做旧</button>
-      </div>
-
-      <!-- 标尺设置 -->
-      <div class="control-group">
-        <h3>标尺设置</h3>
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="showFullRuler" />
-          显示完整标尺
-        </label>
-      </div>
     </div>
 
     <!-- Canvas 容器 -->
     <div class="canvas-container">
+      <div style="display: flex; flex-direction: row; margin-top: 12px">
+        <!-- 做旧效果设置 -->
+        <div class="control-group">
+          <h3>做旧效果</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="applyAging" />
+            启用做旧效果
+          </label>
+          <label v-if="applyAging">
+            做旧强度:
+            <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
+          </label>
+          <button @click="drawStamp(false, true)">刷新做旧</button>
+        </div>
+
+        <!-- 标尺设置 -->
+        <div class="control-group" style="margin-left: 12px">
+          <h3>标尺设置</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="showFullRuler" />
+            显示完整标尺
+          </label>
+        </div>
+      </div>
+
       <canvas
         ref="stampCanvas"
         width="600"
@@ -1321,6 +1323,7 @@ button:hover {
 
 .canvas-container {
   flex-grow: 1;
+  flex-direction: column;
   background-color: aliceblue;
   display: flex;
   justify-content: center;
