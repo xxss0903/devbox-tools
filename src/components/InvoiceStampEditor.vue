@@ -1205,7 +1205,6 @@ watch(
     bottomText,
     bottomTextFontSizeMM,
     bottomTextLetterSpacing,
-    starPositionY,
     bottomTextPositionY,
     taxNumber,
     applyAging,
@@ -1225,11 +1224,11 @@ watch(
     drawStampWidth,
     drawStampHeight,
     shouldDrawStar,
-    starDiameter,
     starPositionY,
     taxNumberCompression,
     taxNumberLetterSpacing,
-    taxNumberPositionY
+    taxNumberPositionY,
+    starDiameter
   ],
   () => {
     drawStamp(false, false)
