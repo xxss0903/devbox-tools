@@ -5,7 +5,7 @@
         class="button-group"
         style="position: sticky; top: 0; z-index: 1000; background-color: white; padding: 10px"
       >
-        <button @click="updateStamp(true)">刷新印章</button>
+        <button @click="updateStamp()">刷新印章</button>
         <button @click="saveStampAsPNG">保存印章</button>
       </div>
 
@@ -199,6 +199,8 @@
         height="600"
         @mousemove="onMouseMove"
         @mouseleave="onMouseLeave"
+        @mousedown="onMouseDown"
+        @mouseup="onMouseUp"
       ></canvas>
     </div>
   </div>
@@ -272,6 +274,12 @@ const securityPatternColor = ref('#FF0000')
 const securityPatternCount = ref(5) // 防伪纹路数量
 const securityPatternLength = ref(0.5) // 纹路长度，单位为毫米
 const securityPatternAngleRange = ref(30) // 纹路倾斜角度范围，单位为度
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const dragStartY = ref(0)
+
+const stampOffsetX = ref(0) // 水平偏移量（单位：毫米）
+const stampOffsetY = ref(0) // 垂直偏移量（单位：毫米）
 
 const goBack = () => {
   router.back()
@@ -427,55 +435,6 @@ const saveStampAsPNG = () => {
   if (applyAging.value) {
     addAgingEffect(saveCtx, outputSize, outputSize, false)
   }
-
-  // 将新的 canvas 转换为 PNG 数据 URL
-  const dataURL = saveCanvas.toDataURL('image/png')
-
-  // 创建一个临时的 <a> 元素来触发下载
-  const link = document.createElement('a')
-  link.href = dataURL
-  link.download = '印章.png'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-
-const saveStamp = () => {
-  const canvas = stampCanvas.value
-  if (!canvas) return
-  const scaleFactor = 1 // 可以根据需要调整，更大的值会产生更高分辨率的图像
-  const tempMMPerPixel = MM_PER_PIXEL * scaleFactor
-
-  // 增加边距，确保完整包含印章
-  const margin = 2 * tempMMPerPixel // 10mm 的边距
-  const stampSize = (circleRadius.value * 2 + 1) * tempMMPerPixel // 增加 20mm 的总边距
-  const saveCanvas = document.createElement('canvas')
-  saveCanvas.width = stampSize
-  saveCanvas.height = stampSize
-  const saveCtx = saveCanvas.getContext('2d')
-  if (!saveCtx) return
-
-  // 设置保存 canvas 的背景为白色
-  saveCtx.fillStyle = 'white'
-  saveCtx.fillRect(0, 0, stampSize, stampSize)
-
-  // 计算原始 canvas 中印章的位置和大小
-  const originalStampSize = (circleRadius.value + 1) * 2 * tempMMPerPixel
-  const sourceX = (canvas.width - originalStampSize) / 2
-  const sourceY = (canvas.height - originalStampSize) / 2
-
-  // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并居中
-  saveCtx.drawImage(
-    canvas,
-    sourceX,
-    sourceY,
-    originalStampSize,
-    originalStampSize,
-    margin,
-    margin,
-    stampSize - 2 * margin,
-    stampSize - 2 * margin
-  )
 
   // 将新的 canvas 转换为 PNG 数据 URL
   const dataURL = saveCanvas.toDataURL('image/png')
@@ -695,11 +654,15 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
   if (!offscreenCtx) return
 
   // 在离屏 canvas 上绘制印章
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
+  const oldCenterX = canvas.width / 2
+  const oldCenterY = canvas.height / 2
   const radius = circleRadius.value * MM_PER_PIXEL
   const radiusX = 20 * MM_PER_PIXEL // 长轴半径
   const radiusY = 15 * MM_PER_PIXEL // 短轴半径
+
+  // 计算偏移后的中心点
+  const centerX = oldCenterX + stampOffsetX.value * MM_PER_PIXEL
+  const centerY = oldCenterY + stampOffsetY.value * MM_PER_PIXEL
 
   // 绘制椭圆边框
   offscreenCtx.beginPath()
@@ -929,22 +892,6 @@ const drawRuler = (
   }
 }
 
-const onMouseMove = (event: MouseEvent) => {
-  const canvas = stampCanvas.value
-  if (!canvas) return
-
-  const rect = canvas.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  const mmX = Math.round(((x - RULER_WIDTH) / MM_PER_PIXEL) * 10) / 10
-  const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
-
-  // 只在需要时重绘主要内容
-  drawStamp(false, false)
-  highlightRulerPosition(mmX, mmY)
-  drawCrossLines(x, y)
-}
-
 const highlightRulerPosition = (mmX: number, mmY: number) => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -1001,13 +948,47 @@ const drawCrossLines = (x: number, y: number) => {
     }
   }
 }
+const onMouseMove = (event: MouseEvent) => {
+  if (isDragging.value) {
+    const newOffsetX = (event.clientX - dragStartX.value) / MM_PER_PIXEL
+    const newOffsetY = (event.clientY - dragStartY.value) / MM_PER_PIXEL
+    stampOffsetX.value = Math.round(newOffsetX * 10) / 10 // 四舍五入到小数点后一位
+    stampOffsetY.value = Math.round(newOffsetY * 10) / 10
+    drawStamp(false, false)
+  } else {
+    // 原有的鼠标移动逻辑
+    const canvas = stampCanvas.value
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    const mmX = Math.round(((x - RULER_WIDTH) / MM_PER_PIXEL) * 10) / 10
+    const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
+
+    drawStamp(false, false)
+    highlightRulerPosition(mmX, mmY)
+    drawCrossLines(x, y)
+  }
+}
 
 const onMouseLeave = () => {
+  isDragging.value = false
   drawStamp(false, false)
 }
 
 const updateStamp = () => {
   drawStamp(false, false)
+}
+
+const onMouseDown = (event: MouseEvent) => {
+  isDragging.value = true
+  dragStartX.value = event.clientX - stampOffsetX.value * MM_PER_PIXEL
+  dragStartY.value = event.clientY - stampOffsetY.value * MM_PER_PIXEL
+}
+
+const onMouseUp = () => {
+  isDragging.value = false
 }
 
 onMounted(() => {
