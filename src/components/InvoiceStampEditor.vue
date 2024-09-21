@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div class="editor-controls">
+    <div class="editor-controls" ref="editorControls">
       <div
         class="button-group"
         style="position: sticky; top: 0; z-index: 1000; background-color: white; padding: 10px"
@@ -15,7 +15,7 @@
           显示完整标尺
         </label>
       </div>
-      <div class="control-group">
+      <div class="control-group" id="basic-info">
         <h3>基本信息</h3>
         <label>
           公司名称:
@@ -42,7 +42,7 @@
           <input type="number" v-model.number="drawStampHeight" min="1" max="50" step="1" />
         </label>
       </div>
-      <div class="control-group">
+      <div class="control-group" id="star-settings">
         <h3>五角星设置</h3>
         <label class="checkbox-label">
           <input type="checkbox" v-model="shouldDrawStar" />
@@ -57,7 +57,7 @@
           <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
         </label>
       </div>
-      <div class="control-group">
+      <div class="control-group" id="stamp-settings">
         <h3>文字压缩设置</h3>
         <label>
           <span>公司名称压缩：{{ companyNameCompression.toFixed(2) }}</span>
@@ -123,24 +123,23 @@
           编码边距 (mm):
           <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
         </label>
-      </div>
-      <div class="control-group">
-        <h3>字体设置</h3>
+        <h3>高级设置</h3>
         <label>
-          公司名称字体大小 (mm):
-          <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
+          <span>文字分布因子:{{ textDistributionFactor }}</span>
+          <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
         </label>
         <label>
-          印章编码字体大小 (mm):
-          <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
+          <span>编码文字分布因子:{{ codeDistributionFactor }}</span>
+          <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
         </label>
         <label>
-          底部文字大小 (mm):
-          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
+          文字边距 (mm):
+          <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
         </label>
-      </div>
-
-      <div class="control-group">
+        <label>
+          编码边距 (mm):
+          <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
+        </label>
         <h3>印章设置</h3>
         <label>
           圆形半径 (mm):
@@ -153,6 +152,19 @@
         <label>
           圆形边框颜色:
           <input type="color" v-model="circleBorderColor" />
+        </label>
+        <h3>字体设置</h3>
+        <label>
+          公司名称字体大小 (mm):
+          <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
+        </label>
+        <label>
+          印章编码字体大小 (mm):
+          <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
+        </label>
+        <label>
+          底部文字大小 (mm):
+          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
         </label>
       </div>
       <div class="control-group">
@@ -200,26 +212,6 @@
           <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
         </label>
       </div>
-
-      <div class="control-group">
-        <h3>高级设置</h3>
-        <label>
-          <span>文字分布因子:{{ textDistributionFactor }}</span>
-          <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
-        </label>
-        <label>
-          <span>编码文字分布因子:{{ codeDistributionFactor }}</span>
-          <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
-        </label>
-        <label>
-          文字边距 (mm):
-          <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
-        </label>
-        <label>
-          编码边距 (mm):
-          <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
-        </label>
-      </div>
     </div>
     <div class="canvas-container">
       <canvas
@@ -230,6 +222,7 @@
         @mouseleave="onMouseLeave"
         @mousedown="onMouseDown"
         @mouseup="onMouseUp"
+        @click="onCanvasClick"
       ></canvas>
     </div>
   </div>
@@ -239,7 +232,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
-
+const editorControls = ref<HTMLDivElement | null>(null)
 const router = useRouter()
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
 const MM_PER_PIXEL = 10 // 毫米换算像素
@@ -248,6 +241,21 @@ const RULER_WIDTH = 80
 const RULER_HEIGHT = 80
 
 const offscreenCanvas = ref<HTMLCanvasElement | null>(null)
+
+// 定义印章区域及其对应的设置组 ID
+const stampAreas = [
+  {
+    name: 'companyName',
+    id: 'basic-info',
+    shape: 'arc',
+    startAngle: Math.PI,
+    endAngle: 2 * Math.PI
+  },
+  { name: 'bottomText', id: 'basic-info', shape: 'rectangle', y: 0.7, height: 0.3 },
+  { name: 'code', id: 'basic-info', shape: 'arc', startAngle: 0, endAngle: Math.PI },
+  { name: 'star', id: 'star-settings', shape: 'circle', radius: 0.2 },
+  { name: 'border', id: 'stamp-settings', shape: 'ellipse' }
+]
 
 // 添加响应式数据
 const companyName = ref('绘制印章有限责任公司')
@@ -520,6 +528,49 @@ const drawEllipse = (
   ctx.strokeStyle = borderColor
   ctx.lineWidth = borderWidth
   ctx.stroke()
+}
+
+const onCanvasClick = (event: MouseEvent) => {
+  const canvas = stampCanvas.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left - RULER_WIDTH
+  const y = event.clientY - rect.top - RULER_HEIGHT
+
+  const centerX = canvas.width / 2 - RULER_WIDTH + stampOffsetX.value * MM_PER_PIXEL
+  const centerY = canvas.height / 2 - RULER_HEIGHT + stampOffsetY.value * MM_PER_PIXEL
+  const radiusX = stampWidth.value * MM_PER_PIXEL
+  const radiusY = stampHeight.value * MM_PER_PIXEL
+
+  const clickedArea = stampAreas.find((area) => {
+    switch (area.shape) {
+      case 'arc':
+        const angle = Math.atan2(y - centerY, x - centerX)
+        return angle >= area.startAngle && angle <= area.endAngle
+      case 'rectangle':
+        return y >= centerY + radiusY * area.y && y <= centerY + radiusY * (area.y + area.height)
+      case 'circle':
+        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2)
+        return distance <= radiusX * area.radius
+      case 'ellipse':
+        return ((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2 <= 1
+    }
+  })
+
+  if (clickedArea) {
+    scrollToSection(clickedArea.id)
+  }
+}
+
+const scrollToSection = (sectionId: string) => {
+  const controlsElement = editorControls.value
+  if (!controlsElement) return
+
+  const section = controlsElement.querySelector(`#${sectionId}`)
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' })
+  }
 }
 
 // 新增一个响应式变量来存储随机参数
