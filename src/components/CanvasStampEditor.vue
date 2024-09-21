@@ -15,15 +15,15 @@
       </label>
       <label>
         公司名称字体大小 (mm):
-        <input type="number" v-model.number="companyFontSizeMM" />
+        <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
       </label>
       <label>
         印章编码字体大小 (mm):
-        <input type="number" v-model.number="codeFontSizeMM" />
+        <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
       </label>
       <label>
         圆形半径 (mm):
-        <input type="number" v-model.number="circleRadius" />
+        <input type="number" v-model.number="circleRadius" step="0.1" />
       </label>
       <label>
         圆形边框宽度 (mm):
@@ -39,7 +39,7 @@
       </label>
       <label>
         五角星直径 (mm):
-        <input type="number" v-model.number="starDiameter" />
+        <input type="number" v-model.number="starDiameter" step="0.1" />
       </label>
       <label>
         底部文字大小 (mm):
@@ -585,40 +585,67 @@ const drawRuler = (
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
 
-  for (let i = 0; i <= rulerLength - rulerSize; i += MM_PER_PIXEL) {
+  for (let i = 0; i <= rulerLength - rulerSize; i += MM_PER_PIXEL / 10) {
     const pos = i + rulerSize
-    const mm = Math.round(i * mmPerPixel)
+    const mm = Math.round(i * mmPerPixel * 10) / 10
 
     if (mm % 5 === 0) {
+      // 10毫米刻度
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
-        ctx.lineTo(pos, rulerSize / 2)
+        ctx.lineTo(pos, rulerSize * 0.8)
       } else {
         ctx.moveTo(0, pos)
-        ctx.lineTo(rulerSize / 2, pos)
+        ctx.lineTo(rulerSize * 0.8, pos)
       }
       ctx.lineWidth = 1
       ctx.stroke()
 
       ctx.save()
       if (isHorizontal) {
-        ctx.fillText(mm.toString(), pos, rulerSize / 2)
+        ctx.fillText(mm.toString(), pos, rulerSize * 0.8)
       } else {
-        ctx.translate(rulerSize / 2, pos)
+        ctx.translate(rulerSize * 0.8, pos)
         ctx.rotate(-Math.PI / 2)
         ctx.fillText(mm.toString(), 0, 0)
       }
       ctx.restore()
-    } else {
+    } else if (mm % 1 === 0) {
+      // 1毫米刻度
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
-        ctx.lineTo(pos, rulerSize / 4)
+        ctx.lineTo(pos, rulerSize * 0.6)
       } else {
         ctx.moveTo(0, pos)
-        ctx.lineTo(rulerSize / 4, pos)
+        ctx.lineTo(rulerSize * 0.6, pos)
       }
+      ctx.lineWidth = 0.5
+      ctx.stroke()
+    } else if (mm % 0.5 === 0) {
+      // 0.5毫米刻度
+      ctx.beginPath()
+      if (isHorizontal) {
+        ctx.moveTo(pos, 0)
+        ctx.lineTo(pos, rulerSize * 0.4)
+      } else {
+        ctx.moveTo(0, pos)
+        ctx.lineTo(rulerSize * 0.4, pos)
+      }
+      ctx.lineWidth = 0.5
+      ctx.stroke()
+    } else {
+      // 0.1毫米刻度
+      ctx.beginPath()
+      if (isHorizontal) {
+        ctx.moveTo(pos, 0)
+        ctx.lineTo(pos, rulerSize * 0.2)
+      } else {
+        ctx.moveTo(0, pos)
+        ctx.lineTo(rulerSize * 0.2, pos)
+      }
+      ctx.lineWidth = 0.5
       ctx.stroke()
     }
   }
@@ -631,17 +658,13 @@ const onMouseMove = (event: MouseEvent) => {
   const rect = canvas.getBoundingClientRect()
   const x = event.clientX - rect.left
   const y = event.clientY - rect.top
-  const mmX = Math.round((x - RULER_WIDTH) / MM_PER_PIXEL)
-  const mmY = Math.round((y - RULER_HEIGHT) / MM_PER_PIXEL)
+  const mmX = Math.round(((x - RULER_WIDTH) / MM_PER_PIXEL) * 10) / 10
+  const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
 
   // 只在需要时重绘主要内容
   drawStamp()
   highlightRulerPosition(mmX, mmY)
   drawCrossLines(x, y)
-}
-
-const onMouseLeave = () => {
-  drawStamp()
 }
 
 const highlightRulerPosition = (mmX: number, mmY: number) => {
@@ -665,7 +688,7 @@ const highlightRulerPosition = (mmX: number, mmY: number) => {
   ctx.font = 'bold 12px Arial'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText(`${mmX}mm, ${mmY}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
+  ctx.fillText(`${mmX.toFixed(1)}mm, ${mmY.toFixed(1)}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
 }
 
 const drawCrossLines = (x: number, y: number) => {
@@ -699,6 +722,10 @@ const drawCrossLines = (x: number, y: number) => {
       mainCtx.drawImage(canvas, 0, 0)
     }
   }
+}
+
+const onMouseLeave = () => {
+  drawStamp()
 }
 
 const updateStamp = () => {

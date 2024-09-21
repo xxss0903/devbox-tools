@@ -625,37 +625,49 @@ const drawRuler = (
     const pos = i + rulerSize
     const mm = Math.round(i * mmPerPixel * 10) / 10
 
-    if (mm % 1 === 0) {
-      // 整数毫米
+    if (mm % 5 === 0) {
+      // 10毫米刻度
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
-        ctx.lineTo(pos, rulerSize / 2)
+        ctx.lineTo(pos, rulerSize * 0.8)
       } else {
         ctx.moveTo(0, pos)
-        ctx.lineTo(rulerSize / 2, pos)
+        ctx.lineTo(rulerSize * 0.8, pos)
       }
       ctx.lineWidth = 1
       ctx.stroke()
 
       ctx.save()
       if (isHorizontal) {
-        ctx.fillText(mm.toString(), pos, rulerSize / 2)
+        ctx.fillText(mm.toString(), pos, rulerSize * 0.8)
       } else {
-        ctx.translate(rulerSize / 2, pos)
+        ctx.translate(rulerSize * 0.8, pos)
         ctx.rotate(-Math.PI / 2)
         ctx.fillText(mm.toString(), 0, 0)
       }
       ctx.restore()
+    } else if (mm % 1 === 0) {
+      // 1毫米刻度
+      ctx.beginPath()
+      if (isHorizontal) {
+        ctx.moveTo(pos, 0)
+        ctx.lineTo(pos, rulerSize * 0.6)
+      } else {
+        ctx.moveTo(0, pos)
+        ctx.lineTo(rulerSize * 0.6, pos)
+      }
+      ctx.lineWidth = 0.5
+      ctx.stroke()
     } else if (mm % 0.5 === 0) {
       // 0.5毫米刻度
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
-        ctx.lineTo(pos, rulerSize / 3)
+        ctx.lineTo(pos, rulerSize * 0.4)
       } else {
         ctx.moveTo(0, pos)
-        ctx.lineTo(rulerSize / 3, pos)
+        ctx.lineTo(rulerSize * 0.4, pos)
       }
       ctx.lineWidth = 0.5
       ctx.stroke()
@@ -664,10 +676,10 @@ const drawRuler = (
       ctx.beginPath()
       if (isHorizontal) {
         ctx.moveTo(pos, 0)
-        ctx.lineTo(pos, rulerSize / 6)
+        ctx.lineTo(pos, rulerSize * 0.2)
       } else {
         ctx.moveTo(0, pos)
-        ctx.lineTo(rulerSize / 6, pos)
+        ctx.lineTo(rulerSize * 0.2, pos)
       }
       ctx.lineWidth = 0.5
       ctx.stroke()
