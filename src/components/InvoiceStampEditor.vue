@@ -365,7 +365,7 @@ const drawCompanyName = (
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px SimSun`
-  ctx.fillStyle = 'red'
+  ctx.fillStyle = circleBorderColor.value
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -405,7 +405,7 @@ const drawCode = (
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px Arial`
-  ctx.fillStyle = 'red'
+  ctx.fillStyle = circleBorderColor.value
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -447,7 +447,7 @@ const drawBottomText = (
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px SimSun`
-  ctx.fillStyle = 'red'
+  ctx.fillStyle = circleBorderColor.value
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -588,7 +588,7 @@ const drawTaxNumber = (
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px Arial`
-  ctx.fillStyle = 'red'
+  ctx.fillStyle = circleBorderColor.value
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -723,7 +723,7 @@ const highlightRulerPosition = (mmX: number, mmY: number) => {
   const y = mmY * MM_PER_PIXEL + RULER_HEIGHT
 
   // 高亮水平标尺
-  ctx.fillStyle = 'red'
+  ctx.fillStyle = circleBorderColor.value
   ctx.fillRect(RULER_WIDTH, y - 1, canvas.width - RULER_WIDTH, 2)
 
   // 高亮垂直标尺
