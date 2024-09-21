@@ -1,7 +1,10 @@
 <template>
   <div class="container">
     <div class="editor-controls">
-      <div class="button-group">
+      <div
+        class="button-group"
+        style="position: sticky; top: 0; z-index: 1000; background-color: white; padding: 10px"
+      >
         <button @click="updateStamp">刷新印章</button>
         <button @click="saveStampAsPNG">保存印章</button>
       </div>
@@ -93,6 +96,7 @@
           启用防伪纹路:
           <input type="checkbox" v-model="securityPatternEnabled" />
         </label>
+        <button @click="drawStamp(true, false)">刷新纹路</button>
         <label>
           纹路数量:
           <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1" />
@@ -200,9 +204,10 @@
           <input type="checkbox" v-model="applyAging" />
           应用做旧效果
         </label>
+        <button @click="drawStamp(false, true)">刷新做旧</button>
         <label v-if="applyAging">
           做旧强度:
-          <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
+          <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
         </label>
       </div>
     </div>
@@ -269,7 +274,26 @@ const goBack = () => {
   router.back()
 }
 
-const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+// 新增一个响应式变量来存储做旧效果的参数
+const agingEffectParams = ref<
+  Array<{
+    x: number
+    y: number
+    noiseSize: number
+    noise: number
+    strongNoiseSize: number
+    strongNoise: number
+    fade: number
+    seed: number // 保存随机数字
+  }>
+>([])
+
+const addAgingEffect = (
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  forceRefresh: boolean = false
+) => {
   const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data
 
@@ -277,89 +301,121 @@ const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: nu
   const centerY = height / 2
   const radius = (circleRadius.value + 1) * MM_PER_PIXEL
 
-  const addCircularNoise = (x: number, y: number, size: number, intensity: number) => {
-    const radiusSquared = (size * size) / 4
-    for (let dy = -size / 2; dy < size / 2; dy++) {
-      for (let dx = -size / 2; dx < size / 2; dx++) {
-        if (dx * dx + dy * dy <= radiusSquared) {
-          const nx = Math.round(x + dx)
-          const ny = Math.round(y + dy)
-          const nIndex = (ny * width + nx) * 4
-          if (nIndex >= 0 && nIndex < data.length) {
-            data[nIndex] = Math.min(255, data[nIndex] + intensity)
-            data[nIndex + 1] = Math.min(255, data[nIndex + 1] + intensity)
-            data[nIndex + 2] = Math.min(255, data[nIndex + 2] + intensity)
-          }
-        }
-      }
-    }
-  }
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const index = (y * width + x) * 4
-
-      const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
-      if (distanceFromCenter <= radius) {
-        if (data[index] > 200 && data[index + 1] < 50 && data[index + 2] < 50) {
+  // 如果需要刷新或者参数数组为空,则重新生成参数
+  if (forceRefresh || agingEffectParams.value.length === 0) {
+    agingEffectParams.value = []
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = (y * width + x) * 4
+        const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
+        if (
+          distanceFromCenter <= radius &&
+          data[index] > 200 &&
+          data[index + 1] < 50 &&
+          data[index + 2] < 50
+        ) {
           const intensityFactor = agingIntensity.value / 100
+          let seed = Math.random()
+          agingEffectParams.value.push({
+            x,
 
-          // 添加小型圆形噪点
-          if (Math.random() < 0.4 * intensityFactor) {
-            const noiseSize = Math.random() * 3 + 1 // 噪点大小从1到4像素不等
-            const noise = Math.random() * 200 * intensityFactor
-            addCircularNoise(x, y, noiseSize, noise)
-          }
-
-          // 添加大型圆形噪点
-          if (Math.random() < 0.05 * intensityFactor) {
-            const strongNoiseSize = Math.random() * 5 + 2 // 更大的噪点，2到7像素不等
-            const strongNoise = Math.random() * 250 * intensityFactor + 5
-            addCircularNoise(x, y, strongNoiseSize, strongNoise)
-          }
-
-          // 随机添加褪色效果
-          if (Math.random() < 0.2 * intensityFactor) {
-            const fade = Math.random() * 50 * intensityFactor
-            data[index] = Math.min(255, data[index] + fade)
-            data[index + 1] = Math.min(255, data[index + 1] + fade)
-            data[index + 2] = Math.min(255, data[index + 2] + fade)
-          }
+            y,
+            noiseSize: Math.random() * 3 + 1,
+            noise: Math.random() * 200 * intensityFactor,
+            strongNoiseSize: Math.random() * 5 + 2,
+            strongNoise: Math.random() * 250 * intensityFactor + 5,
+            fade: Math.random() * 50 * intensityFactor,
+            seed: seed
+          })
         }
       }
     }
   }
+
+  // 使用保存的参数应用做旧效果
+  agingEffectParams.value.forEach((param) => {
+    const { x, y, noiseSize, noise, strongNoiseSize, strongNoise, fade, seed } = param
+    const index = (y * width + x) * 4
+
+    if (seed < 0.4) {
+      addCircularNoise(data, width, x, y, noiseSize, noise)
+    }
+
+    if (seed < 0.05) {
+      addCircularNoise(data, width, x, y, strongNoiseSize, strongNoise)
+    }
+
+    if (seed < 0.2) {
+      data[index] = Math.min(255, data[index] + fade)
+      data[index + 1] = Math.min(255, data[index + 1] + fade)
+      data[index + 2] = Math.min(255, data[index + 2] + fade)
+    }
+  })
 
   ctx.putImageData(imageData, 0, 0)
 }
 
+// 辅助函数,用于添加圆形噪点
+const addCircularNoise = (
+  data: Uint8ClampedArray,
+  width: number,
+  x: number,
+  y: number,
+  size: number,
+  intensity: number
+) => {
+  const radiusSquared = (size * size) / 4
+  for (let dy = -size / 2; dy < size / 2; dy++) {
+    for (let dx = -size / 2; dx < size / 2; dx++) {
+      if (dx * dx + dy * dy <= radiusSquared) {
+        const nx = Math.round(x + dx)
+        const ny = Math.round(y + dy)
+        const nIndex = (ny * width + nx) * 4
+        if (nIndex >= 0 && nIndex < data.length) {
+          data[nIndex] = Math.min(255, data[nIndex] + intensity)
+          data[nIndex + 1] = Math.min(255, data[nIndex + 1] + intensity)
+          data[nIndex + 2] = Math.min(255, data[nIndex + 2] + intensity)
+        }
+      }
+    }
+  }
+}
+
+// 新增一个响应式变量来存储随机参数
+const securityPatternParams = ref<Array<{ angle: number; lineAngle: number }>>([])
 // 修改防伪纹路绘制函数
 const drawSecurityPattern = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
   radiusX: number,
-  radiusY: number
+  radiusY: number,
+  forceRefresh: boolean = false
 ) => {
   if (!securityPatternEnabled.value) return
 
   ctx.save()
-  ctx.strokeStyle = '#FFFFFF' // 设置纹路颜色为白色
+  ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = securityPatternWidth.value * MM_PER_PIXEL
-  ctx.globalCompositeOperation = 'destination-out' // 使用擦除模式
+  ctx.globalCompositeOperation = 'destination-out'
 
   const angleRangeRad = (securityPatternAngleRange.value * Math.PI) / 180
 
-  for (let i = 0; i < securityPatternCount.value; i++) {
-    const angle = Math.random() * Math.PI * 2
+  // 如果需要刷新或者参数数组为空,则重新生成参数
+  if (forceRefresh || securityPatternParams.value.length === 0) {
+    securityPatternParams.value = []
+    for (let i = 0; i < securityPatternCount.value; i++) {
+      const angle = Math.random() * Math.PI * 2
+      const normalAngle = Math.atan2(radiusY * Math.cos(angle), radiusX * Math.sin(angle))
+      const lineAngle = normalAngle + (Math.random() - 0.5) * angleRangeRad
+      securityPatternParams.value.push({ angle, lineAngle })
+    }
+  }
+
+  // 使用保存的参数绘制纹路
+  securityPatternParams.value.forEach(({ angle, lineAngle }) => {
     const x = centerX + radiusX * Math.cos(angle)
     const y = centerY + radiusY * Math.sin(angle)
-
-    // 计算椭圆在该点的法线角度
-    const normalAngle = Math.atan2(radiusY * Math.cos(angle), radiusX * Math.sin(angle))
-
-    // 在法线角度基础上添加随机倾斜
-    const lineAngle = normalAngle + (Math.random() - 0.5) * angleRangeRad
 
     const length = securityPatternLength.value * MM_PER_PIXEL
     const startX = x - (length / 2) * Math.cos(lineAngle)
@@ -371,7 +427,7 @@ const drawSecurityPattern = (
     ctx.moveTo(startX, startY)
     ctx.lineTo(endX, endY)
     ctx.stroke()
-  }
+  })
 
   ctx.restore()
 }
@@ -658,7 +714,7 @@ const drawBottomText = (
   ctx.restore()
 }
 
-const drawStamp = () => {
+const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean = false) => {
   const canvas = stampCanvas.value
   if (!canvas) return
   const ctx = canvas.getContext('2d')
@@ -709,7 +765,8 @@ const drawStamp = () => {
     centerX,
     centerY,
     circleRadius.value * MM_PER_PIXEL,
-    circleRadius.value * MM_PER_PIXEL * 0.75
+    circleRadius.value * MM_PER_PIXEL * 0.75,
+    refreshSecurityPattern
   )
 
   // 4. 绘制公司名称
@@ -766,7 +823,7 @@ const drawStamp = () => {
 
   // 如果需要，在这里添加做旧效果
   if (applyAging.value) {
-    addAgingEffect(ctx, canvas.width, canvas.height)
+    addAgingEffect(ctx, canvas.width, canvas.height, refreshOld)
   }
 
   // // 在绘制完所有内容后，添加做旧效果

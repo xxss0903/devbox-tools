@@ -127,7 +127,7 @@
         </label>
       </div>
       <div class="control-group">
-        <h3>防伪纹路设置（点击刷新印章按钮可刷新防伪纹路）</h3>
+        <h3>防伪纹路设置</h3>
         <label>
           启用防伪纹路:
           <input type="checkbox" v-model="securityPatternEnabled" />
