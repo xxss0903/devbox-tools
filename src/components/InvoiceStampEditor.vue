@@ -84,7 +84,7 @@
             type="range"
             v-model.number="bottomTextLetterSpacing"
             min="-1"
-            max="5"
+            max="10"
             step="0.05"
           />
         </label>
@@ -125,6 +125,26 @@
       <div class="control-group" id="tax-number-settings">
         <h3>税号设置</h3>
         <label>税号: <input v-model="taxNumber" /></label>
+        <label>
+          <span>压缩比例：{{ taxNumberCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="taxNumberCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>字符间距 (mm)：{{ taxNumberLetterSpacing.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="taxNumberLetterSpacing"
+            min="-1"
+            max="20"
+            step="0.05"
+          />
+        </label>
       </div>
 
       <!-- 五角星设置 -->
@@ -301,6 +321,8 @@ const stampOffsetX = ref(0) // 水平偏移量（单位：毫米）
 const stampOffsetY = ref(0) // 垂直偏移量（单位：毫米）
 const showFullRuler = ref(false)
 const shouldDrawStar = ref(false) // 默认绘制五角星
+const taxNumberCompression = ref(1) // 税号文字宽度缩放比例
+const taxNumberLetterSpacing = ref(0.3) // 税号文字间距（单位：毫米）
 
 const goBack = () => {
   router.back()
@@ -865,8 +887,7 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     centerY,
     taxNumber.value,
     taxNumberFontHeight,
-    taxNumberTotalWidth,
-    taxNumberCharWidth
+    taxNumberTotalWidth
   )
 
   // 6. 绘制底部文字
@@ -923,8 +944,7 @@ const drawTaxNumber = (
   centerY: number,
   text: string,
   fontSize: number,
-  totalWidth: number,
-  characterWidth: number
+  totalWidth: number
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px Arial`
@@ -934,14 +954,25 @@ const drawTaxNumber = (
 
   const characters = text.split('')
   const charCount = characters.length
-  const spacing = (totalWidth - charCount * characterWidth) / (charCount - 1)
-  const startX = centerX - totalWidth / 2 + characterWidth / 2
+  const letterSpacing = taxNumberLetterSpacing.value * MM_PER_PIXEL
+
+  // 计算压缩后的总宽度
+  const compressedTotalWidth = totalWidth * taxNumberCompression.value
+
+  // 计算单个字符的宽度（考虑压缩）
+  const charWidth = (compressedTotalWidth - (charCount - 1) * letterSpacing) / charCount
+
+  // 计算整个文本的实际宽度
+  const actualWidth = charCount * charWidth + (charCount - 1) * letterSpacing
+
+  // 计算起始位置，确保文字居中
+  const startX = centerX - actualWidth / 2 + charWidth / 2
 
   characters.forEach((char, index) => {
-    const x = startX + index * (characterWidth + spacing)
+    const x = startX + index * (charWidth + letterSpacing)
     ctx.save()
     ctx.translate(x, centerY)
-    ctx.scale((fontSize - characterWidth) / fontSize, 1)
+    ctx.scale(taxNumberCompression.value, 1)
     ctx.fillText(char, 0, 0)
     ctx.restore()
   })
@@ -1188,7 +1219,9 @@ watch(
     drawStampHeight,
     shouldDrawStar,
     starDiameter,
-    starPositionY
+    starPositionY,
+    taxNumberCompression,
+    taxNumberLetterSpacing
   ],
   () => {
     drawStamp(false, false)
