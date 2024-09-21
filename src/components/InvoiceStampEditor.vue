@@ -14,6 +14,10 @@
         <input v-model="code" />
       </label>
       <label>
+        税号:
+        <input v-model="taxNumber" />
+      </label>
+      <label>
         公司名称字体大小 (mm):
         <input type="number" v-model.number="companyFontSizeMM" />
       </label>
@@ -116,6 +120,8 @@ const offscreenCanvas = ref<HTMLCanvasElement | null>(null)
 const companyName = ref('绘制印章有限责任公司')
 // 印章编码
 const code = ref('1234567890123')
+// 税号
+const taxNumber = ref('000000000000000000')
 // 公司名称字体大小（毫米）
 const companyFontSizeMM = ref(4.2)
 // 编码字体大小（毫米）
@@ -502,6 +508,20 @@ const drawStamp = () => {
     companyFontSizeMM.value * MM_PER_PIXEL
   )
 
+  // 绘制税号
+  const taxNumberFontHeight = 3.7 * MM_PER_PIXEL
+  const taxNumberTotalWidth = 26 * MM_PER_PIXEL
+  const taxNumberCharWidth = 1.3 * MM_PER_PIXEL
+  drawTaxNumber(
+    ctx,
+    centerX,
+    centerY,
+    taxNumber.value,
+    taxNumberFontHeight,
+    taxNumberTotalWidth,
+    taxNumberCharWidth
+  )
+
   // 6. 绘制底部文字
   const bottomFontSize = bottomTextFontSizeMM.value * MM_PER_PIXEL
   drawBottomText(
@@ -544,6 +564,39 @@ const drawStamp = () => {
 
   // 8. 绘制垂直标尺
   drawRuler(ctx, canvas.height, RULER_WIDTH, false)
+}
+
+// 绘制中间横排税号
+const drawTaxNumber = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  text: string,
+  fontSize: number,
+  totalWidth: number,
+  characterWidth: number
+) => {
+  ctx.save()
+  ctx.font = `${fontSize}px Arial`
+  ctx.fillStyle = 'red'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  const characters = text.split('')
+  const charCount = characters.length
+  const spacing = (totalWidth - charCount * characterWidth) / (charCount - 1)
+  const startX = centerX - totalWidth / 2 + characterWidth / 2
+
+  characters.forEach((char, index) => {
+    const x = startX + index * (characterWidth + spacing)
+    ctx.save()
+    ctx.translate(x, centerY)
+    ctx.scale((fontSize - characterWidth) / fontSize, 1)
+    ctx.fillText(char, 0, 0)
+    ctx.restore()
+  })
+
+  ctx.restore()
 }
 
 const drawRuler = (
@@ -721,7 +774,8 @@ watch(
     bottomTextFontSizeMM,
     bottomTextLetterSpacing,
     starPositionY,
-    bottomTextPositionY
+    bottomTextPositionY,
+    taxNumber
   ],
   () => {
     drawStamp()
