@@ -8,7 +8,13 @@
         <button @click="updateStamp()">刷新印章</button>
         <button @click="saveStampAsPNG">保存印章</button>
       </div>
-
+      <div class="control-group">
+        <h3>标尺设置</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="showFullRuler" />
+          显示完整标尺
+        </label>
+      </div>
       <div class="control-group">
         <h3>基本信息</h3>
         <label>
@@ -26,6 +32,14 @@
         <label>
           税号:
           <input v-model="taxNumber" />
+        </label>
+        <label>
+          印章宽度 (mm):
+          <input type="number" v-model.number="drawStampWidth" min="1" max="50" step="1" />
+        </label>
+        <label>
+          印章高度 (mm):
+          <input type="number" v-model.number="drawStampHeight" min="1" max="50" step="1" />
         </label>
       </div>
       <div class="control-group">
@@ -207,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
@@ -280,7 +294,7 @@ const dragStartY = ref(0)
 
 const stampOffsetX = ref(0) // 水平偏移量（单位：毫米）
 const stampOffsetY = ref(0) // 垂直偏移量（单位：毫米）
-
+const showFullRuler = ref(false)
 const goBack = () => {
   router.back()
 }
@@ -364,6 +378,33 @@ const addAgingEffect = (
   })
 
   ctx.putImageData(imageData, 0, 0)
+}
+
+const drawFullRuler = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  if (!showFullRuler.value) return
+
+  ctx.save()
+  ctx.strokeStyle = '#bbbbbb' // 浅灰色，半透明
+  ctx.lineWidth = 1
+  ctx.setLineDash([5, 5]) // 设置虚线样式
+
+  // 绘制垂直线
+  for (let x = RULER_WIDTH; x < width; x += 5 * MM_PER_PIXEL) {
+    ctx.beginPath()
+    ctx.moveTo(x, RULER_HEIGHT)
+    ctx.lineTo(x, height)
+    ctx.stroke()
+  }
+
+  // 绘制水平线
+  for (let y = RULER_HEIGHT; y < height; y += 5 * MM_PER_PIXEL) {
+    ctx.beginPath()
+    ctx.moveTo(RULER_WIDTH, y)
+    ctx.lineTo(width, y)
+    ctx.stroke()
+  }
+
+  ctx.restore()
 }
 
 // 辅助函数,用于添加圆形噪点
@@ -637,6 +678,18 @@ const drawBottomText = (
   ctx.restore()
 }
 
+const drawStampWidth = ref(40)
+const drawStampHeight = ref(30)
+
+// 印章尺寸，本来是20*15，现在改成19.5*14.5，为了减去线条宽度的一半
+const stampHeight = computed(() => {
+  return drawStampHeight.value / 2 - circleBorderWidth.value / 2
+})
+
+const stampWidth = computed(() => {
+  return drawStampWidth.value / 2 - circleBorderWidth.value / 2
+})
+
 const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean = false) => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -657,8 +710,8 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
   const oldCenterX = canvas.width / 2
   const oldCenterY = canvas.height / 2
   const radius = circleRadius.value * MM_PER_PIXEL
-  const radiusX = 20 * MM_PER_PIXEL // 长轴半径
-  const radiusY = 15 * MM_PER_PIXEL // 短轴半径
+  const radiusX = stampWidth.value * MM_PER_PIXEL // 长轴半径
+  const radiusY = stampHeight.value * MM_PER_PIXEL // 短轴半径
 
   // 计算偏移后的中心点
   const centerX = oldCenterX + stampOffsetX.value * MM_PER_PIXEL
@@ -686,8 +739,8 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     offscreenCtx,
     centerX,
     centerY,
-    20 * MM_PER_PIXEL,
-    15 * MM_PER_PIXEL,
+    stampWidth.value * MM_PER_PIXEL, // 长轴半径
+    stampHeight.value * MM_PER_PIXEL, // 短轴半径
     circleBorderWidth.value * MM_PER_PIXEL,
     circleBorderColor.value
   )
@@ -707,8 +760,8 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     offscreenCtx,
     centerX,
     centerY,
-    20 * MM_PER_PIXEL, // 长轴半径
-    15 * MM_PER_PIXEL, // 短轴半径
+    stampWidth.value * MM_PER_PIXEL, // 长轴半径
+    stampHeight.value * MM_PER_PIXEL, // 短轴半径
     companyName.value,
     companyFontSizeMM.value * MM_PER_PIXEL
   )
@@ -744,8 +797,8 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     offscreenCtx,
     centerX,
     centerY,
-    20 * MM_PER_PIXEL, // 长轴半径
-    15 * MM_PER_PIXEL, // 短轴半径
+    stampWidth.value * MM_PER_PIXEL, // 长轴半径
+    stampHeight.value * MM_PER_PIXEL, // 短轴半径
     code.value,
     codeFontSizeMM.value * MM_PER_PIXEL
   )
@@ -769,6 +822,9 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
 
   // 8. 绘制垂直标尺
   drawRuler(ctx, canvas.height, RULER_WIDTH, false)
+
+  // 在绘制完所有内容后，添加完整标尺
+  drawFullRuler(ctx, canvas.width, canvas.height)
 }
 
 // 绘制中间横排税号
@@ -1038,7 +1094,9 @@ watch(
     securityPatternEnabled,
     securityPatternCount,
     securityPatternLength,
-    securityPatternWidth
+    securityPatternWidth,
+    drawStampWidth,
+    drawStampHeight
   ],
   () => {
     drawStamp(false, false)
