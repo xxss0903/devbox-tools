@@ -145,6 +145,10 @@
             step="0.05"
           />
         </label>
+        <label>
+          <span>垂直位置调整 (mm)：{{ taxNumberPositionY.toFixed(1) }}</span>
+          <input type="range" v-model.number="taxNumberPositionY" min="-10" max="10" step="0.1" />
+        </label>
       </div>
 
       <!-- 五角星设置 -->
@@ -308,7 +312,7 @@ const codeCompression = ref(1)
 // 防伪纹路
 const securityPatternEnabled = ref(true)
 const securityPatternDensity = ref(0.5)
-const securityPatternWidth = ref(0.1) // 纹路宽度，单位为毫米
+const securityPatternWidth = ref(0.2) // 纹路宽度，单位为毫米
 const securityPatternColor = ref('#FF0000')
 const securityPatternCount = ref(5) // 防伪纹路数量
 const securityPatternLength = ref(2) // 纹路长度，单位为毫米
@@ -323,7 +327,7 @@ const showFullRuler = ref(false)
 const shouldDrawStar = ref(false) // 默认绘制五角星
 const taxNumberCompression = ref(1) // 税号文字宽度缩放比例
 const taxNumberLetterSpacing = ref(0.3) // 税号文字间距（单位：毫米）
-
+const taxNumberPositionY = ref(0) // 税号垂直位置调整，默认为0
 const goBack = () => {
   router.back()
 }
@@ -887,7 +891,8 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     centerY,
     taxNumber.value,
     taxNumberFontHeight,
-    taxNumberTotalWidth
+    taxNumberTotalWidth,
+    taxNumberPositionY.value
   )
 
   // 6. 绘制底部文字
@@ -944,7 +949,8 @@ const drawTaxNumber = (
   centerY: number,
   text: string,
   fontSize: number,
-  totalWidth: number
+  totalWidth: number,
+  positionY: number
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px Arial`
@@ -967,11 +973,12 @@ const drawTaxNumber = (
 
   // 计算起始位置，确保文字居中
   const startX = centerX - actualWidth / 2 + charWidth / 2
+  const adjustedCenterY = centerY + positionY * MM_PER_PIXEL // 使用调整后的Y位置
 
   characters.forEach((char, index) => {
     const x = startX + index * (charWidth + letterSpacing)
     ctx.save()
-    ctx.translate(x, centerY)
+    ctx.translate(x, adjustedCenterY)
     ctx.scale(taxNumberCompression.value, 1)
     ctx.fillText(char, 0, 0)
     ctx.restore()
@@ -1221,7 +1228,8 @@ watch(
     starDiameter,
     starPositionY,
     taxNumberCompression,
-    taxNumberLetterSpacing
+    taxNumberLetterSpacing,
+    taxNumberPositionY
   ],
   () => {
     drawStamp(false, false)
