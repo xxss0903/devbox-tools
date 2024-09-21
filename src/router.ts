@@ -18,9 +18,9 @@ import ImageRounder from './components/ImageRounder.vue'
 import SvgEditor from './components/SvgEditor.vue'
 import Calculator from './components/Calculator.vue'
 import CanvasStampEditor from './components/CanvasStampEditor.vue'
+import StampEditor from './components/StampEditor.vue'
 
 const routes = [
-
   {
     path: '/',
     name: 'Home',
@@ -31,7 +31,11 @@ const routes = [
     path: '/work-diary',
     name: 'WorkDiary',
     component: WorkDiary,
-    meta: { title: '工作日记', searchable: true, keywords: ['work', 'diary', '工作', '日记', '日志'] }
+    meta: {
+      title: '工作日记',
+      searchable: true,
+      keywords: ['work', 'diary', '工作', '日记', '日志']
+    }
   },
   {
     path: '/image-tools',
@@ -61,7 +65,11 @@ const routes = [
     path: '/transparency-converter',
     name: 'TransparencyConverter',
     component: TransparencyConverter,
-    meta: { title: '透明度转换', searchable: true, keywords: ['transparency', 'convert', '透明度', '转换'] }
+    meta: {
+      title: '透明度转换',
+      searchable: true,
+      keywords: ['transparency', 'convert', '透明度', '转换']
+    }
   },
   {
     path: '/code-converter',
@@ -85,7 +93,11 @@ const routes = [
     path: '/image-base64-converter',
     name: 'ImageBase64Converter',
     component: ImageBase64Converter,
-    meta: { title: '图片Base64转换', searchable: true, keywords: ['image', 'base64', 'convert', '图片', '转换'] }
+    meta: {
+      title: '图片Base64转换',
+      searchable: true,
+      keywords: ['image', 'base64', 'convert', '图片', '转换']
+    }
   },
   {
     path: '/image-cropper',
@@ -97,7 +109,11 @@ const routes = [
     path: '/icons8-viewer',
     name: 'Icons8Viewer',
     component: Icons8Viewer,
-    meta: { title: 'Icons8查看器', searchable: true, keywords: ['icons8', 'viewer', '图标', '查看器'] }
+    meta: {
+      title: 'Icons8查看器',
+      searchable: true,
+      keywords: ['icons8', 'viewer', '图标', '查看器']
+    }
   },
   {
     path: '/screenshot-tool',
@@ -109,7 +125,11 @@ const routes = [
     path: '/clipboard-manager',
     name: 'ClipboardManager',
     component: ClipboardManager,
-    meta: { title: '剪贴板管理器', searchable: true, keywords: ['clipboard', 'manager', '剪贴板', '管理'] }
+    meta: {
+      title: '剪贴板管理器',
+      searchable: true,
+      keywords: ['clipboard', 'manager', '剪贴板', '管理']
+    }
   },
   {
     path: '/image-rounder',
@@ -132,9 +152,9 @@ const routes = [
   {
     path: '/stamp-editor',
     name: 'StampEditor',
-    component: CanvasStampEditor,
+    component: StampEditor,
     meta: { title: '印章编辑器', searchable: true, keywords: ['stamp', 'editor', '印章', '编辑器'] }
-  },
+  }
 ]
 
 const router = createRouter({

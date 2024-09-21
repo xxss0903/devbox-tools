@@ -1,6 +1,5 @@
 <template>
   <div class="container">
-    <NavigationBar title="公章编辑器" @goBack="goBack" />
     <div class="editor-controls">
       <label>
         公司名称:
