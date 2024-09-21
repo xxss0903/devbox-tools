@@ -165,7 +165,7 @@
           做旧效果
         </label>
         <label v-if="applyAging">
-          做旧强度（做旧会随时更新，请注意）:
+          做旧强度（因为随机的关系，做旧保存的图片和效果图会有不同）:
           <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
         </label>
       </div>
@@ -340,6 +340,7 @@ const addAgingEffect = (ctx: CanvasRenderingContext2D, width: number, height: nu
 
   ctx.putImageData(imageData, 0, 0)
 }
+
 const saveStampAsPNG = () => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -353,10 +354,6 @@ const saveStampAsPNG = () => {
   saveCanvas.height = outputSize
   const saveCtx = saveCanvas.getContext('2d')
   if (!saveCtx) return
-
-  // 设置保存 canvas 的背景为白色
-  //   saveCtx.fillStyle = 'white'
-  //   saveCtx.fillRect(0, 0, outputSize, outputSize)
 
   // 清除画布，使背景透明
   saveCtx.clearRect(0, 0, outputSize, outputSize)
@@ -383,6 +380,11 @@ const saveStampAsPNG = () => {
     drawSize
   )
 
+  // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
+  if (applyAging.value) {
+    addAgingEffect(saveCtx, outputSize, outputSize)
+  }
+
   // 将新的 canvas 转换为 PNG 数据 URL
   const dataURL = saveCanvas.toDataURL('image/png')
 
@@ -394,6 +396,7 @@ const saveStampAsPNG = () => {
   link.click()
   document.body.removeChild(link)
 }
+
 const saveStamp = () => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -752,7 +755,7 @@ const drawStamp = (refreshRandom: boolean = false) => {
 
   // 在绘制完所有内容后，添加做旧效果
   if (applyAging.value) {
-    addAgingEffect(ctx, canvas.width, canvas.height, refreshRandom)
+    addAgingEffect(ctx, canvas.width, canvas.height)
   }
 
   // 7. 绘制水平标尺
