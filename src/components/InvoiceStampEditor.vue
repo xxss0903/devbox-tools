@@ -145,7 +145,7 @@
       </div>
 
       <!-- 防伪纹路设置 -->
-      <div class="control-group" id="security-pattern-settings">
+      <div class="control-group">
         <h3>防伪纹路设置</h3>
         <label>
           启用防伪纹路:
@@ -172,7 +172,7 @@
       </div>
 
       <!-- 做旧效果设置 -->
-      <div class="control-group" id="aging-effect-settings">
+      <div class="control-group">
         <h3>做旧效果</h3>
         <label class="checkbox-label">
           <input type="checkbox" v-model="applyAging" />
@@ -186,7 +186,7 @@
       </div>
 
       <!-- 标尺设置 -->
-      <div class="control-group" id="ruler-settings">
+      <div class="control-group">
         <h3>标尺设置</h3>
         <label class="checkbox-label">
           <input type="checkbox" v-model="showFullRuler" />
@@ -228,17 +228,17 @@ const offscreenCanvas = ref<HTMLCanvasElement | null>(null)
 const stampAreas = [
   {
     name: 'companyName',
-    id: 'basic-info',
+    id: 'company-name-settings',
     shape: 'arc',
     startAngle: Math.PI,
     endAngle: 2 * Math.PI
   },
-  { name: 'bottomText', id: 'basic-info', shape: 'rectangle', y: 0.7, height: 0.3 },
-  { name: 'code', id: 'basic-info', shape: 'arc', startAngle: 0, endAngle: Math.PI },
+  { name: 'bottomText', id: 'bottom-text-settings', shape: 'rectangle', y: 0.7, height: 0.3 },
+  { name: 'taxNumber', id: 'tax-number-settings', shape: 'rectangle', y: 0.4, height: 0.3 },
+  { name: 'code', id: 'code-settings', shape: 'arc', startAngle: 0, endAngle: Math.PI },
   { name: 'star', id: 'star-settings', shape: 'circle', radius: 0.2 },
   { name: 'border', id: 'stamp-settings', shape: 'ellipse' }
 ]
-
 // 添加响应式数据
 const companyName = ref('绘制印章有限责任公司')
 // 印章编码
