@@ -20,7 +20,73 @@
           <input v-model="code" />
         </label>
       </div>
+      <div class="control-group">
+        <h3>文字压缩设置</h3>
+        <label>
+          <span>公司名称压缩：{{ companyNameCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="companyNameCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>公司名称分布因子：{{ textDistributionFactor.toFixed(1) }}</span>
+          <input
+            type="range"
+            v-model.number="textDistributionFactor"
+            min="1"
+            max="100"
+            step="0.5"
+          />
+        </label>
+        <label>
+          <span>公司名称边距 (mm): </span>
+          <input type="number" v-model.number="textMarginMM" min="-10" max="10" step="0.05" />
+        </label>
+        <label>
+          <span>底部文字压缩：{{ bottomTextCompression.toFixed(2) }}</span>
+          <input
+            type="range"
+            v-model.number="bottomTextCompression"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>底部文字间隔：{{ bottomTextLetterSpacing.toFixed(2) }}mm</span>
+          <input
+            type="range"
+            v-model.number="bottomTextLetterSpacing"
+            min="-1"
+            max="5"
+            step="0.05"
+          />
+        </label>
+        <label>
+          <span>编码文字压缩：{{ codeCompression.toFixed(2) }}</span>
+          <input type="range" v-model.number="codeCompression" min="0.5" max="1.5" step="0.05" />
+        </label>
 
+        <label>
+          <span>编码文字分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
+          <input
+            type="range"
+            v-model.number="codeDistributionFactor"
+            min="10"
+            max="40"
+            step="0.5"
+          />
+        </label>
+
+        <label>
+          编码边距 (mm):
+          <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
+        </label>
+      </div>
       <div class="control-group">
         <h3>字体设置</h3>
         <label>
@@ -98,28 +164,6 @@
           <input type="range" v-model.number="agingIntensity" min="0" max="200" step="1" />
         </label>
       </div>
-
-      <div class="control-group">
-        <h3>高级设置</h3>
-        <label>
-          文字分布因子:
-          <input type="range" v-model.number="textDistributionFactor" min="1" max="60" step="1" />
-          {{ textDistributionFactor }}
-        </label>
-        <label>
-          编码文字分布因子:
-          <input type="range" v-model.number="codeDistributionFactor" min="10" max="40" step="1" />
-          {{ codeDistributionFactor }}
-        </label>
-        <label>
-          文字边距 (mm):
-          <input type="number" v-model.number="textMarginMM" min="0" max="5" step="0.1" />
-        </label>
-        <label>
-          编码边距 (mm):
-          <input type="number" v-model.number="codeMarginMM" min="0" max="5" step="0.1" />
-        </label>
-      </div>
     </div>
     <div class="canvas-container">
       <canvas
@@ -170,6 +214,9 @@ const bottomTextFontSizeMM = ref(4) // 底部文字大小，默认 4mm
 const bottomTextLetterSpacing = ref(0) // 底部文字字符间距，默认 0
 const starPositionY = ref(0) // 五角星垂直位置调整，默认 0
 const bottomTextPositionY = ref(0) // 底部文字垂直位置调整，默认 0
+const companyNameCompression = ref(1)
+const bottomTextCompression = ref(1)
+const codeCompression = ref(1)
 
 const goBack = () => {
   router.back()
@@ -402,8 +449,7 @@ const drawCompanyName = (
   const characters = text.split('')
   const characterCount = characters.length
 
-  // 调整起始和结束角度，使文字始终均匀分布在上半部分
-  const totalAngle = Math.PI * (1 + characterCount / textDistributionFactor.value) // 动态调整总角度
+  const totalAngle = Math.PI * (1 + characterCount / textDistributionFactor.value)
   const startAngle = Math.PI + (Math.PI - totalAngle) / 2
   const endAngle = startAngle + totalAngle
   const anglePerChar = totalAngle / characterCount
@@ -417,7 +463,8 @@ const drawCompanyName = (
 
     ctx.save()
     ctx.translate(x, y)
-    ctx.rotate(angle + Math.PI / 2) // 旋转文字以适应圆弧
+    ctx.rotate(angle + Math.PI / 2)
+    ctx.scale(companyNameCompression.value, 1) // 应用压缩
     ctx.fillText(char, 0, 0)
     ctx.restore()
   })
@@ -426,6 +473,7 @@ const drawCompanyName = (
 }
 
 // 修改 drawCode 函数
+
 const drawCode = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
@@ -436,14 +484,13 @@ const drawCode = (
 ) => {
   ctx.save()
   ctx.font = `${fontSize}px Arial`
-  circleBorderColor.value
+  ctx.fillStyle = circleBorderColor.value
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
   const characters = text.split('')
   const characterCount = characters.length
 
-  // 动态调整总角度
   const totalAngle = Math.PI * (characterCount / codeDistributionFactor.value) * 0.5
   const startAngle = Math.PI / 2 + totalAngle / 2
   const endAngle = Math.PI / 2 - totalAngle / 2
@@ -458,7 +505,8 @@ const drawCode = (
 
     ctx.save()
     ctx.translate(x, y)
-    ctx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
+    ctx.rotate(angle - Math.PI / 2)
+    ctx.scale(codeCompression.value, 1) // 应用压缩
     ctx.fillText(char, 0, 0)
     ctx.restore()
   })
@@ -496,22 +544,26 @@ const drawBottomText = (
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  // 计算文字位置（在五角星正下方）
   const textY = centerY + radius * 0.5 + positionY * MM_PER_PIXEL
 
-  if (letterSpacing === 0) {
-    ctx.fillText(text, centerX, textY)
-  } else {
-    const chars = text.split('')
-    const totalWidth = ctx.measureText(text).width + (chars.length - 1) * letterSpacing
-    let startX = centerX - totalWidth / 2
+  ctx.save()
+  ctx.translate(centerX, textY)
+  ctx.scale(bottomTextCompression.value, 1) // 应用压缩
 
-    chars.forEach((char) => {
-      ctx.fillText(char, startX, textY)
-      startX += ctx.measureText(char).width + letterSpacing
-    })
-  }
+  const chars = text.split('')
+  const charWidths = chars.map((char) => ctx.measureText(char).width)
+  const totalWidth =
+    charWidths.reduce((sum, width) => sum + width, 0) +
+    (chars.length - 1) * letterSpacing * MM_PER_PIXEL
 
+  let currentX = -totalWidth / 2 // 从文本的左边缘开始
+
+  chars.forEach((char, index) => {
+    ctx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
+    currentX += charWidths[index] + letterSpacing * MM_PER_PIXEL
+  })
+
+  ctx.restore()
   ctx.restore()
 }
 
@@ -799,7 +851,11 @@ watch(
     bottomTextFontSizeMM,
     bottomTextLetterSpacing,
     starPositionY,
-    bottomTextPositionY
+    bottomTextPositionY,
+    companyNameCompression,
+    bottomTextCompression,
+    codeCompression,
+    bottomTextLetterSpacing
   ],
   () => {
     drawStamp()
