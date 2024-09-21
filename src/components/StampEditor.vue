@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const editorType = ref('standard')
+const editorType = ref('invoice')
 
 const goBack = () => {
   router.back()
@@ -21,8 +21,8 @@ const goBack = () => {
 
     <div class="editor-selector">
       <select v-model="editorType">
-        <option value="standard">标准印章制作</option>
         <option value="invoice">发票章制作</option>
+        <option value="standard">标准印章制作</option>
       </select>
     </div>
 

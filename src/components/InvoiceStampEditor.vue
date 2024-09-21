@@ -43,6 +43,21 @@
         </label>
       </div>
       <div class="control-group">
+        <h3>五角星设置</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="shouldDrawStar" />
+          绘制五角星
+        </label>
+        <label v-if="shouldDrawStar">
+          五角星直径 (mm):
+          <input type="number" v-model.number="starDiameter" step="0.1" />
+        </label>
+        <label v-if="shouldDrawStar">
+          五角星垂直位置:
+          <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
+        </label>
+      </div>
+      <div class="control-group">
         <h3>文字压缩设置</h3>
         <label>
           <span>公司名称压缩：{{ companyNameCompression.toFixed(2) }}</span>
@@ -295,6 +310,8 @@ const dragStartY = ref(0)
 const stampOffsetX = ref(0) // 水平偏移量（单位：毫米）
 const stampOffsetY = ref(0) // 垂直偏移量（单位：毫米）
 const showFullRuler = ref(false)
+const shouldDrawStar = ref(false) // 默认绘制五角星
+
 const goBack = () => {
   router.back()
 }
@@ -678,6 +695,36 @@ const drawBottomText = (
   ctx.restore()
 }
 
+// 绘制五角星
+const drawStarShape = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+  const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
+  const pathData = starPath.split(/(?=[MLZ])/)
+
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(r, r)
+  ctx.beginPath()
+
+  pathData.forEach((command) => {
+    const [cmd, ...params] = command.trim().split(/\s+/)
+    switch (cmd) {
+      case 'M':
+        ctx.moveTo(parseFloat(params[0]), parseFloat(params[1]))
+        break
+      case 'L':
+        ctx.lineTo(parseFloat(params[0]), parseFloat(params[1]))
+        break
+      case 'Z':
+        ctx.closePath()
+        break
+    }
+  })
+
+  ctx.fillStyle = circleBorderColor.value
+  ctx.fill()
+  ctx.restore()
+}
+
 const drawStampWidth = ref(40)
 const drawStampHeight = ref(30)
 
@@ -765,6 +812,15 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     companyName.value,
     companyFontSizeMM.value * MM_PER_PIXEL
   )
+
+  // 5. 绘制五角星
+  if (shouldDrawStar.value) {
+    // const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
+    // drawStar(ctx, centerX, centerY, starRadius)
+    const starRadius = (starDiameter.value / 2) * MM_PER_PIXEL
+    const starY = centerY + starPositionY.value * MM_PER_PIXEL
+    drawStarShape(offscreenCtx, centerX, starY, starRadius)
+  }
 
   // 绘制税号
   const taxNumberFontHeight = 3.7 * MM_PER_PIXEL
@@ -1096,7 +1152,10 @@ watch(
     securityPatternLength,
     securityPatternWidth,
     drawStampWidth,
-    drawStampHeight
+    drawStampHeight,
+    shouldDrawStar,
+    starDiameter,
+    starPositionY
   ],
   () => {
     drawStamp(false, false)
