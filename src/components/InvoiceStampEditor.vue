@@ -25,8 +25,31 @@
           >圆形边框宽度 (mm): <input type="number" step="0.1" v-model.number="circleBorderWidth"
         /></label>
         <label>圆形边框颜色: <input type="color" v-model="circleBorderColor" /></label>
+        <div class="control-group" id="inner-circle-settings">
+          <h3>内圈圆形设置</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="drawInnerCircle" /> 绘制内圈圆形
+          </label>
+          <label>
+            内圈圆形线宽 (mm):
+            <input
+              type="number"
+              v-model.number="innerCircleLineWidth"
+              min="0.1"
+              max="2"
+              step="0.1"
+            />
+          </label>
+          <label>
+            内圈圆形宽度 (mm):
+            <input type="number" v-model.number="innerCircleWidth" min="1" max="50" step="0.5" />
+          </label>
+          <label>
+            内圈圆形高度 (mm):
+            <input type="number" v-model.number="innerCircleHeight" min="1" max="50" step="0.5" />
+          </label>
+        </div>
       </div>
-
       <!-- 公司名称设置 -->
       <div class="control-group" id="company-name-settings">
         <h3>公司名称设置</h3>
@@ -208,13 +231,13 @@
         </div>
 
         <!-- 标尺设置 -->
-        <div class="control-group" style="margin-left: 12px">
+        <!-- <div class="control-group" style="margin-left: 12px">
           <h3>标尺设置</h3>
           <label class="checkbox-label">
             <input type="checkbox" v-model="showFullRuler" />
             显示完整标尺
           </label>
-        </div>
+        </div> -->
       </div>
 
       <canvas ref="stampCanvas" width="600" height="600"></canvas>
@@ -222,12 +245,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import {
   DrawStampUtils,
   type ICode,
   type ICompany,
   type IDrawStar,
+  type IInnerCircle,
   type ISecurityPattern,
   type IStampType,
   type ITaxNumber
@@ -290,13 +314,15 @@ const securityPatternColor = ref('#FF0000')
 const securityPatternCount = ref(5) // 防伪纹路数量
 const securityPatternLength = ref(2) // 纹路长度，单位为毫米
 
-const stampOffsetX = ref(0) // 水平偏移量（单位：毫米）
-const stampOffsetY = ref(0) // 垂直偏移量（单位：毫米）
 const showFullRuler = ref(false)
 const shouldDrawStar = ref(false) // 默认绘制五角星
 const taxNumberCompression = ref(1) // 税号文字宽度缩放比例
 const taxNumberLetterSpacing = ref(0.3) // 税号文字间距（单位：毫米）
 const taxNumberPositionY = ref(0) // 税号垂直位置调整，默认为0
+const drawInnerCircle = ref(false) // 是否绘制内圈圆
+const innerCircleLineWidth = ref(0.5) // 内圈圆线宽，单位为毫米
+const innerCircleWidth = ref(15) // 内圈圆宽度，单位为毫米
+const innerCircleHeight = ref(12) // 内圈圆高度，单位为毫米
 
 const saveStampAsPNG = () => {
   drawStampUtils.saveStampAsPNG(512)
@@ -378,6 +404,13 @@ const updateDrawConfigs = () => {
   drawStar.drawStar = shouldDrawStar.value
   drawStar.starDiameter = starDiameter.value
   drawStar.starPositionY = starPositionY.value
+
+  // 内圈圆
+  const innerCircle: IInnerCircle = drawConfigs.innerCircle
+  innerCircle.drawInnerCircle = drawInnerCircle.value
+  innerCircle.innerCircleLineWidth = innerCircleLineWidth.value
+  innerCircle.innerCircleLineRadiusX = innerCircleWidth.value
+  innerCircle.innerCircleLineRadiusY = innerCircleHeight.value
 
   drawStamp()
 }
@@ -473,7 +506,11 @@ watch(
     taxNumberCompression,
     taxNumberLetterSpacing,
     taxNumberPositionY,
-    starDiameter
+    starDiameter,
+    drawInnerCircle,
+    innerCircleLineWidth,
+    innerCircleWidth,
+    innerCircleHeight
   ],
   () => {
     updateDrawConfigs()

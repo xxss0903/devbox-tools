@@ -74,6 +74,14 @@ export type IStampType = {
   fontWidth: number
 }
 
+// 内圈圆
+export type IInnerCircle = {
+  drawInnerCircle: boolean // 是否绘制内圈圆
+  innerCircleLineWidth: number // 内圈圆线宽
+  innerCircleLineRadiusX: number // x轴半径
+  innerCircleLineRadiusY: number // y轴半径
+}
+
 // 是否绘制标尺
 export type IShowRuler = {
   showRuler: boolean
@@ -97,6 +105,7 @@ export type IDrawStampConfig = {
   refreshSecurityPattern: boolean
   refreshOld: boolean
   shouldDrawRuler: boolean
+  innerCircle: IInnerCircle
 }
 
 // 标尺宽度
@@ -178,6 +187,14 @@ export class DrawStampUtils {
     applyAging: false,
     agingIntensity: 50
   }
+
+  // 内圈圆
+  private innerCircle: IInnerCircle = {
+    drawInnerCircle: true,
+    innerCircleLineWidth: 0.5,
+    innerCircleLineRadiusX: 16,
+    innerCircleLineRadiusY: 12
+  }
   // 总的印章绘制参数
   private drawStampConfigs: IDrawStampConfig = {
     ruler: this.ruler,
@@ -194,7 +211,8 @@ export class DrawStampUtils {
     refreshOld: false,
     taxNumber: this.taxNumber,
     agingEffect: this.agingEffect,
-    shouldDrawRuler: true
+    shouldDrawRuler: true,
+    innerCircle: this.innerCircle
   }
 
   private securityPatternParams: Array<{ angle: number; lineAngle: number }> = []
@@ -229,10 +247,12 @@ export class DrawStampUtils {
   private dragStartX = 0
   private dragStartY = 0
 
+  // 获取绘制印章的配置
   getDrawConfigs() {
     return this.drawStampConfigs
   }
 
+  // 设置绘制印章的配置，比如可以保存某些印章的配置，然后保存之后直接设置绘制，更加方便
   setDrawConfigs(drawConfigs: IDrawStampConfig) {
     this.drawStampConfigs = drawConfigs
   }
@@ -360,6 +380,158 @@ export class DrawStampUtils {
   }
 
   /**
+   * 解析SVG路径数据
+   * @param svgPath SVG路径字符串
+   * @returns 解析后的路径命令数组
+   */
+  private parseSVGPath(svgPath: string): Array<{ command: string; params: number[] }> {
+    const commands = svgPath.match(/([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)/g) || []
+    return commands.map((cmd) => {
+      const command = cmd[0]
+      const params = cmd
+        .slice(1)
+        .trim()
+        .split(/[\s,]+/)
+        .map(parseFloat)
+      return { command, params }
+    })
+  }
+
+  /**
+   * 根据解析的SVG路径数据绘制图形
+   * @param ctx 画布上下文
+   * @param path 解析后的SVG路径数据
+   * @param x 绘制的x坐标
+   * @param y 绘制的y坐标
+   * @param scale 缩放比例
+   */
+  private drawSVGPath(
+    ctx: CanvasRenderingContext2D,
+    path: Array<{ command: string; params: number[] }>,
+    x: number,
+    y: number,
+    scale: number = 1
+  ) {
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(scale, scale)
+    ctx.beginPath()
+
+    let currentX = 0
+    let currentY = 0
+    let startX = 0
+    let startY = 0
+
+    path.forEach(({ command, params }) => {
+      switch (command) {
+        case 'M':
+          currentX = params[0]
+          currentY = params[1]
+          ctx.moveTo(currentX, currentY)
+          startX = currentX
+          startY = currentY
+          break
+        case 'm':
+          currentX += params[0]
+          currentY += params[1]
+          ctx.moveTo(currentX, currentY)
+          startX = currentX
+          startY = currentY
+          break
+        case 'L':
+          currentX = params[0]
+          currentY = params[1]
+          ctx.lineTo(currentX, currentY)
+          break
+        case 'l':
+          currentX += params[0]
+          currentY += params[1]
+          ctx.lineTo(currentX, currentY)
+          break
+        case 'H':
+          currentX = params[0]
+          ctx.lineTo(currentX, currentY)
+          break
+        case 'h':
+          currentX += params[0]
+          ctx.lineTo(currentX, currentY)
+          break
+        case 'V':
+          currentY = params[0]
+          ctx.lineTo(currentX, currentY)
+          break
+        case 'v':
+          currentY += params[0]
+          ctx.lineTo(currentX, currentY)
+          break
+        case 'C':
+          ctx.bezierCurveTo(params[0], params[1], params[2], params[3], params[4], params[5])
+          currentX = params[4]
+          currentY = params[5]
+          break
+        case 'c':
+          ctx.bezierCurveTo(
+            currentX + params[0],
+            currentY + params[1],
+            currentX + params[2],
+            currentY + params[3],
+            currentX + params[4],
+            currentY + params[5]
+          )
+          currentX += params[4]
+          currentY += params[5]
+          break
+        case 'S':
+          // 实现S命令的逻辑
+          break
+        case 's':
+          // 实现s命令的逻辑
+          break
+        case 'Q':
+          ctx.quadraticCurveTo(params[0], params[1], params[2], params[3])
+          currentX = params[2]
+          currentY = params[3]
+          break
+        case 'q':
+          ctx.quadraticCurveTo(
+            currentX + params[0],
+            currentY + params[1],
+            currentX + params[2],
+            currentY + params[3]
+          )
+          currentX += params[2]
+          currentY += params[3]
+          break
+        case 'T':
+          // 实现T命令的逻辑
+          break
+        case 't':
+          // 实现t命令的逻辑
+          break
+        case 'A':
+          // 实现A命令的逻辑 (椭圆弧)
+          console.warn('Arc command not fully implemented')
+          break
+        case 'a':
+          // 实现a命令的逻辑 (相对椭圆弧)
+          console.warn('Relative arc command not fully implemented')
+          break
+        case 'Z':
+        case 'z':
+          ctx.closePath()
+          currentX = startX
+          currentY = startY
+          break
+      }
+    })
+
+    ctx.fillStyle = this.primaryColor
+    ctx.fill()
+
+    ctx.restore()
+  }
+
+  /**
    * 绘制五角星
    * @param canvasCtx 画笔
    * @param x 圆心x坐标
@@ -368,31 +540,8 @@ export class DrawStampUtils {
    */
   private drawStarShape(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
     const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
-    const pathData = starPath.split(/(?=[MLZ])/)
-
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.scale(r, r)
-    ctx.beginPath()
-
-    pathData.forEach((command) => {
-      const [cmd, ...params] = command.trim().split(/\s+/)
-      switch (cmd) {
-        case 'M':
-          ctx.moveTo(parseFloat(params[0]), parseFloat(params[1]))
-          break
-        case 'L':
-          ctx.lineTo(parseFloat(params[0]), parseFloat(params[1]))
-          break
-        case 'Z':
-          ctx.closePath()
-          break
-      }
-    })
-
-    ctx.fillStyle = this.primaryColor
-    ctx.fill()
-    ctx.restore()
+    const svgData = this.parseSVGPath(starPath)
+    this.drawSVGPath(ctx, svgData, x, y, r)
   }
 
   /**
@@ -999,7 +1148,7 @@ export class DrawStampUtils {
       // 首先隐藏虚线
       this.drawStampConfigs.shouldDrawRuler = true
       this.refreshStamp()
-    }, 300)
+    }, 50)
   }
 
   // 刷新印章绘制
@@ -1062,13 +1211,6 @@ export class DrawStampUtils {
     // 清除整个画布
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-    // // 创建离屏 canvas
-    // const offscreenCanvas = document.createElement('canvas')
-    // offscreenCanvas.width = this.canvas.width
-    // offscreenCanvas.height = this.canvas.height
-    // const offscreenCtx = offscreenCanvas.getContext('2d')
-    // if (!offscreenCtx) return
-
     // 在离屏 canvas 上绘制椭圆边框
     const offscreenCanvas = this.offscreenCanvas
     offscreenCanvas.width = this.canvas.width
@@ -1090,6 +1232,24 @@ export class DrawStampUtils {
 
     // 绘制椭圆
     this.drawEllipse(offscreenCtx, centerX, centerY, radiusX, radiusY, borderWidth, borderColor)
+
+    if (this.drawStampConfigs.innerCircle.drawInnerCircle) {
+      const innerCircle = this.drawStampConfigs.innerCircle
+      const innerCircleWidth =
+        (innerCircle.innerCircleLineRadiusX - innerCircle.innerCircleLineWidth) / 2
+      const innerCircleHeight =
+        (innerCircle.innerCircleLineRadiusY - innerCircle.innerCircleLineWidth) / 2
+      // 绘制内圈椭圆
+      this.drawEllipse(
+        offscreenCtx,
+        centerX,
+        centerY,
+        innerCircleWidth * this.mmToPixel,
+        innerCircleHeight * this.mmToPixel,
+        innerCircle.innerCircleLineWidth * this.mmToPixel,
+        this.drawStampConfigs.primaryColor
+      )
+    }
 
     // 在椭圆边框上绘制防伪纹路
     this.drawSecurityPattern(
