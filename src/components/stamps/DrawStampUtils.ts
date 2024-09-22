@@ -200,13 +200,134 @@ export class DrawStampUtils {
     }
     this.canvasCtx = ctx
     this.mmToPixel = mmToPixel
-
+    this.canvas = canvas
     // 创建离屏canvas
     this.offscreenCanvas = document.createElement('canvas')
-    this.canvas = canvas
+
     if (this.canvas && this.offscreenCanvas) {
       this.offscreenCanvas.width = canvas.width
       this.offscreenCanvas.height = canvas.height
+    }
+    this.addCanvasListener()
+  }
+
+  private isDragging = false
+  private dragStartX = 0
+  private dragStartY = 0
+
+  addCanvasListener() {
+    this.canvas.addEventListener('mousemove', (event) => {
+      this.onMouseMove(event)
+    })
+    this.canvas.addEventListener('mouseleave', (event) => {
+      this.onMouseLeave(event)
+    })
+    this.canvas.addEventListener('mousedown', (event) => {
+      this.onMouseDown(event)
+    })
+    this.canvas.addEventListener('mouseup', (event) => {
+      this.onMouseUp()
+    })
+    this.canvas.addEventListener('click', (event) => {
+      this.onCanvasClick(event)
+    })
+  }
+
+  onMouseUp = () => {
+    this.isDragging = false
+  }
+
+  // 点击印章区域，比如五角星等位置然后进行相应的跳转之类的
+  onCanvasClick = (event: MouseEvent) => {
+    const canvas = this.canvas
+    if (!canvas) return
+  }
+
+  onMouseLeave = (event: MouseEvent) => {
+    this.isDragging = false
+    this.refreshStamp()
+  }
+
+  onMouseDown = (event: MouseEvent) => {
+    this.isDragging = true
+    this.dragStartX = event.clientX - this.stampOffsetX * this.mmToPixel
+    this.dragStartY = event.clientY - this.stampOffsetY * this.mmToPixel
+  }
+
+  onMouseMove = (event: MouseEvent) => {
+    if (this.isDragging) {
+      const newOffsetX = (event.clientX - this.dragStartX) / this.mmToPixel
+      const newOffsetY = (event.clientY - this.dragStartY) / this.mmToPixel
+      this.stampOffsetX = Math.round(newOffsetX * 10) / 10 // 四舍五入到小数点后一位
+      this.stampOffsetY = Math.round(newOffsetY * 10) / 10
+      this.refreshStamp()
+    } else {
+      // 原有的鼠标移动逻辑
+      const rect = this.canvas.getBoundingClientRect()
+      const x = event.clientX - rect.left
+      const y = event.clientY - rect.top
+      const mmX = Math.round(((x - RULER_WIDTH) / this.mmToPixel) * 10) / 10
+      const mmY = Math.round(((y - RULER_HEIGHT) / this.mmToPixel) * 10) / 10
+
+      this.refreshStamp()
+      this.highlightRulerPosition(mmX, mmY)
+      this.drawCrossLines(x, y)
+    }
+  }
+
+  highlightRulerPosition = (mmX: number, mmY: number) => {
+    const x = mmX * this.mmToPixel + RULER_WIDTH
+    const y = mmY * this.mmToPixel + RULER_HEIGHT
+
+    // 高亮水平标尺
+    this.canvasCtx.fillStyle = this.drawStampConfigs.primaryColor
+    this.canvasCtx.fillRect(RULER_WIDTH, y - 1, this.canvas.width - RULER_WIDTH, 2)
+
+    // 高亮垂直标尺
+    this.canvasCtx.fillRect(x - 1, RULER_HEIGHT, 2, this.canvas.height - RULER_HEIGHT)
+
+    // 显示坐标
+    this.canvasCtx.fillStyle = 'black'
+    this.canvasCtx.font = 'bold 12px Arial'
+    this.canvasCtx.textAlign = 'left'
+    this.canvasCtx.textBaseline = 'top'
+    this.canvasCtx.fillText(
+      `${mmX.toFixed(1)}mm, ${mmY.toFixed(1)}mm`,
+      RULER_WIDTH + 5,
+      RULER_HEIGHT + 5
+    )
+  }
+
+  drawCrossLines = (x: number, y: number) => {
+    const canvas = this.offscreenCanvas
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // 清除之前绘制的内容
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    ctx.beginPath()
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'
+    ctx.lineWidth = 1
+
+    // 绘制水平线
+    ctx.moveTo(RULER_WIDTH, y)
+    ctx.lineTo(canvas.width, y)
+
+    // 绘制垂直线
+    ctx.moveTo(x, RULER_HEIGHT)
+    ctx.lineTo(x, canvas.height)
+
+    ctx.stroke()
+
+    // 将离屏canvas的内容绘制到主canvas上
+    const mainCanvas = this.canvas
+    if (mainCanvas) {
+      const mainCtx = mainCanvas.getContext('2d')
+      if (mainCtx) {
+        mainCtx.drawImage(canvas, 0, 0)
+      }
     }
   }
 
@@ -520,54 +641,6 @@ export class DrawStampUtils {
 
     this.canvasCtx.restore()
   }
-
-  //   /**
-  //    * 绘制税号
-  //    * @param taxNumber 税号参数
-  //    * @param centerX 圆心x坐标
-  //    * @param centerY 圆心y坐标
-  //    */
-  //   drawTaxNumber = (taxNumber: ITaxNumber, centerX: number, centerY: number) => {
-  //     const fontSize = taxNumber.fontHeight * this.mmToPixel
-  //     const text = taxNumber.code
-  //     const positionY = taxNumber.positionY * this.mmToPixel
-  //     const totalWidth = taxNumber.totalWidth * this.mmToPixel
-
-  //     this.canvasCtx.save()
-  //     this.canvasCtx.font = `${fontSize}px ${taxNumber.fontFamily}`
-  //     this.canvasCtx.fillStyle = this.drawStampConfigs.primaryColor
-  //     this.canvasCtx.textAlign = 'center'
-  //     this.canvasCtx.textBaseline = 'middle'
-
-  //     const characters = text.split('')
-  //     const charCount = characters.length
-  //     const letterSpacing =
-  //       (totalWidth - charCount * taxNumber.fontWidth * this.mmToPixel) / (charCount - 1)
-
-  //     // 计算单个字符的宽度（考虑压缩）
-  //     const charWidth = taxNumber.fontWidth * this.mmToPixel
-  //     // 包含间隙之后的字符的宽度
-  //     const charTotalWidth = charWidth + letterSpacing
-  //     const scaleWidth = charWidth / charTotalWidth
-
-  //     // 计算整个文本的实际宽度
-  //     const actualWidth = charCount * charWidth + (charCount - 1) * letterSpacing
-
-  //     // 计算起始位置，确保文字居中
-  //     const startX = centerX - totalWidth / 2
-  //     const adjustedCenterY = centerY + positionY * this.mmToPixel // 使用调整后的Y位置
-
-  //     characters.forEach((char, index) => {
-  //       const x = startX + index * charTotalWidth + charWidth / 2 + letterSpacing
-  //       this.canvasCtx.save()
-  //       this.canvasCtx.translate(x, adjustedCenterY)
-  //       this.canvasCtx.scale(scaleWidth, 1)
-  //       this.canvasCtx.fillText(char, 0, 0)
-  //       this.canvasCtx.restore()
-  //     })
-
-  //     this.canvasCtx.restore()
-  //   }
 
   /**
    * 添加做旧效果
@@ -952,5 +1025,9 @@ export class DrawStampUtils {
     if (refreshOld) {
       this.addAgingEffect(this.canvas.width, this.canvas.height, refreshOld)
     }
+
+    this.drawRuler(this.canvas.width, RULER_HEIGHT, true)
+    this.drawRuler(this.canvas.height, RULER_HEIGHT, false)
+    this.drawFullRuler(this.canvas.width, this.canvas.height)
   }
 }
