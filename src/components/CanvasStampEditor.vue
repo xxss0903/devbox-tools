@@ -1,32 +1,41 @@
 <template>
   <div class="container">
-    <div class="editor-controls">
+    <div class="editor-controls" ref="editorControls">
+      <!-- 顶部固定按钮 -->
       <div
         class="button-group"
         style="position: sticky; top: 0; z-index: 1000; background-color: white; padding: 10px"
       >
-        <button @click="updateStamp">刷新印章</button>
+        <button @click="updateStamp()">刷新印章</button>
         <button @click="saveStampAsPNG">保存印章</button>
       </div>
-      <div class="control-group">
-        <h3>基本信息</h3>
-        <label>
-          公司名称:
-          <input v-model="companyName" />
-        </label>
-        <label>
-          底部文字:
-          <input type="text" v-model="bottomText" />
-        </label>
-        <label>
-          印章编码:
-          <input v-model="code" />
-        </label>
+
+      <!-- 印章基本设置 -->
+      <div class="control-group" id="stamp-settings">
+        <h3>印章基本设置</h3>
+        <label
+          >印章宽度 (mm):
+          <input type="number" v-model.number="drawStampWidth" min="1" max="50" step="1"
+        /></label>
+        <label
+          >印章高度 (mm):
+          <input type="number" v-model.number="drawStampHeight" min="1" max="50" step="1"
+        /></label>
+        <label
+          >圆形边框宽度 (mm): <input type="number" step="0.1" v-model.number="circleBorderWidth"
+        /></label>
+        <label>圆形边框颜色: <input type="color" v-model="circleBorderColor" /></label>
       </div>
-      <div class="control-group">
-        <h3>文字压缩设置</h3>
+
+      <!-- 公司名称设置 -->
+      <div class="control-group" id="company-name-settings">
+        <h3>公司名称设置</h3>
+        <label>公司名称: <input v-model="companyName" /></label>
+        <label
+          >字体大小 (mm): <input type="number" v-model.number="companyFontSizeMM" step="0.1"
+        /></label>
         <label>
-          <span>公司名称压缩：{{ companyNameCompression.toFixed(2) }}</span>
+          <span>压缩比例：{{ companyNameCompression.toFixed(2) }}</span>
           <input
             type="range"
             v-model.number="companyNameCompression"
@@ -36,7 +45,7 @@
           />
         </label>
         <label>
-          <span>公司名称分布因子：{{ textDistributionFactor.toFixed(1) }}</span>
+          <span>分布因子：{{ textDistributionFactor.toFixed(1) }}</span>
           <input
             type="range"
             v-model.number="textDistributionFactor"
@@ -46,11 +55,21 @@
           />
         </label>
         <label>
-          <span>公司名称边距 (mm): </span>
+          <span>边距 (mm): </span>
           <input type="number" v-model.number="textMarginMM" min="-10" max="10" step="0.05" />
         </label>
+      </div>
+
+      <!-- 底部文字设置 -->
+      <div class="control-group" id="bottom-text-settings">
+        <h3>底部文字设置</h3>
+        <label>底部文字: <input type="text" v-model="bottomText" /></label>
+        <label
+          >字体大小 (mm):
+          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1"
+        /></label>
         <label>
-          <span>底部文字压缩：{{ bottomTextCompression.toFixed(2) }}</span>
+          <span>压缩比例：{{ bottomTextCompression.toFixed(2) }}</span>
           <input
             type="range"
             v-model.number="bottomTextCompression"
@@ -60,22 +79,34 @@
           />
         </label>
         <label>
-          <span>底部文字间隔：{{ bottomTextLetterSpacing.toFixed(2) }}mm</span>
+          <span>字符间距 (mm)：{{ bottomTextLetterSpacing.toFixed(2) }}</span>
           <input
             type="range"
             v-model.number="bottomTextLetterSpacing"
             min="-1"
-            max="5"
+            max="10"
             step="0.05"
           />
         </label>
         <label>
-          <span>编码文字压缩：{{ codeCompression.toFixed(2) }}</span>
+          垂直位置调整 (mm):
+          <input type="number" v-model.number="bottomTextPositionY" min="-10" max="10" step="0.1" />
+        </label>
+      </div>
+
+      <!-- 印章编码设置 -->
+      <div class="control-group" id="code-settings">
+        <h3>印章编码设置</h3>
+        <label>印章编码: <input v-model="code" /></label>
+        <label
+          >字体大小 (mm): <input type="number" v-model.number="codeFontSizeMM" step="0.1"
+        /></label>
+        <label>
+          <span>压缩比例：{{ codeCompression.toFixed(2) }}</span>
           <input type="range" v-model.number="codeCompression" min="0.5" max="1.5" step="0.05" />
         </label>
-
         <label>
-          <span>编码文字分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
+          <span>分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
           <input
             type="range"
             v-model.number="codeDistributionFactor"
@@ -84,87 +115,44 @@
             step="0.5"
           />
         </label>
-
         <label>
-          编码边距 (mm):
+          边距 (mm):
           <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
         </label>
       </div>
-      <div class="control-group">
-        <h3>防伪纹路设置</h3>
+
+      <!-- 税号设置 -->
+      <div class="control-group" id="tax-number-settings">
+        <h3>税号设置</h3>
+        <label>税号: <input v-model="taxNumber" /></label>
         <label>
-          启用防伪纹路:
-          <input type="checkbox" v-model="securityPatternEnabled" />
-        </label>
-        <button @click="drawStamp(true, false)">刷新纹路</button>
-        <label>
-          纹路数量:
-          <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1" />
-        </label>
-        <label>
-          纹路长度 (mm):
+          <span>压缩比例：{{ taxNumberCompression.toFixed(2) }}</span>
           <input
             type="range"
-            v-model.number="securityPatternLength"
-            min="0.1"
-            max="20"
-            step="0.1"
-          />
-        </label>
-        <label>
-          纹路宽度 (mm):
-          <input
-            type="range"
-            v-model.number="securityPatternWidth"
-            min="0.05"
-            max="0.5"
+            v-model.number="taxNumberCompression"
+            min="0.5"
+            max="1.5"
             step="0.05"
           />
         </label>
         <label>
-          纹路倾斜角度范围 (度):
+          <span>字符间距 (mm)：{{ taxNumberLetterSpacing.toFixed(2) }}</span>
           <input
             type="range"
-            v-model.number="securityPatternAngleRange"
-            min="0"
-            max="90"
-            step="5"
+            v-model.number="taxNumberLetterSpacing"
+            min="-1"
+            max="20"
+            step="0.05"
           />
         </label>
-      </div>
-      <div class="control-group">
-        <h3>字体设置</h3>
         <label>
-          公司名称字体大小 (mm):
-          <input type="number" v-model.number="companyFontSizeMM" step="0.1" />
-        </label>
-        <label>
-          印章编码字体大小 (mm):
-          <input type="number" v-model.number="codeFontSizeMM" step="0.1" />
-        </label>
-        <label>
-          底部文字大小 (mm):
-          <input type="number" v-model.number="bottomTextFontSizeMM" min="1" max="10" step="0.1" />
+          <span>垂直位置调整 (mm)：{{ taxNumberPositionY.toFixed(1) }}</span>
+          <input type="range" v-model.number="taxNumberPositionY" min="-10" max="10" step="0.1" />
         </label>
       </div>
 
-      <div class="control-group">
-        <h3>印章设置</h3>
-        <label>
-          圆形半径 (mm):
-          <input type="number" v-model.number="circleRadius" step="0.1" />
-        </label>
-        <label>
-          圆形边框宽度 (mm):
-          <input type="number" step="0.1" v-model.number="circleBorderWidth" />
-        </label>
-        <label>
-          印章颜色:
-          <input type="color" v-model="circleBorderColor" />
-        </label>
-      </div>
-
-      <div class="control-group">
+      <!-- 五角星设置 -->
+      <div class="control-group" id="star-settings">
         <h3>五角星设置</h3>
         <label class="checkbox-label">
           <input type="checkbox" v-model="shouldDrawStar" />
@@ -175,58 +163,84 @@
           <input type="number" v-model.number="starDiameter" step="0.1" />
         </label>
         <label v-if="shouldDrawStar">
-          五角星垂直位置:
+          五角星垂直位置 (mm):
           <input type="number" v-model.number="starPositionY" min="-10" max="10" step="0.1" />
         </label>
       </div>
 
+      <!-- 防伪纹路设置 -->
       <div class="control-group">
-        <h3>底部文字设置</h3>
+        <h3>防伪纹路设置</h3>
         <label>
-          底部文字字符间距:
+          启用防伪纹路:
+          <input type="checkbox" v-model="securityPatternEnabled" />
+        </label>
+        <button @click="drawStamp(true, false)">刷新纹路</button>
+        <label
+          >纹路数量:
+          <input type="range" v-model.number="securityPatternCount" min="1" max="20" step="1"
+        /></label>
+        <label
+          >纹路长度 (mm):
+          <input type="range" v-model.number="securityPatternLength" min="0.1" max="20" step="0.1"
+        /></label>
+        <label
+          >纹路宽度 (mm):
           <input
-            type="number"
-            v-model.number="bottomTextLetterSpacing"
-            min="-1"
-            max="1"
-            step="0.1"
-          />
-        </label>
-        <label>
-          底部文字垂直位置:
-          <input type="number" v-model.number="bottomTextPositionY" min="-10" max="10" step="0.1" />
-        </label>
-      </div>
-
-      <div class="control-group">
-        <h3>做旧效果</h3>
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="applyAging" />
-          应用做旧效果
-        </label>
-        <button @click="drawStamp(false, true)">刷新做旧</button>
-        <label v-if="applyAging">
-          做旧强度:
-          <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
-        </label>
+            type="range"
+            v-model.number="securityPatternWidth"
+            min="0.05"
+            max="0.5"
+            step="0.05"
+        /></label>
       </div>
     </div>
+
+    <!-- Canvas 容器 -->
     <div class="canvas-container">
+      <div style="display: flex; flex-direction: row; margin-top: 12px">
+        <!-- 做旧效果设置 -->
+        <div class="control-group">
+          <h3>做旧效果</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="applyAging" />
+            启用做旧效果
+          </label>
+          <label v-if="applyAging">
+            做旧强度:
+            <input type="range" v-model.number="agingIntensity" min="0" max="100" step="1" />
+          </label>
+          <button @click="drawStamp(false, true)">刷新做旧</button>
+        </div>
+
+        <!-- 标尺设置 -->
+        <div class="control-group" style="margin-left: 12px">
+          <h3>标尺设置</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="showFullRuler" />
+            显示完整标尺
+          </label>
+        </div>
+      </div>
+
       <canvas
         ref="stampCanvas"
         width="600"
         height="600"
         @mousemove="onMouseMove"
         @mouseleave="onMouseLeave"
+        @mousedown="onMouseDown"
+        @mouseup="onMouseUp"
+        @click="onCanvasClick"
       ></canvas>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
-
+const editorControls = ref<HTMLDivElement | null>(null)
 const router = useRouter()
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
 const MM_PER_PIXEL = 10 // 毫米换算像素
@@ -236,40 +250,86 @@ const RULER_HEIGHT = 80
 
 const offscreenCanvas = ref<HTMLCanvasElement | null>(null)
 
+// 定义印章区域及其对应的设置组 ID
+const stampAreas = [
+  {
+    name: 'companyName',
+    id: 'company-name-settings',
+    shape: 'arc',
+    startAngle: Math.PI,
+    endAngle: 2 * Math.PI
+  },
+  { name: 'bottomText', id: 'bottom-text-settings', shape: 'rectangle', y: 0.7, height: 0.3 },
+  { name: 'taxNumber', id: 'tax-number-settings', shape: 'rectangle', y: 0.4, height: 0.3 },
+  { name: 'code', id: 'code-settings', shape: 'arc', startAngle: 0, endAngle: Math.PI },
+  { name: 'star', id: 'star-settings', shape: 'circle', radius: 0.2 },
+  { name: 'border', id: 'stamp-settings', shape: 'ellipse' }
+]
 // 添加响应式数据
 const companyName = ref('绘制印章有限责任公司')
+// 印章编码
 const code = ref('1234567890123')
-const companyFontSizeMM = ref(7)
-const codeFontSizeMM = ref(2)
-const circleRadius = ref(21)
-const circleBorderWidth = ref(1.2)
+// 税号
+const taxNumber = ref('000000000000000000')
+// 公司名称字体大小（毫米）
+const companyFontSizeMM = ref(4.2)
+// 编码字体大小（毫米）
+const codeFontSizeMM = ref(2.2)
+// 编码字体宽度（毫米）
+const codeFontWidthMM = ref(1.7)
+// 圆形印章半径（毫米）
+const circleRadius = ref(20)
+// 圆形边框宽度（毫米）
+const circleBorderWidth = ref(1)
+// 圆形边框颜色
 const circleBorderColor = ref('#ff0000')
+// 五角星直径（毫米）
 const starDiameter = ref(14)
 // 做旧效果
 const applyAging = ref(false)
 // 添加新的响应式数据
 const agingIntensity = ref(50)
+// 文字分布因子，控制公司名称文字在椭圆上的分布范围
 const textDistributionFactor = ref(20)
+// 文字边距，控制公司名称文字距离椭圆边缘的距离（单位：毫米）
 const textMarginMM = ref(1) // 默认值为1mm
+// 编码边距，控制印章编码距离椭圆边缘的距离（单位：毫米）
 const codeMarginMM = ref(1) // 默认值为1mm
+// 编码分布因子，控制印章编码在椭圆下方的分布范围
 const codeDistributionFactor = ref(20) // 默认值可以根据需要调整
-const shouldDrawStar = ref(true) // 默认绘制五角星
+// 印章底部文字
 const bottomText = ref('合同专用章')
-
-const bottomTextFontSizeMM = ref(4) // 底部文字大小，默认 4mm
-const bottomTextLetterSpacing = ref(0) // 底部文字字符间距，默认 0
-const starPositionY = ref(0) // 五角星垂直位置调整，默认 0
-const bottomTextPositionY = ref(0) // 底部文字垂直位置调整，默认 0
+// 底部文字大小，默认 4mm
+const bottomTextFontSizeMM = ref(4.6)
+const bottomTextFontWidthMM = ref(3)
+// 底部文字字符间距，默认 0
+const bottomTextLetterSpacing = ref(0)
+// 五角星垂直位置调整，默认 0
+const starPositionY = ref(0)
+// 底部文字垂直位置调整，默认 0
+const bottomTextPositionY = ref(-5)
 const companyNameCompression = ref(1)
 const bottomTextCompression = ref(1)
 const codeCompression = ref(1)
 // 防伪纹路
 const securityPatternEnabled = ref(true)
-const securityPatternWidth = ref(0.1) // 纹路宽度，单位为毫米
+const securityPatternDensity = ref(0.5)
+const securityPatternWidth = ref(0.2) // 纹路宽度，单位为毫米
+const securityPatternColor = ref('#FF0000')
 const securityPatternCount = ref(5) // 防伪纹路数量
-const securityPatternLength = ref(0.5) // 纹路长度，单位为毫米
+const securityPatternLength = ref(2) // 纹路长度，单位为毫米
 const securityPatternAngleRange = ref(30) // 纹路倾斜角度范围，单位为度
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const dragStartY = ref(0)
 
+const stampOffsetX = ref(0) // 水平偏移量（单位：毫米）
+const stampOffsetY = ref(0) // 垂直偏移量（单位：毫米）
+const showFullRuler = ref(false)
+const shouldDrawStar = ref(false) // 默认绘制五角星
+const taxNumberCompression = ref(1) // 税号文字宽度缩放比例
+const taxNumberLetterSpacing = ref(0.3) // 税号文字间距（单位：毫米）
+const taxNumberPositionY = ref(0) // 税号垂直位置调整，默认为0
 const goBack = () => {
   router.back()
 }
@@ -355,6 +415,33 @@ const addAgingEffect = (
   ctx.putImageData(imageData, 0, 0)
 }
 
+const drawFullRuler = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  if (!showFullRuler.value) return
+
+  ctx.save()
+  ctx.strokeStyle = '#bbbbbb' // 浅灰色，半透明
+  ctx.lineWidth = 1
+  ctx.setLineDash([5, 5]) // 设置虚线样式
+
+  // 绘制垂直线
+  for (let x = RULER_WIDTH; x < width; x += 5 * MM_PER_PIXEL) {
+    ctx.beginPath()
+    ctx.moveTo(x, RULER_HEIGHT)
+    ctx.lineTo(x, height)
+    ctx.stroke()
+  }
+
+  // 绘制水平线
+  for (let y = RULER_HEIGHT; y < height; y += 5 * MM_PER_PIXEL) {
+    ctx.beginPath()
+    ctx.moveTo(RULER_WIDTH, y)
+    ctx.lineTo(width, y)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
 // 辅助函数,用于添加圆形噪点
 const addCircularNoise = (
   data: Uint8ClampedArray,
@@ -381,9 +468,124 @@ const addCircularNoise = (
   }
 }
 
+const saveStampAsPNG = () => {
+  const canvas = stampCanvas.value
+  if (!canvas) return
+
+  // 设置固定的输出尺寸
+  const outputSize = 512
+
+  // 创建一个新的 canvas 元素，大小为 512x512
+  const saveCanvas = document.createElement('canvas')
+  saveCanvas.width = outputSize
+  saveCanvas.height = outputSize
+  const saveCtx = saveCanvas.getContext('2d')
+  if (!saveCtx) return
+
+  // 清除画布，使背景透明
+  saveCtx.clearRect(0, 0, outputSize, outputSize)
+
+  // 计算原始 canvas 中印章的位置和大小
+  const originalStampSize = (circleRadius.value * 2 + 2) * MM_PER_PIXEL
+  const sourceX = (canvas.width - originalStampSize) / 2 + stampOffsetX.value * MM_PER_PIXEL
+  const sourceY = (canvas.height - originalStampSize) / 2 + stampOffsetY.value * MM_PER_PIXEL
+
+  // 减少边距，这里我们将边距从 10% 减少到 2%
+  const margin = outputSize * 0.01 // 2% 的边距
+  const drawSize = outputSize
+
+  // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并调整大小
+  saveCtx.drawImage(
+    canvas,
+    sourceX,
+    sourceY,
+    originalStampSize,
+    originalStampSize,
+    margin,
+    margin,
+    drawSize,
+    drawSize
+  )
+
+  // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
+  if (applyAging.value) {
+    addAgingEffect(saveCtx, outputSize, outputSize, false)
+  }
+
+  // 将新的 canvas 转换为 PNG 数据 URL
+  const dataURL = saveCanvas.toDataURL('image/png')
+
+  // 创建一个临时的 <a> 元素来触发下载
+  const link = document.createElement('a')
+  link.href = dataURL
+  link.download = '印章.png'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+const drawEllipse = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radiusX: number,
+  radiusY: number,
+  borderWidth: number,
+  borderColor: string
+) => {
+  ctx.beginPath()
+  ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2)
+  ctx.strokeStyle = borderColor
+  ctx.lineWidth = borderWidth
+  ctx.stroke()
+}
+
+const onCanvasClick = (event: MouseEvent) => {
+  const canvas = stampCanvas.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left - RULER_WIDTH
+  const y = event.clientY - rect.top - RULER_HEIGHT
+
+  const centerX = canvas.width / 2 - RULER_WIDTH + stampOffsetX.value * MM_PER_PIXEL
+  const centerY = canvas.height / 2 - RULER_HEIGHT + stampOffsetY.value * MM_PER_PIXEL
+  const radiusX = stampWidth.value * MM_PER_PIXEL
+  const radiusY = stampHeight.value * MM_PER_PIXEL
+
+  const clickedArea = stampAreas.find((area) => {
+    switch (area.shape) {
+      case 'arc':
+        const angle = Math.atan2(y - centerY, x - centerX)
+        return angle >= area.startAngle && angle <= area.endAngle
+      case 'rectangle':
+        return y >= centerY + radiusY * area.y && y <= centerY + radiusY * (area.y + area.height)
+      case 'circle':
+        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2)
+        return distance <= radiusX * area.radius
+      case 'ellipse':
+        return ((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2 <= 1
+    }
+  })
+
+  if (clickedArea) {
+    scrollToSection(clickedArea.id)
+  }
+}
+
+const scrollToSection = (sectionId: string) => {
+  const controlsElement = editorControls.value
+  if (!controlsElement) return
+
+  const section = controlsElement.querySelector(`#${sectionId}`)
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
 // 新增一个响应式变量来存储随机参数
 const securityPatternParams = ref<Array<{ angle: number; lineAngle: number }>>([])
-// 修改防伪纹路绘制函数
+
 const drawSecurityPattern = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
@@ -432,104 +634,126 @@ const drawSecurityPattern = (
   ctx.restore()
 }
 
-const saveStampAsPNG = () => {
-  const canvas = stampCanvas.value
-  if (!canvas) return
+const drawCompanyName = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radiusX: number,
+  radiusY: number,
+  text: string,
+  fontSize: number
+) => {
+  ctx.save()
+  ctx.font = `${fontSize}px SimSun`
+  ctx.fillStyle = circleBorderColor.value
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
 
-  // 设置固定的输出尺寸
-  const outputSize = 1024
+  const characters = text.split('')
+  const characterCount = characters.length
 
-  // 创建一个新的 canvas 元素，大小为 512x512
-  const saveCanvas = document.createElement('canvas')
-  saveCanvas.width = outputSize
-  saveCanvas.height = outputSize
-  const saveCtx = saveCanvas.getContext('2d')
-  if (!saveCtx) return
+  // 调整起始和结束角度，使文字均匀分布在椭圆上半部分
+  const totalAngle = Math.PI * (1 + characterCount / textDistributionFactor.value)
+  const startAngle = Math.PI + (Math.PI - totalAngle) / 2
+  const anglePerChar = totalAngle / characterCount
 
-  // 清除画布，使背景透明
-  saveCtx.clearRect(0, 0, outputSize, outputSize)
+  characters.forEach((char, index) => {
+    const angle = startAngle + anglePerChar * (index + 0.5)
+    const x =
+      centerX + Math.cos(angle) * (radiusX - fontSize / 2 - textMarginMM.value * MM_PER_PIXEL)
+    const y =
+      centerY + Math.sin(angle) * (radiusY - fontSize / 2 - textMarginMM.value * MM_PER_PIXEL)
 
-  // 计算原始 canvas 中印章的位置和大小
-  const originalStampSize = (circleRadius.value * 2 + 2) * MM_PER_PIXEL
-  const sourceX = (canvas.width - originalStampSize) / 2
-  const sourceY = (canvas.height - originalStampSize) / 2
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(angle + Math.PI / 2)
+    ctx.scale(companyNameCompression.value, 1) // 应用压缩
+    ctx.fillText(char, 0, 0)
+    ctx.restore()
+  })
 
-  // 计算在新 canvas 中的绘制位置和大小
-  const margin = outputSize * 0.1 // 10% 的边距
-  const drawSize = outputSize - 2 * margin
-
-  // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并调整大小
-  saveCtx.drawImage(
-    canvas,
-    sourceX,
-    sourceY,
-    originalStampSize,
-    originalStampSize,
-    margin,
-    margin,
-    drawSize,
-    drawSize
-  )
-
-  // 将新的 canvas 转换为 PNG 数据 URL，指定 alpha 通道
-  const dataURL = saveCanvas.toDataURL('image/png')
-
-  // 创建一个临时的 <a> 元素来触发下载
-  const link = document.createElement('a')
-  link.href = dataURL
-  link.download = '印章.png'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  ctx.restore()
 }
 
-const saveStamp = () => {
-  const canvas = stampCanvas.value
-  if (!canvas) return
-  const scaleFactor = 1 // 可以根据需要调整，更大的值会产生更高分辨率的图像
-  const tempMMPerPixel = MM_PER_PIXEL * scaleFactor
+const drawCode = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radiusX: number,
+  radiusY: number,
+  text: string,
+  fontSize: number
+) => {
+  ctx.save()
+  ctx.font = `${fontSize}px Arial`
+  ctx.fillStyle = circleBorderColor.value
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
 
-  // 增加边距，确保完整包含印章
-  const margin = 2 * tempMMPerPixel // 10mm 的边距
-  const stampSize = (circleRadius.value * 2 + 1) * tempMMPerPixel // 增加 20mm 的总边距
-  const saveCanvas = document.createElement('canvas')
-  saveCanvas.width = stampSize
-  saveCanvas.height = stampSize
-  const saveCtx = saveCanvas.getContext('2d')
-  if (!saveCtx) return
+  const characters = text.split('')
+  const characterCount = characters.length
 
-  // 设置保存 canvas 的背景为白色
-  saveCtx.fillStyle = 'white'
-  saveCtx.fillRect(0, 0, stampSize, stampSize)
+  // 动态调整总角度
+  const totalAngle = Math.PI * (characterCount / codeDistributionFactor.value) * 0.5
+  const startAngle = Math.PI / 2 + totalAngle / 2
+  const endAngle = Math.PI / 2 - totalAngle / 2
+  const anglePerChar = totalAngle / (characterCount - 1)
 
-  // 计算原始 canvas 中印章的位置和大小
-  const originalStampSize = (circleRadius.value + 1) * 2 * tempMMPerPixel
-  const sourceX = (canvas.width - originalStampSize) / 2
-  const sourceY = (canvas.height - originalStampSize) / 2
+  characters.forEach((char, index) => {
+    const angle = startAngle - anglePerChar * index
+    const x =
+      centerX + Math.cos(angle) * (radiusX - fontSize / 2 - codeMarginMM.value * MM_PER_PIXEL)
+    const y =
+      centerY + Math.sin(angle) * (radiusY - fontSize / 2 - codeMarginMM.value * MM_PER_PIXEL)
 
-  // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并居中
-  saveCtx.drawImage(
-    canvas,
-    sourceX,
-    sourceY,
-    originalStampSize,
-    originalStampSize,
-    margin,
-    margin,
-    stampSize - 2 * margin,
-    stampSize - 2 * margin
-  )
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
+    ctx.scale(codeCompression.value, 1) // 应用压缩
+    ctx.fillText(char, 0, 0)
+    ctx.restore()
+  })
 
-  // 将新的 canvas 转换为 PNG 数据 URL
-  const dataURL = saveCanvas.toDataURL('image/png')
+  ctx.restore()
+}
 
-  // 创建一个临时的 <a> 元素来触发下载
-  const link = document.createElement('a')
-  link.href = dataURL
-  link.download = '印章.png'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+const drawBottomText = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  text: string,
+  fontSize: number,
+  letterSpacing: number,
+  positionY: number
+) => {
+  ctx.save()
+  ctx.font = `${fontSize}px SimSun`
+  ctx.fillStyle = circleBorderColor.value
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  // 计算文字位置（在五角星正下方）
+  const textY = centerY + radius * 0.5 + positionY * MM_PER_PIXEL
+
+  ctx.save()
+  ctx.translate(centerX, textY)
+  ctx.scale(bottomTextCompression.value, 1) // 应用压缩
+
+  const chars = text.split('')
+  const charWidths = chars.map((char) => ctx.measureText(char).width)
+  const totalWidth =
+    charWidths.reduce((sum, width) => sum + width, 0) +
+    (chars.length - 1) * letterSpacing * MM_PER_PIXEL
+
+  let currentX = -totalWidth / 2 // 从文本的左边缘开始
+
+  chars.forEach((char, index) => {
+    ctx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
+    currentX += charWidths[index] + letterSpacing * MM_PER_PIXEL
+  })
+
+  ctx.restore()
 }
 
 // 绘制五角星
@@ -562,157 +786,17 @@ const drawStarShape = (ctx: CanvasRenderingContext2D, x: number, y: number, r: n
   ctx.restore()
 }
 
-// 绘制外边框圆形
-const drawCircle = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  r: number,
-  borderWidth: number,
-  circleBorderColor: string
-) => {
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.strokeStyle = circleBorderColor
-  ctx.lineWidth = borderWidth
-  ctx.stroke()
-}
+const drawStampWidth = ref(40)
+const drawStampHeight = ref(40)
 
-// 绘制文字
-const drawCompanyName = (
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  radius: number,
-  text: string,
-  fontSize: number
-) => {
-  ctx.save()
-  ctx.font = `${fontSize}px SimSun`
-  ctx.fillStyle = circleBorderColor.value
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
+// 印章尺寸，本来是20*15，现在改成19.5*14.5，为了减去线条宽度的一半
+const stampHeight = computed(() => {
+  return drawStampHeight.value / 2 - circleBorderWidth.value / 2
+})
 
-  const characters = text.split('')
-  const characterCount = characters.length
-
-  const totalAngle = Math.PI * (1 + characterCount / textDistributionFactor.value)
-  const startAngle = Math.PI + (Math.PI - totalAngle) / 2
-  const endAngle = startAngle + totalAngle
-  const anglePerChar = totalAngle / characterCount
-
-  characters.forEach((char, index) => {
-    const angle = startAngle + anglePerChar * (index + 0.5)
-    const x =
-      centerX + Math.cos(angle) * (radius - fontSize / 2 - textMarginMM.value * MM_PER_PIXEL)
-    const y =
-      centerY + Math.sin(angle) * (radius - fontSize / 2 - textMarginMM.value * MM_PER_PIXEL)
-
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.rotate(angle + Math.PI / 2)
-    ctx.scale(companyNameCompression.value, 1) // 应用压缩
-    ctx.fillText(char, 0, 0)
-    ctx.restore()
-  })
-
-  ctx.restore()
-}
-
-// 修改 drawCode 函数
-
-const drawCode = (
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  radius: number,
-  text: string,
-  fontSize: number
-) => {
-  ctx.save()
-  ctx.font = `${fontSize}px Arial`
-  ctx.fillStyle = circleBorderColor.value
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-
-  const characters = text.split('')
-  const characterCount = characters.length
-
-  const totalAngle = Math.PI * (characterCount / codeDistributionFactor.value) * 0.5
-  const startAngle = Math.PI / 2 + totalAngle / 2
-  const endAngle = Math.PI / 2 - totalAngle / 2
-  const anglePerChar = totalAngle / (characterCount - 1)
-
-  characters.forEach((char, index) => {
-    const angle = startAngle - anglePerChar * index
-    const x =
-      centerX + Math.cos(angle) * (radius - fontSize / 2 - codeMarginMM.value * MM_PER_PIXEL)
-    const y =
-      centerY + Math.sin(angle) * (radius - fontSize / 2 - codeMarginMM.value * MM_PER_PIXEL)
-
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.rotate(angle - Math.PI / 2)
-    ctx.scale(codeCompression.value, 1) // 应用压缩
-    ctx.fillText(char, 0, 0)
-    ctx.restore()
-  })
-
-  ctx.restore()
-}
-
-const drawRectangle = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-) => {
-  ctx.beginPath()
-  ctx.rect(x, y, width, height)
-  ctx.strokeStyle = 'blue'
-  ctx.lineWidth = 1
-  ctx.stroke()
-}
-
-const drawBottomText = (
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  radius: number,
-  text: string,
-  fontSize: number,
-  letterSpacing: number,
-  positionY: number
-) => {
-  ctx.save()
-  ctx.font = `${fontSize}px SimSun`
-  ctx.fillStyle = circleBorderColor.value
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-
-  const textY = centerY + radius * 0.5 + positionY * MM_PER_PIXEL
-
-  ctx.save()
-  ctx.translate(centerX, textY)
-  ctx.scale(bottomTextCompression.value, 1) // 应用压缩
-
-  const chars = text.split('')
-  const charWidths = chars.map((char) => ctx.measureText(char).width)
-  const totalWidth =
-    charWidths.reduce((sum, width) => sum + width, 0) +
-    (chars.length - 1) * letterSpacing * MM_PER_PIXEL
-
-  let currentX = -totalWidth / 2 // 从文本的左边缘开始
-
-  chars.forEach((char, index) => {
-    ctx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
-    currentX += charWidths[index] + letterSpacing * MM_PER_PIXEL
-  })
-
-  ctx.restore()
-  ctx.restore()
-}
+const stampWidth = computed(() => {
+  return drawStampWidth.value / 2 - circleBorderWidth.value / 2
+})
 
 const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean = false) => {
   const canvas = stampCanvas.value
@@ -731,15 +815,21 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
   if (!offscreenCtx) return
 
   // 在离屏 canvas 上绘制印章
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
+  const oldCenterX = canvas.width / 2
+  const oldCenterY = canvas.height / 2
   const radius = circleRadius.value * MM_PER_PIXEL
+  const radiusX = stampWidth.value * MM_PER_PIXEL // 长轴半径
+  const radiusY = stampHeight.value * MM_PER_PIXEL // 短轴半径
 
-  // 绘制圆形边框
+  // 计算偏移后的中心点
+  const centerX = oldCenterX + stampOffsetX.value * MM_PER_PIXEL
+  const centerY = oldCenterY + stampOffsetY.value * MM_PER_PIXEL
+
+  // 绘制椭圆边框
   offscreenCtx.beginPath()
-  offscreenCtx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-  offscreenCtx.lineWidth = circleBorderWidth.value * MM_PER_PIXEL
+  offscreenCtx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2)
   offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
+  offscreenCtx.lineWidth = circleBorderWidth.value * MM_PER_PIXEL
   offscreenCtx.stroke()
 
   // 绘制其他元素（公司名称、底部文字、编码等）
@@ -749,12 +839,16 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  // 3. 绘制圆形
-  drawCircle(
+  // 2. 计算圆心位置
+  //   const centerX = canvas.width / 2
+  //   const centerY = canvas.height / 2
+
+  drawEllipse(
     offscreenCtx,
     centerX,
     centerY,
-    circleRadius.value * MM_PER_PIXEL,
+    stampWidth.value * MM_PER_PIXEL, // 长轴半径
+    stampHeight.value * MM_PER_PIXEL, // 短轴半径
     circleBorderWidth.value * MM_PER_PIXEL,
     circleBorderColor.value
   )
@@ -769,12 +863,13 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     refreshSecurityPattern
   )
 
-  // 4. 绘制公司名称
+  // 在 drawStamp 函数中调用 drawCompanyName 时，传入椭圆的长轴和短轴半径
   drawCompanyName(
     offscreenCtx,
     centerX,
     centerY,
-    circleRadius.value * MM_PER_PIXEL,
+    stampWidth.value * MM_PER_PIXEL, // 长轴半径
+    stampHeight.value * MM_PER_PIXEL, // 短轴半径
     companyName.value,
     companyFontSizeMM.value * MM_PER_PIXEL
   )
@@ -788,7 +883,20 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     drawStarShape(offscreenCtx, centerX, starY, starRadius)
   }
 
-  // 6. 绘制底部文字
+  // 绘制税号
+  const taxNumberFontHeight = 3.7 * MM_PER_PIXEL
+  const taxNumberTotalWidth = 26 * MM_PER_PIXEL
+  const taxNumberCharWidth = 1.3 * MM_PER_PIXEL
+  drawTaxNumber(
+    offscreenCtx,
+    centerX,
+    centerY,
+    taxNumber.value,
+    taxNumberFontHeight,
+    taxNumberTotalWidth,
+    taxNumberPositionY.value
+  )
+
   // 6. 绘制底部文字
   const bottomFontSize = bottomTextFontSizeMM.value * MM_PER_PIXEL
   drawBottomText(
@@ -802,12 +910,12 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     bottomTextPositionY.value
   )
 
-  // 6. 绘制印章编码
   drawCode(
     offscreenCtx,
     centerX,
     centerY,
-    circleRadius.value * MM_PER_PIXEL,
+    stampWidth.value * MM_PER_PIXEL, // 长轴半径
+    stampHeight.value * MM_PER_PIXEL, // 短轴半径
     code.value,
     codeFontSizeMM.value * MM_PER_PIXEL
   )
@@ -821,21 +929,64 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
   ctx.drawImage(offscreenCanvas, 0, 0)
   ctx.restore()
 
-  // 如果需要，在这里添加做旧效果
+  // 在绘制完所有内容后，添加做旧效果
   if (applyAging.value) {
     addAgingEffect(ctx, canvas.width, canvas.height, refreshOld)
   }
-
-  // // 在绘制完所有内容后，添加做旧效果
-  // if (applyAging.value) {
-  //   addAgingEffect(ctx, canvas.width, canvas.height)
-  // }
 
   // 7. 绘制水平标尺
   drawRuler(ctx, canvas.width, RULER_HEIGHT, true)
 
   // 8. 绘制垂直标尺
   drawRuler(ctx, canvas.height, RULER_WIDTH, false)
+
+  // 在绘制完所有内容后，添加完整标尺
+  drawFullRuler(ctx, canvas.width, canvas.height)
+}
+
+// 绘制中间横排税号
+const drawTaxNumber = (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  text: string,
+  fontSize: number,
+  totalWidth: number,
+  positionY: number
+) => {
+  ctx.save()
+  ctx.font = `${fontSize}px Arial`
+  ctx.fillStyle = circleBorderColor.value
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  const characters = text.split('')
+  const charCount = characters.length
+  const letterSpacing = taxNumberLetterSpacing.value * MM_PER_PIXEL
+
+  // 计算压缩后的总宽度
+  const compressedTotalWidth = totalWidth * taxNumberCompression.value
+
+  // 计算单个字符的宽度（考虑压缩）
+  const charWidth = (compressedTotalWidth - (charCount - 1) * letterSpacing) / charCount
+
+  // 计算整个文本的实际宽度
+  const actualWidth = charCount * charWidth + (charCount - 1) * letterSpacing
+
+  // 计算起始位置，确保文字居中
+  const startX = centerX - actualWidth / 2 + charWidth / 2
+  const adjustedCenterY = centerY + positionY * MM_PER_PIXEL // 使用调整后的Y位置
+
+  characters.forEach((char, index) => {
+    const x = startX + index * (charWidth + letterSpacing)
+    ctx.save()
+    ctx.translate(x, adjustedCenterY)
+    ctx.scale(taxNumberCompression.value, 1)
+    ctx.fillText(char, 0, 0)
+    ctx.restore()
+  })
+
+  ctx.restore()
 }
 
 const drawRuler = (
@@ -926,22 +1077,6 @@ const drawRuler = (
   }
 }
 
-const onMouseMove = (event: MouseEvent) => {
-  const canvas = stampCanvas.value
-  if (!canvas) return
-
-  const rect = canvas.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  const mmX = Math.round(((x - RULER_WIDTH) / MM_PER_PIXEL) * 10) / 10
-  const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
-
-  // 只在需要时重绘主要内容
-  drawStamp()
-  highlightRulerPosition(mmX, mmY)
-  drawCrossLines(x, y)
-}
-
 const highlightRulerPosition = (mmX: number, mmY: number) => {
   const canvas = stampCanvas.value
   if (!canvas) return
@@ -998,13 +1133,47 @@ const drawCrossLines = (x: number, y: number) => {
     }
   }
 }
+const onMouseMove = (event: MouseEvent) => {
+  if (isDragging.value) {
+    const newOffsetX = (event.clientX - dragStartX.value) / MM_PER_PIXEL
+    const newOffsetY = (event.clientY - dragStartY.value) / MM_PER_PIXEL
+    stampOffsetX.value = Math.round(newOffsetX * 10) / 10 // 四舍五入到小数点后一位
+    stampOffsetY.value = Math.round(newOffsetY * 10) / 10
+    drawStamp(false, false)
+  } else {
+    // 原有的鼠标移动逻辑
+    const canvas = stampCanvas.value
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    const mmX = Math.round(((x - RULER_WIDTH) / MM_PER_PIXEL) * 10) / 10
+    const mmY = Math.round(((y - RULER_HEIGHT) / MM_PER_PIXEL) * 10) / 10
+
+    drawStamp(false, false)
+    highlightRulerPosition(mmX, mmY)
+    drawCrossLines(x, y)
+  }
+}
 
 const onMouseLeave = () => {
-  drawStamp()
+  isDragging.value = false
+  drawStamp(false, false)
 }
 
 const updateStamp = () => {
-  drawStamp()
+  drawStamp(false, false)
+}
+
+const onMouseDown = (event: MouseEvent) => {
+  isDragging.value = true
+  dragStartX.value = event.clientX - stampOffsetX.value * MM_PER_PIXEL
+  dragStartY.value = event.clientY - stampOffsetY.value * MM_PER_PIXEL
+}
+
+const onMouseUp = () => {
+  isDragging.value = false
 }
 
 onMounted(() => {
@@ -1016,7 +1185,7 @@ onMounted(() => {
     offscreenCanvas.value.height = canvas.height
   }
 
-  drawStamp()
+  drawStamp(false, false)
 })
 
 // 监听所有响应式数据的变化
@@ -1035,31 +1204,43 @@ watch(
     textMarginMM,
     codeMarginMM,
     agingIntensity,
-    shouldDrawStar,
     bottomText,
     bottomTextFontSizeMM,
     bottomTextLetterSpacing,
-    starPositionY,
     bottomTextPositionY,
+    taxNumber,
+    applyAging,
+    agingIntensity,
     companyNameCompression,
     bottomTextCompression,
     codeCompression,
     bottomTextLetterSpacing,
+    securityPatternDensity,
+    securityPatternColor,
+    securityPatternDensity,
+    securityPatternColor,
     securityPatternEnabled,
-    securityPatternWidth,
     securityPatternCount,
     securityPatternLength,
-    securityPatternAngleRange
+    securityPatternWidth,
+    drawStampWidth,
+    drawStampHeight,
+    shouldDrawStar,
+    starPositionY,
+    taxNumberCompression,
+    taxNumberLetterSpacing,
+    taxNumberPositionY,
+    starDiameter
   ],
   () => {
-    drawStamp()
+    drawStamp(false, false)
   }
 )
 </script>
 <style scoped>
 .container {
   display: flex;
-  height: 100%;
+  height: 50%; /* 使用视口高度 */
   overflow: hidden;
 }
 
@@ -1067,9 +1248,9 @@ watch(
   width: 300px;
   padding: 10px;
   background-color: #f0f0f0;
-  overflow-y: auto;
-  max-height: 70vh;
-  box-sizing: border-box;
+  overflow-y: auto; /* 允许垂直滚动 */
+  max-height: 70vh; /* 最大高度为视口高度 */
+  box-sizing: border-box; /* 确保padding不会增加总宽度 */
 }
 
 .control-group {
@@ -1101,7 +1282,7 @@ watch(
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 3px;
-  box-sizing: border-box;
+  box-sizing: border-box; /* 确保padding不会增加总宽度 */
 }
 
 .editor-controls input[type='color'] {
@@ -1142,11 +1323,12 @@ button:hover {
 
 .canvas-container {
   flex-grow: 1;
+  flex-direction: column;
   background-color: aliceblue;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: auto;
+  overflow: auto; /* 允许内容溢出时滚动 */
 }
 
 canvas {

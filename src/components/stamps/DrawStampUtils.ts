@@ -1,28 +1,45 @@
+// 防伪纹路
 type ISecurityPattern = {
   openSecurityPattern: boolean
-  securityPatternWidth: number
-  securityPatternLength: number
-  securityPatternEnabled: boolean
-  securityPatternCount: number
-  securityPatternAngleRange: number
+  securityPatternWidth: number // 防伪纹路宽度
+  securityPatternLength: number // 防伪纹路长度
+  securityPatternEnabled: boolean // 是否启用防伪纹路
+  securityPatternCount: number // 防伪纹路数量
+  securityPatternAngleRange: number // 防伪纹路角度范围
 }
 
-type ICompanyName = {
-  companyName: string
-  companyNameCompression: number
-  textMarginMM: number
-  textDistributionFactor: number
-  textFontSizeMM: number
-  fontFamily: string
+// 绘制印章的公司
+type ICompany = {
+  companyName: string // 公司名称
+  compression: number // 公司名称压缩比例
+  borderOffset: number // 边框偏移量
+  textDistributionFactor: number // 文字分布因子
+  fontFamily: string // 字体
+  fontHeight: number // 字体高度
 }
 
+// 印章编码
 type ICode = {
-  code: string
-  codeCompression: number
-  codeFontSizeMM: number
-  fontFamily: string
+  code: string // 编码
+  compression: number // 编码压缩比例
+  fontHeight: number // 编码字体大小
+  fontFamily: string // 编码字体
+  borderOffset: number // 编码边框偏移量
+  fontWidth: number // 编码字体宽度
 }
 
+type ITaxNumber = {
+  code: string // 税号
+  compression: number // 税号压缩比例
+  fontHeight: number // 税号字体大小
+  fontFamily: string // 编码字体
+  fontWidth: number // 编码字体宽度
+  letterSpacing: number // 编码字符间距
+  positionY: number // 编码文字位置
+  totalWidth: number // 编码文字总宽度
+}
+
+// 做旧效果参数
 type IAgingEffectParams = {
   x: number
   y: number
@@ -34,16 +51,29 @@ type IAgingEffectParams = {
   seed: number
 }
 
+// 做旧效果
 type IAgingEffect = {
   applyAging: boolean
   agingIntensity: number
 }
 
+// 绘制五角星
 type IDrawStar = {
   drawStar: boolean
   starDiameter: number
 }
 
+// 印章类型
+type IStampType = {
+  stampType: string
+  fontHeight: number
+  compression: number
+  letterSpacing: number
+  positionY: number
+  fontWidth: number
+}
+
+// 是否绘制标尺
 type IShowRuler = {
   showRuler: boolean
   showFullRuler: boolean
@@ -54,8 +84,10 @@ type IDrawStampConfig = {
   ruler: IShowRuler
   drawStar: IDrawStar
   securityPattern: ISecurityPattern
-  companyName: ICompanyName
+  company: ICompany
   code: ICode
+  taxNumber: ITaxNumber
+  stampType: IStampType
   width: number
   height: number
   borderWidth: number
@@ -64,7 +96,9 @@ type IDrawStampConfig = {
   refreshOld: boolean
 }
 
+// 标尺宽度
 const RULER_WIDTH = 80
+// 标尺高度
 const RULER_HEIGHT = 80
 
 /**
@@ -98,33 +132,55 @@ export class DrawStampUtils {
     securityPatternCount: 5,
     securityPatternAngleRange: 30
   }
-  private companyName: ICompanyName = {
+  private company: ICompany = {
     companyName: '印章绘制公司',
-    companyNameCompression: 1,
-    textMarginMM: 0.1,
-    textDistributionFactor: 1,
-    textFontSizeMM: 0.1,
-    fontFamily: 'SimSun'
+    compression: 1,
+    borderOffset: 1,
+    textDistributionFactor: 20,
+    fontFamily: 'SimSun',
+    fontHeight: 4.2
+  }
+  private taxNumber: ITaxNumber = {
+    code: '000000000000000000',
+    compression: 0.8,
+    fontHeight: 3.7,
+    fontFamily: 'Arial',
+    fontWidth: 1.3,
+    letterSpacing: 5,
+    positionY: 0,
+    totalWidth: 26
   }
   private code: ICode = {
     code: '1234567890',
-    codeCompression: 1,
-    codeFontSizeMM: 0.1,
-    fontFamily: 'Arial'
+    compression: 1,
+    fontHeight: 1.2,
+    fontFamily: 'Arial',
+    borderOffset: 1,
+    fontWidth: 1.2
+  }
+  private stampType: IStampType = {
+    stampType: '发票专用章',
+    fontHeight: 4.6,
+    fontWidth: 3,
+    compression: 1,
+    letterSpacing: 0,
+    positionY: 0
   }
   // 总的印章绘制参数
   private drawStampConfigs: IDrawStampConfig = {
     ruler: this.ruler,
     drawStar: this.drawStar,
     securityPattern: this.securityPattern,
-    companyName: this.companyName,
+    company: this.company,
     code: this.code,
     width: 40,
     height: 30,
+    stampType: this.stampType,
     primaryColor: this.primaryColor,
     borderWidth: 1,
     refreshSecurityPattern: false,
-    refreshOld: false
+    refreshOld: false,
+    taxNumber: this.taxNumber
   }
 
   private securityPatternParams: Array<{ angle: number; lineAngle: number }> = []
@@ -211,16 +267,12 @@ export class DrawStampUtils {
    * @param positionY 文字位置
    * @param fillColor 填充颜色
    */
-  drawStampTypeText(
-    centerX: number,
-    centerY: number,
-    radius: number,
-    text: string,
-    fontSize: number,
-    letterSpacing: number,
-    positionY: number,
-    textCompression: number
-  ) {
+  drawStampType(stampType: IStampType, centerX: number, centerY: number, radiusX: number) {
+    const fontSize = stampType.fontHeight * this.mmToPixel
+    const textCompression = stampType.compression
+    const letterSpacing = stampType.letterSpacing
+    const positionY = stampType.positionY
+
     this.canvasCtx.save()
     this.canvasCtx.font = `${fontSize}px SimSun`
     this.canvasCtx.fillStyle = this.primaryColor
@@ -228,13 +280,13 @@ export class DrawStampUtils {
     this.canvasCtx.textBaseline = 'middle'
 
     // 计算文字位置（在五角星正下方）
-    const textY = centerY + radius * 0.5 + positionY * this.mmToPixel
+    const textY = centerY + radiusX * 0.5 + positionY * this.mmToPixel
 
     this.canvasCtx.save()
     this.canvasCtx.translate(centerX, textY)
     this.canvasCtx.scale(textCompression, 1) // 应用压缩
 
-    const chars = text.split('')
+    const chars = stampType.stampType.split('')
     const charWidths = chars.map((char) => this.canvasCtx.measureText(char).width)
     const totalWidth =
       charWidths.reduce((sum, width) => sum + width, 0) +
@@ -341,40 +393,37 @@ export class DrawStampUtils {
    * @param fontSize 字体大小
    */
   drawCompanyName(
+    company: ICompany,
     centerX: number,
     centerY: number,
     radiusX: number,
-    radiusY: number,
-    text: string,
-    fontSize: number
+    radiusY: number
   ) {
+    const fontSize = company.fontHeight * this.mmToPixel
     this.canvasCtx.save()
-    this.canvasCtx.font = `${fontSize}px SimSun`
+    this.canvasCtx.font = `${fontSize}px ${company.fontFamily}`
     this.canvasCtx.fillStyle = this.primaryColor
     this.canvasCtx.textAlign = 'center'
-    this.canvasCtx.textBaseline = 'middle'
+    this.canvasCtx.textBaseline = 'bottom'
 
-    const characters = text.split('')
+    const characters = company.companyName.split('')
     const characterCount = characters.length
+    const borderOffset = company.borderOffset * this.mmToPixel
 
     // 调整起始和结束角度，使文字均匀分布在椭圆上半部分
-    const totalAngle = Math.PI * (1 + characterCount / this.companyName.textDistributionFactor)
+    const totalAngle = Math.PI * (1 + characterCount / company.textDistributionFactor)
     const startAngle = Math.PI + (Math.PI - totalAngle) / 2
     const anglePerChar = totalAngle / characterCount
 
     characters.forEach((char, index) => {
       const angle = startAngle + anglePerChar * (index + 0.5)
-      const x =
-        centerX +
-        Math.cos(angle) * (radiusX - fontSize / 2 - this.companyName.textMarginMM * this.mmToPixel)
-      const y =
-        centerY +
-        Math.sin(angle) * (radiusY - fontSize / 2 - this.companyName.textMarginMM * this.mmToPixel)
+      const x = centerX + Math.cos(angle) * (radiusX - fontSize - borderOffset)
+      const y = centerY + Math.sin(angle) * (radiusY - fontSize - borderOffset)
 
       this.canvasCtx.save()
       this.canvasCtx.translate(x, y)
       this.canvasCtx.rotate(angle + Math.PI / 2)
-      this.canvasCtx.scale(this.companyName.companyNameCompression, 1) // 应用压缩
+      this.canvasCtx.scale(company.compression, 1) // 应用压缩
       this.canvasCtx.fillText(char, 0, 0)
       this.canvasCtx.restore()
     })
@@ -391,22 +440,18 @@ export class DrawStampUtils {
    * @param text 编码文本
    * @param fontSize 字体大小
    */
-  drawCode(
-    centerX: number,
-    centerY: number,
-    radiusX: number,
-    radiusY: number,
-    text: string,
-    fontSize: number,
-    fontFamily: string
-  ) {
+  drawCode(code: ICode, centerX: number, centerY: number, radiusX: number, radiusY: number) {
+    const fontSize = code.fontHeight * this.mmToPixel
+    const text = code.code
+
     this.canvasCtx.save()
-    this.canvasCtx.font = `${fontSize}px ${fontFamily}`
+    this.canvasCtx.font = `${fontSize}px ${code.fontFamily}`
     this.canvasCtx.fillStyle = this.primaryColor
     this.canvasCtx.textAlign = 'center'
     this.canvasCtx.textBaseline = 'middle'
 
     const characters = text.split('')
+    console.log(characters)
     const characterCount = characters.length
 
     // 动态调整总角度
@@ -429,6 +474,100 @@ export class DrawStampUtils {
 
     this.canvasCtx.restore()
   }
+
+  /**
+   * 绘制税号
+   * @param ctx 画布上下文
+   * @param centerX 圆心x坐标
+   * @param centerY 圆心y坐标
+   */
+  drawTaxNumber(taxNumber: ITaxNumber, centerX: number, centerY: number) {
+    const fontSize = taxNumber.fontHeight * this.mmToPixel
+    const totalWidth = taxNumber.totalWidth * this.mmToPixel
+    const positionY = taxNumber.positionY * this.mmToPixel
+
+    this.canvasCtx.save()
+    this.canvasCtx.font = `${fontSize}px ${taxNumber.fontFamily}`
+    this.canvasCtx.fillStyle = this.primaryColor
+    this.canvasCtx.textAlign = 'center'
+    this.canvasCtx.textBaseline = 'middle'
+
+    const characters = taxNumber.code.split('')
+    const charCount = characters.length
+    const letterSpacing = this.drawStampConfigs.taxNumber.letterSpacing * this.mmToPixel
+
+    // 计算压缩后的总宽度
+    const compressedTotalWidth = totalWidth * this.drawStampConfigs.taxNumber.compression
+
+    // 计算单个字符的宽度（考虑压缩）
+    const charWidth = (compressedTotalWidth - (charCount - 1) * letterSpacing) / charCount
+
+    // 计算整个文本的实际宽度
+    const actualWidth = charCount * charWidth + (charCount - 1) * letterSpacing
+
+    // 计算起始位置，确保文字居中
+    const startX = centerX - actualWidth / 2 + charWidth / 2
+    const adjustedCenterY = centerY + positionY * this.mmToPixel
+
+    characters.forEach((char, index) => {
+      const x = startX + index * (charWidth + letterSpacing)
+      this.canvasCtx.save()
+      this.canvasCtx.translate(x, adjustedCenterY)
+      this.canvasCtx.scale(this.drawStampConfigs.taxNumber.compression, 1)
+      this.canvasCtx.fillText(char, 0, 0)
+      this.canvasCtx.restore()
+    })
+
+    this.canvasCtx.restore()
+  }
+
+  //   /**
+  //    * 绘制税号
+  //    * @param taxNumber 税号参数
+  //    * @param centerX 圆心x坐标
+  //    * @param centerY 圆心y坐标
+  //    */
+  //   drawTaxNumber = (taxNumber: ITaxNumber, centerX: number, centerY: number) => {
+  //     const fontSize = taxNumber.fontHeight * this.mmToPixel
+  //     const text = taxNumber.code
+  //     const positionY = taxNumber.positionY * this.mmToPixel
+  //     const totalWidth = taxNumber.totalWidth * this.mmToPixel
+
+  //     this.canvasCtx.save()
+  //     this.canvasCtx.font = `${fontSize}px ${taxNumber.fontFamily}`
+  //     this.canvasCtx.fillStyle = this.drawStampConfigs.primaryColor
+  //     this.canvasCtx.textAlign = 'center'
+  //     this.canvasCtx.textBaseline = 'middle'
+
+  //     const characters = text.split('')
+  //     const charCount = characters.length
+  //     const letterSpacing =
+  //       (totalWidth - charCount * taxNumber.fontWidth * this.mmToPixel) / (charCount - 1)
+
+  //     // 计算单个字符的宽度（考虑压缩）
+  //     const charWidth = taxNumber.fontWidth * this.mmToPixel
+  //     // 包含间隙之后的字符的宽度
+  //     const charTotalWidth = charWidth + letterSpacing
+  //     const scaleWidth = charWidth / charTotalWidth
+
+  //     // 计算整个文本的实际宽度
+  //     const actualWidth = charCount * charWidth + (charCount - 1) * letterSpacing
+
+  //     // 计算起始位置，确保文字居中
+  //     const startX = centerX - totalWidth / 2
+  //     const adjustedCenterY = centerY + positionY * this.mmToPixel // 使用调整后的Y位置
+
+  //     characters.forEach((char, index) => {
+  //       const x = startX + index * charTotalWidth + charWidth / 2 + letterSpacing
+  //       this.canvasCtx.save()
+  //       this.canvasCtx.translate(x, adjustedCenterY)
+  //       this.canvasCtx.scale(scaleWidth, 1)
+  //       this.canvasCtx.fillText(char, 0, 0)
+  //       this.canvasCtx.restore()
+  //     })
+
+  //     this.canvasCtx.restore()
+  //   }
 
   /**
    * 添加做旧效果
@@ -649,7 +788,8 @@ export class DrawStampUtils {
     saveCtx.clearRect(0, 0, outputSize, outputSize)
 
     // 计算原始 canvas 中印章的位置和大小
-    const originalStampSize = (Math.max(this.stampWidth, this.stampHeight) + 2) * this.mmToPixel
+    const originalStampSize =
+      (Math.max(this.drawStampConfigs.width, this.drawStampConfigs.height) + 2) * this.mmToPixel
     const sourceX = (this.canvas.width - originalStampSize) / 2 + this.stampOffsetX * this.mmToPixel
     const sourceY =
       (this.canvas.height - originalStampSize) / 2 + this.stampOffsetY * this.mmToPixel
@@ -693,13 +833,21 @@ export class DrawStampUtils {
     // 计算画布中心点
     const x = this.canvas.width / 2
     const y = this.canvas.height / 2
+    const mmToPixel = this.mmToPixel
+    console.log('draw stamp', this.drawStampConfigs.width * mmToPixel)
+    const drawRadiusX = (this.drawStampConfigs.width - this.drawStampConfigs.borderWidth) / 2
+    const drawRadiusY = (this.drawStampConfigs.height - this.drawStampConfigs.borderWidth) / 2
+    const offsetX = this.stampOffsetX * this.mmToPixel
+    const offsetY = this.stampOffsetX * this.mmToPixel
+    const centerX = x + offsetX
+    const centerY = y + offsetY
 
     this.drawStamp(
-      x,
-      y,
-      this.drawStampConfigs.width,
-      this.drawStampConfigs.height,
-      this.drawStampConfigs.borderWidth,
+      centerX,
+      centerY,
+      drawRadiusX * mmToPixel,
+      drawRadiusY * mmToPixel,
+      this.drawStampConfigs.borderWidth * mmToPixel,
       this.drawStampConfigs.primaryColor,
       this.drawStampConfigs.refreshSecurityPattern,
       this.drawStampConfigs.refreshOld
@@ -727,8 +875,8 @@ export class DrawStampUtils {
    * @param borderColor 边框颜色
    */
   drawStamp(
-    x: number,
-    y: number,
+    centerX: number,
+    centerY: number,
     radiusX: number,
     radiusY: number,
     borderWidth: number,
@@ -739,26 +887,22 @@ export class DrawStampUtils {
     // 清除整个画布
     this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-    // 创建离屏 canvas
-    const offscreenCanvas = document.createElement('canvas')
-    offscreenCanvas.width = this.canvas.width
-    offscreenCanvas.height = this.canvas.height
-    const offscreenCtx = offscreenCanvas.getContext('2d')
-    if (!offscreenCtx) return
+    // // 创建离屏 canvas
+    // const offscreenCanvas = document.createElement('canvas')
+    // offscreenCanvas.width = this.canvas.width
+    // offscreenCanvas.height = this.canvas.height
+    // const offscreenCtx = offscreenCanvas.getContext('2d')
+    // if (!offscreenCtx) return
 
-    // 计算拖动后的中心点
-    const centerX = x + this.stampOffsetX * this.mmToPixel
-    const centerY = y + this.stampOffsetY * this.mmToPixel
+    // // 在离屏 canvas 上绘制椭圆边框
+    // offscreenCtx.beginPath()
+    // offscreenCtx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2)
+    // offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
+    // offscreenCtx.lineWidth = borderWidth
+    // offscreenCtx.stroke()
 
-    // 在离屏 canvas 上绘制椭圆边框
-    offscreenCtx.beginPath()
-    offscreenCtx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2)
-    offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
-    offscreenCtx.lineWidth = borderWidth
-    offscreenCtx.stroke()
-
-    // 设置填充颜色为白色
-    offscreenCtx.fillStyle = 'white'
+    // // 设置填充颜色为白色
+    // offscreenCtx.fillStyle = 'white'
 
     // 设置画布背景
     this.canvasCtx.fillStyle = 'white'
@@ -767,50 +911,42 @@ export class DrawStampUtils {
     // 绘制椭圆
     this.drawEllipse(centerX, centerY, radiusX, radiusY, borderWidth, borderColor)
 
+    // 在椭圆边框上绘制防伪纹路
+    // this.drawSecurityPattern(
+    //   offscreenCtx,
+    //   centerX,
+    //   centerY,
+    //   radiusX,
+    //   radiusY,
+    //   refreshSecurityPattern
+    // )
+
     // 绘制五角星
-    if (this.drawStar.drawStar) {
-      this.drawStarShape(centerX, centerY, this.drawStar.starDiameter)
+    if (this.drawStampConfigs.drawStar.drawStar) {
+      const drawStarDia = this.drawStampConfigs.drawStar.starDiameter / 2
+      this.drawStarShape(centerX, centerY, drawStarDia * this.mmToPixel)
     }
 
-    // 在椭圆边框上绘制防伪纹路
-    this.drawSecurityPattern(
-      offscreenCtx,
-      centerX,
-      centerY,
-      radiusX,
-      radiusY,
-      refreshSecurityPattern
-    )
-
     // 绘制公司名称
-    this.drawCompanyName(
-      centerX,
-      centerY,
-      radiusX,
-      radiusY,
-      this.companyName.companyName,
-      this.companyName.textFontSizeMM
-    )
+    this.drawCompanyName(this.drawStampConfigs.company, centerX, centerY, radiusX, radiusY)
+
+    // 绘制印章类型
+    this.drawStampType(this.drawStampConfigs.stampType, centerX, centerY, radiusX)
 
     // 绘制印章编码
-    this.drawCode(
-      centerX,
-      centerY,
-      radiusX,
-      radiusY,
-      this.code.code,
-      this.code.codeFontSizeMM,
-      this.code.fontFamily
-    )
+    this.drawCode(this.drawStampConfigs.code, centerX, centerY, radiusX, radiusY)
+
+    // 绘制纳税识别号
+    this.drawTaxNumber(this.drawStampConfigs.taxNumber, centerX, centerY)
 
     // 将离屏 canvas 的内容作为蒙版应用到主 canvas
-    this.canvasCtx.save()
-    this.canvasCtx.globalCompositeOperation = 'source-over'
-    this.canvasCtx.fillStyle = borderColor
-    this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height)
-    this.canvasCtx.globalCompositeOperation = 'destination-in'
-    this.canvasCtx.drawImage(offscreenCanvas, 0, 0)
-    this.canvasCtx.restore()
+    // this.canvasCtx.save()
+    // this.canvasCtx.globalCompositeOperation = 'source-over'
+    // this.canvasCtx.fillStyle = borderColor
+    // this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    // this.canvasCtx.globalCompositeOperation = 'destination-in'
+    // this.canvasCtx.drawImage(offscreenCanvas, 0, 0)
+    // this.canvasCtx.restore()
 
     // 在绘制完所有内容后，添加做旧效果
     if (refreshOld) {
