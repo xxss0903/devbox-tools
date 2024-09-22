@@ -133,7 +133,7 @@ export class DrawStampUtils {
     securityPatternAngleRange: 30
   }
   private company: ICompany = {
-    companyName: '印章绘制公司',
+    companyName: '印章绘制有限责任公司',
     compression: 1,
     borderOffset: 1,
     textDistributionFactor: 20,
@@ -142,11 +142,11 @@ export class DrawStampUtils {
   }
   private taxNumber: ITaxNumber = {
     code: '000000000000000000',
-    compression: 0.8,
+    compression: 0.7,
     fontHeight: 3.7,
     fontFamily: 'Arial',
     fontWidth: 1.3,
-    letterSpacing: 5,
+    letterSpacing: 8,
     positionY: 0,
     totalWidth: 26
   }
@@ -605,7 +605,7 @@ export class DrawStampUtils {
   drawTaxNumber(taxNumber: ITaxNumber, centerX: number, centerY: number) {
     const fontSize = taxNumber.fontHeight * this.mmToPixel
     const totalWidth = taxNumber.totalWidth * this.mmToPixel
-    const positionY = taxNumber.positionY * this.mmToPixel
+    const positionY = taxNumber.positionY * this.mmToPixel + 0.3
 
     this.canvasCtx.save()
     this.canvasCtx.font = `${fontSize}px ${taxNumber.fontFamily}`
@@ -634,12 +634,23 @@ export class DrawStampUtils {
       const x = startX + index * (charWidth + letterSpacing)
       this.canvasCtx.save()
       this.canvasCtx.translate(x, adjustedCenterY)
-      this.canvasCtx.scale(this.drawStampConfigs.taxNumber.compression, 1)
+      this.canvasCtx.scale(this.drawStampConfigs.taxNumber.compression, 1.35)
       this.canvasCtx.fillText(char, 0, 0)
       this.canvasCtx.restore()
     })
-
     this.canvasCtx.restore()
+
+    // // 绘制包含税号的矩形
+    // const rectWidth = 26 * this.mmToPixel // 26mm 转换为像素
+    // const rectHeight = fontSize * 1.2 // 矩形高度略大于字体大小
+    // const rectX = centerX - rectWidth / 2
+    // const rectY = adjustedCenterY - rectHeight / 2
+
+    // this.canvasCtx.save()
+    // this.canvasCtx.strokeStyle = this.primaryColor
+    // this.canvasCtx.lineWidth = 1
+    // this.canvasCtx.strokeRect(rectX, rectY, rectWidth, rectHeight)
+    // this.canvasCtx.restore()
   }
 
   /**
@@ -907,11 +918,10 @@ export class DrawStampUtils {
     const x = this.canvas.width / 2
     const y = this.canvas.height / 2
     const mmToPixel = this.mmToPixel
-    console.log('draw stamp', this.drawStampConfigs.width * mmToPixel)
     const drawRadiusX = (this.drawStampConfigs.width - this.drawStampConfigs.borderWidth) / 2
     const drawRadiusY = (this.drawStampConfigs.height - this.drawStampConfigs.borderWidth) / 2
     const offsetX = this.stampOffsetX * this.mmToPixel
-    const offsetY = this.stampOffsetX * this.mmToPixel
+    const offsetY = this.stampOffsetY * this.mmToPixel
     const centerX = x + offsetX
     const centerY = y + offsetY
 
