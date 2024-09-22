@@ -125,7 +125,7 @@ export class DrawStampUtils {
   }
   // 防伪纹路
   private securityPattern: ISecurityPattern = {
-    openSecurityPattern: false,
+    openSecurityPattern: true,
     securityPatternWidth: 0.1,
     securityPatternLength: 0.1,
     securityPatternEnabled: false,
@@ -270,32 +270,28 @@ export class DrawStampUtils {
       const mmY = Math.round(((y - RULER_HEIGHT) / this.mmToPixel) * 10) / 10
 
       this.refreshStamp()
-      this.highlightRulerPosition(mmX, mmY)
+      this.highlightRulerPosition(this.canvasCtx, mmX, mmY)
       this.drawCrossLines(x, y)
     }
   }
 
-  highlightRulerPosition = (mmX: number, mmY: number) => {
+  highlightRulerPosition = (ctx: CanvasRenderingContext2D, mmX: number, mmY: number) => {
     const x = mmX * this.mmToPixel + RULER_WIDTH
     const y = mmY * this.mmToPixel + RULER_HEIGHT
 
     // 高亮水平标尺
-    this.canvasCtx.fillStyle = this.drawStampConfigs.primaryColor
-    this.canvasCtx.fillRect(RULER_WIDTH, y - 1, this.canvas.width - RULER_WIDTH, 2)
+    ctx.fillStyle = this.drawStampConfigs.primaryColor
+    ctx.fillRect(RULER_WIDTH, y - 1, this.canvas.width - RULER_WIDTH, 2)
 
     // 高亮垂直标尺
-    this.canvasCtx.fillRect(x - 1, RULER_HEIGHT, 2, this.canvas.height - RULER_HEIGHT)
+    ctx.fillRect(x - 1, RULER_HEIGHT, 2, this.canvas.height - RULER_HEIGHT)
 
     // 显示坐标
-    this.canvasCtx.fillStyle = 'black'
-    this.canvasCtx.font = 'bold 12px Arial'
-    this.canvasCtx.textAlign = 'left'
-    this.canvasCtx.textBaseline = 'top'
-    this.canvasCtx.fillText(
-      `${mmX.toFixed(1)}mm, ${mmY.toFixed(1)}mm`,
-      RULER_WIDTH + 5,
-      RULER_HEIGHT + 5
-    )
+    ctx.fillStyle = 'black'
+    ctx.font = 'bold 12px Arial'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillText(`${mmX.toFixed(1)}mm, ${mmY.toFixed(1)}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
   }
 
   drawCrossLines = (x: number, y: number) => {
@@ -348,33 +344,33 @@ export class DrawStampUtils {
    * @param y 圆心y坐标
    * @param r 半径
    */
-  drawStarShape(x: number, y: number, r: number) {
+  drawStarShape(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
     const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
     const pathData = starPath.split(/(?=[MLZ])/)
 
-    this.canvasCtx.save()
-    this.canvasCtx.translate(x, y)
-    this.canvasCtx.scale(r, r)
-    this.canvasCtx.beginPath()
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(r, r)
+    ctx.beginPath()
 
     pathData.forEach((command) => {
       const [cmd, ...params] = command.trim().split(/\s+/)
       switch (cmd) {
         case 'M':
-          this.canvasCtx.moveTo(parseFloat(params[0]), parseFloat(params[1]))
+          ctx.moveTo(parseFloat(params[0]), parseFloat(params[1]))
           break
         case 'L':
-          this.canvasCtx.lineTo(parseFloat(params[0]), parseFloat(params[1]))
+          ctx.lineTo(parseFloat(params[0]), parseFloat(params[1]))
           break
         case 'Z':
-          this.canvasCtx.closePath()
+          ctx.closePath()
           break
       }
     })
 
-    this.canvasCtx.fillStyle = this.primaryColor
-    this.canvasCtx.fill()
-    this.canvasCtx.restore()
+    ctx.fillStyle = this.primaryColor
+    ctx.fill()
+    ctx.restore()
   }
 
   /**
@@ -388,38 +384,44 @@ export class DrawStampUtils {
    * @param positionY 文字位置
    * @param fillColor 填充颜色
    */
-  drawStampType(stampType: IStampType, centerX: number, centerY: number, radiusX: number) {
+  drawStampType(
+    ctx: CanvasRenderingContext2D,
+    stampType: IStampType,
+    centerX: number,
+    centerY: number,
+    radiusX: number
+  ) {
     const fontSize = stampType.fontHeight * this.mmToPixel
     const letterSpacing = stampType.letterSpacing
     const positionY = stampType.positionY
 
-    this.canvasCtx.save()
-    this.canvasCtx.font = `${fontSize}px SimSun`
-    this.canvasCtx.fillStyle = this.primaryColor
-    this.canvasCtx.textAlign = 'center'
-    this.canvasCtx.textBaseline = 'middle'
+    ctx.save()
+    ctx.font = `${fontSize}px SimSun`
+    ctx.fillStyle = this.primaryColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
 
     // 计算文字位置（在五角星正下方）
     const textY = centerY + radiusX * 0.5 + positionY * this.mmToPixel
 
-    this.canvasCtx.save()
-    this.canvasCtx.translate(centerX, textY)
+    ctx.save()
+    ctx.translate(centerX, textY)
 
     const chars = stampType.stampType.split('')
-    const charWidths = chars.map((char) => this.canvasCtx.measureText(char).width)
+    const charWidths = chars.map((char) => ctx.measureText(char).width)
     const totalWidth =
       charWidths.reduce((sum, width) => sum + width, 0) +
       (chars.length - 1) * letterSpacing * this.mmToPixel
 
     let currentX = -totalWidth / 2 // 从文本的左边缘开始
 
-    this.canvasCtx.scale(this.drawStampConfigs.stampType.compression, 1)
+    ctx.scale(this.drawStampConfigs.stampType.compression, 1)
     chars.forEach((char, index) => {
-      this.canvasCtx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
+      ctx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
       currentX += charWidths[index] + letterSpacing * this.mmToPixel
     })
 
-    this.canvasCtx.restore()
+    ctx.restore()
   }
 
   /**
@@ -489,6 +491,7 @@ export class DrawStampUtils {
    * @param borderColor 边框颜色
    */
   drawEllipse(
+    ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
     radiusX: number,
@@ -496,11 +499,11 @@ export class DrawStampUtils {
     borderWidth: number,
     borderColor: string
   ) {
-    this.canvasCtx.beginPath()
-    this.canvasCtx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2)
-    this.canvasCtx.strokeStyle = borderColor
-    this.canvasCtx.lineWidth = borderWidth
-    this.canvasCtx.stroke()
+    ctx.beginPath()
+    ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2)
+    ctx.strokeStyle = borderColor
+    ctx.lineWidth = borderWidth
+    ctx.stroke()
   }
 
   /**
@@ -513,6 +516,7 @@ export class DrawStampUtils {
    * @param fontSize 字体大小
    */
   drawCompanyName(
+    ctx: CanvasRenderingContext2D,
     company: ICompany,
     centerX: number,
     centerY: number,
@@ -520,11 +524,11 @@ export class DrawStampUtils {
     radiusY: number
   ) {
     const fontSize = company.fontHeight * this.mmToPixel
-    this.canvasCtx.save()
-    this.canvasCtx.font = `${fontSize}px ${company.fontFamily}`
-    this.canvasCtx.fillStyle = this.primaryColor
-    this.canvasCtx.textAlign = 'center'
-    this.canvasCtx.textBaseline = 'bottom'
+    ctx.save()
+    ctx.font = `${fontSize}px ${company.fontFamily}`
+    ctx.fillStyle = this.primaryColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
 
     const characters = company.companyName.split('')
     const characterCount = characters.length
@@ -540,15 +544,15 @@ export class DrawStampUtils {
       const x = centerX + Math.cos(angle) * (radiusX - fontSize - borderOffset)
       const y = centerY + Math.sin(angle) * (radiusY - fontSize - borderOffset)
 
-      this.canvasCtx.save()
-      this.canvasCtx.translate(x, y)
-      this.canvasCtx.rotate(angle + Math.PI / 2)
-      this.canvasCtx.scale(company.compression, 1) // 应用压缩
-      this.canvasCtx.fillText(char, 0, 0)
-      this.canvasCtx.restore()
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.rotate(angle + Math.PI / 2)
+      ctx.scale(company.compression, 1) // 应用压缩
+      ctx.fillText(char, 0, 0)
+      ctx.restore()
     })
 
-    this.canvasCtx.restore()
+    ctx.restore()
   }
 
   /**
@@ -560,18 +564,24 @@ export class DrawStampUtils {
    * @param text 编码文本
    * @param fontSize 字体大小
    */
-  drawCode(code: ICode, centerX: number, centerY: number, radiusX: number, radiusY: number) {
+  drawCode(
+    ctx: CanvasRenderingContext2D,
+    code: ICode,
+    centerX: number,
+    centerY: number,
+    radiusX: number,
+    radiusY: number
+  ) {
     const fontSize = code.fontHeight * this.mmToPixel
     const text = code.code
 
-    this.canvasCtx.save()
-    this.canvasCtx.font = `${fontSize}px ${code.fontFamily}`
-    this.canvasCtx.fillStyle = this.primaryColor
-    this.canvasCtx.textAlign = 'center'
-    this.canvasCtx.textBaseline = 'middle'
+    ctx.save()
+    ctx.font = `${fontSize}px ${code.fontFamily}`
+    ctx.fillStyle = this.primaryColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
 
     const characters = text.split('')
-    console.log(characters)
     const characterCount = characters.length
 
     // 动态调整总角度
@@ -584,15 +594,15 @@ export class DrawStampUtils {
       const x = centerX + Math.cos(angle) * (radiusX - fontSize / 2 - 1 * this.mmToPixel)
       const y = centerY + Math.sin(angle) * (radiusY - fontSize / 2 - 1 * this.mmToPixel)
 
-      this.canvasCtx.save()
-      this.canvasCtx.translate(x, y)
-      this.canvasCtx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
-      this.canvasCtx.scale(1, 1) // 应用压缩
-      this.canvasCtx.fillText(char, 0, 0)
-      this.canvasCtx.restore()
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
+      ctx.scale(1, 1) // 应用压缩
+      ctx.fillText(char, 0, 0)
+      ctx.restore()
     })
 
-    this.canvasCtx.restore()
+    ctx.restore()
   }
 
   /**
@@ -601,16 +611,21 @@ export class DrawStampUtils {
    * @param centerX 圆心x坐标
    * @param centerY 圆心y坐标
    */
-  drawTaxNumber(taxNumber: ITaxNumber, centerX: number, centerY: number) {
+  drawTaxNumber(
+    ctx: CanvasRenderingContext2D,
+    taxNumber: ITaxNumber,
+    centerX: number,
+    centerY: number
+  ) {
     const fontSize = taxNumber.fontHeight * this.mmToPixel
     const totalWidth = taxNumber.totalWidth * this.mmToPixel
     const positionY = taxNumber.positionY * this.mmToPixel + 0.3
 
-    this.canvasCtx.save()
-    this.canvasCtx.font = `${fontSize}px ${taxNumber.fontFamily}`
-    this.canvasCtx.fillStyle = this.primaryColor
-    this.canvasCtx.textAlign = 'center'
-    this.canvasCtx.textBaseline = 'middle'
+    ctx.save()
+    ctx.font = `${fontSize}px ${taxNumber.fontFamily}`
+    ctx.fillStyle = this.primaryColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
 
     const characters = taxNumber.code.split('')
     const charCount = characters.length
@@ -631,13 +646,13 @@ export class DrawStampUtils {
 
     characters.forEach((char, index) => {
       const x = startX + index * (charWidth + letterSpacing)
-      this.canvasCtx.save()
-      this.canvasCtx.translate(x, adjustedCenterY)
-      this.canvasCtx.scale(this.drawStampConfigs.taxNumber.compression, 1.35)
-      this.canvasCtx.fillText(char, 0, 0)
-      this.canvasCtx.restore()
+      ctx.save()
+      ctx.translate(x, adjustedCenterY)
+      ctx.scale(this.drawStampConfigs.taxNumber.compression, 1.35)
+      ctx.fillText(char, 0, 0)
+      ctx.restore()
     })
-    this.canvasCtx.restore()
+    ctx.restore()
 
     // // 绘制包含税号的矩形
     // const rectWidth = 26 * this.mmToPixel // 26mm 转换为像素
@@ -645,11 +660,11 @@ export class DrawStampUtils {
     // const rectX = centerX - rectWidth / 2
     // const rectY = adjustedCenterY - rectHeight / 2
 
-    // this.canvasCtx.save()
-    // this.canvasCtx.strokeStyle = this.primaryColor
-    // this.canvasCtx.lineWidth = 1
-    // this.canvasCtx.strokeRect(rectX, rectY, rectWidth, rectHeight)
-    // this.canvasCtx.restore()
+    // ctx.save()
+    // ctx.strokeStyle = this.primaryColor
+    // ctx.lineWidth = 1
+    // ctx.strokeRect(rectX, rectY, rectWidth, rectHeight)
+    // ctx.restore()
   }
 
   /**
@@ -658,8 +673,13 @@ export class DrawStampUtils {
    * @param height 画布高度
    * @param forceRefresh 是否强制刷新
    */
-  addAgingEffect(width: number, height: number, forceRefresh: boolean = false) {
-    const imageData = this.canvasCtx.getImageData(0, 0, width, height)
+  addAgingEffect(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    forceRefresh: boolean = false
+  ) {
+    const imageData = ctx.getImageData(0, 0, width, height)
     const data = imageData.data
 
     const centerX = width / 2
@@ -716,7 +736,7 @@ export class DrawStampUtils {
       }
     })
 
-    this.canvasCtx.putImageData(imageData, 0, 0)
+    ctx.putImageData(imageData, 0, 0)
   }
 
   private addCircularNoise(
@@ -749,31 +769,31 @@ export class DrawStampUtils {
    * @param width 画布宽度
    * @param height 画布高度
    */
-  drawFullRuler(width: number, height: number) {
+  drawFullRuler(ctx: CanvasRenderingContext2D, width: number, height: number) {
     if (!this.ruler.showFullRuler) return
 
-    this.canvasCtx.save()
-    this.canvasCtx.strokeStyle = '#bbbbbb' // 浅灰色
-    this.canvasCtx.lineWidth = 1
-    this.canvasCtx.setLineDash([5, 5]) // 设置虚线样式
+    ctx.save()
+    ctx.strokeStyle = '#bbbbbb' // 浅灰色
+    ctx.lineWidth = 1
+    ctx.setLineDash([5, 5]) // 设置虚线样式
 
     // 绘制垂直线
     for (let x = RULER_WIDTH; x < width; x += 5 * this.mmToPixel) {
-      this.canvasCtx.beginPath()
-      this.canvasCtx.moveTo(x, RULER_HEIGHT)
-      this.canvasCtx.lineTo(x, height)
-      this.canvasCtx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(x, RULER_HEIGHT)
+      ctx.lineTo(x, height)
+      ctx.stroke()
     }
 
     // 绘制水平线
     for (let y = RULER_HEIGHT; y < height; y += 5 * this.mmToPixel) {
-      this.canvasCtx.beginPath()
-      this.canvasCtx.moveTo(RULER_WIDTH, y)
-      this.canvasCtx.lineTo(width, y)
-      this.canvasCtx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(RULER_WIDTH, y)
+      ctx.lineTo(width, y)
+      ctx.stroke()
     }
 
-    this.canvasCtx.restore()
+    ctx.restore()
   }
 
   /**
@@ -782,24 +802,29 @@ export class DrawStampUtils {
    * @param rulerSize 标尺宽度
    * @param isHorizontal 是否为水平标尺
    */
-  drawRuler(rulerLength: number, rulerSize: number, isHorizontal: boolean) {
+  drawRuler(
+    ctx: CanvasRenderingContext2D,
+    rulerLength: number,
+    rulerSize: number,
+    isHorizontal: boolean
+  ) {
     if (!this.ruler.showRuler) return
 
     const mmPerPixel = 1 / this.mmToPixel
 
     // 绘制标尺背景
-    this.canvasCtx.fillStyle = 'lightgray'
+    ctx.fillStyle = 'lightgray'
     if (isHorizontal) {
-      this.canvasCtx.fillRect(0, 0, rulerLength, rulerSize)
+      ctx.fillRect(0, 0, rulerLength, rulerSize)
     } else {
-      this.canvasCtx.fillRect(0, 0, rulerSize, rulerLength)
+      ctx.fillRect(0, 0, rulerSize, rulerLength)
     }
 
     // 绘制刻度和数字
-    this.canvasCtx.fillStyle = 'black'
-    this.canvasCtx.font = '10px Arial'
-    this.canvasCtx.textAlign = 'center'
-    this.canvasCtx.textBaseline = 'top'
+    ctx.fillStyle = 'black'
+    ctx.font = '10px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
 
     for (let i = 0; i <= rulerLength - rulerSize; i += this.mmToPixel / 10) {
       const pos = i + rulerSize
@@ -807,50 +832,50 @@ export class DrawStampUtils {
 
       if (mm % 5 === 0) {
         // 5毫米刻度
-        this.canvasCtx.beginPath()
+        ctx.beginPath()
         if (isHorizontal) {
-          this.canvasCtx.moveTo(pos, 0)
-          this.canvasCtx.lineTo(pos, rulerSize * 0.8)
+          ctx.moveTo(pos, 0)
+          ctx.lineTo(pos, rulerSize * 0.8)
         } else {
-          this.canvasCtx.moveTo(0, pos)
-          this.canvasCtx.lineTo(rulerSize * 0.8, pos)
+          ctx.moveTo(0, pos)
+          ctx.lineTo(rulerSize * 0.8, pos)
         }
-        this.canvasCtx.lineWidth = 1
-        this.canvasCtx.stroke()
+        ctx.lineWidth = 1
+        ctx.stroke()
 
-        this.canvasCtx.save()
+        ctx.save()
         if (isHorizontal) {
-          this.canvasCtx.fillText(mm.toString(), pos, rulerSize * 0.8)
+          ctx.fillText(mm.toString(), pos, rulerSize * 0.8)
         } else {
-          this.canvasCtx.translate(rulerSize * 0.8, pos)
-          this.canvasCtx.rotate(-Math.PI / 2)
-          this.canvasCtx.fillText(mm.toString(), 0, 0)
+          ctx.translate(rulerSize * 0.8, pos)
+          ctx.rotate(-Math.PI / 2)
+          ctx.fillText(mm.toString(), 0, 0)
         }
-        this.canvasCtx.restore()
+        ctx.restore()
       } else if (mm % 1 === 0) {
         // 1毫米刻度
-        this.canvasCtx.beginPath()
+        ctx.beginPath()
         if (isHorizontal) {
-          this.canvasCtx.moveTo(pos, 0)
-          this.canvasCtx.lineTo(pos, rulerSize * 0.6)
+          ctx.moveTo(pos, 0)
+          ctx.lineTo(pos, rulerSize * 0.6)
         } else {
-          this.canvasCtx.moveTo(0, pos)
-          this.canvasCtx.lineTo(rulerSize * 0.6, pos)
+          ctx.moveTo(0, pos)
+          ctx.lineTo(rulerSize * 0.6, pos)
         }
-        this.canvasCtx.lineWidth = 0.5
-        this.canvasCtx.stroke()
+        ctx.lineWidth = 0.5
+        ctx.stroke()
       } else {
         // 0.1毫米刻度
-        this.canvasCtx.beginPath()
+        ctx.beginPath()
         if (isHorizontal) {
-          this.canvasCtx.moveTo(pos, 0)
-          this.canvasCtx.lineTo(pos, rulerSize * 0.2)
+          ctx.moveTo(pos, 0)
+          ctx.lineTo(pos, rulerSize * 0.2)
         } else {
-          this.canvasCtx.moveTo(0, pos)
-          this.canvasCtx.lineTo(rulerSize * 0.2, pos)
+          ctx.moveTo(0, pos)
+          ctx.lineTo(rulerSize * 0.2, pos)
         }
-        this.canvasCtx.lineWidth = 0.5
-        this.canvasCtx.stroke()
+        ctx.lineWidth = 0.5
+        ctx.stroke()
       }
     }
   }
@@ -925,6 +950,7 @@ export class DrawStampUtils {
     const centerY = y + offsetY
 
     this.drawStamp(
+      this.canvasCtx,
       centerX,
       centerY,
       drawRadiusX * mmToPixel,
@@ -957,6 +983,7 @@ export class DrawStampUtils {
    * @param borderColor 边框颜色
    */
   drawStamp(
+    ctx: CanvasRenderingContext2D,
     centerX: number,
     centerY: number,
     radiusX: number,
@@ -967,7 +994,7 @@ export class DrawStampUtils {
     refreshOld: boolean = false
   ) {
     // 清除整个画布
-    this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
     // // 创建离屏 canvas
     // const offscreenCanvas = document.createElement('canvas')
@@ -976,67 +1003,79 @@ export class DrawStampUtils {
     // const offscreenCtx = offscreenCanvas.getContext('2d')
     // if (!offscreenCtx) return
 
-    // // 在离屏 canvas 上绘制椭圆边框
-    // offscreenCtx.beginPath()
-    // offscreenCtx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2)
-    // offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
-    // offscreenCtx.lineWidth = borderWidth
-    // offscreenCtx.stroke()
+    // 在离屏 canvas 上绘制椭圆边框
+    const offscreenCanvas = document.createElement('canvas')
+    offscreenCanvas.width = this.canvas.width
+    offscreenCanvas.height = this.canvas.height
+    const offscreenCtx = offscreenCanvas.getContext('2d')
+    if (!offscreenCtx) return
+    offscreenCtx.beginPath()
+    offscreenCtx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2)
+    offscreenCtx.strokeStyle = 'white' // 使用白色，稍后会变成红色
+    offscreenCtx.lineWidth = borderWidth
+    offscreenCtx.stroke()
 
     // // 设置填充颜色为白色
-    // offscreenCtx.fillStyle = 'white'
+    offscreenCtx.fillStyle = 'white'
 
     // 设置画布背景
-    this.canvasCtx.fillStyle = 'white'
-    this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    // ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
     // 绘制椭圆
-    this.drawEllipse(centerX, centerY, radiusX, radiusY, borderWidth, borderColor)
+    this.drawEllipse(offscreenCtx, centerX, centerY, radiusX, radiusY, borderWidth, borderColor)
 
     // 在椭圆边框上绘制防伪纹路
-    // this.drawSecurityPattern(
-    //   offscreenCtx,
-    //   centerX,
-    //   centerY,
-    //   radiusX,
-    //   radiusY,
-    //   refreshSecurityPattern
-    // )
+    this.drawSecurityPattern(
+      offscreenCtx!!,
+      centerX,
+      centerY,
+      radiusX,
+      radiusY,
+      refreshSecurityPattern
+    )
 
     // 绘制五角星
     if (this.drawStampConfigs.drawStar.drawStar) {
       const drawStarDia = this.drawStampConfigs.drawStar.starDiameter / 2
-      this.drawStarShape(centerX, centerY, drawStarDia * this.mmToPixel)
+      this.drawStarShape(ctx, centerX, centerY, drawStarDia * this.mmToPixel)
     }
 
     // 绘制公司名称
-    this.drawCompanyName(this.drawStampConfigs.company, centerX, centerY, radiusX, radiusY)
+    this.drawCompanyName(
+      offscreenCtx,
+      this.drawStampConfigs.company,
+      centerX,
+      centerY,
+      radiusX,
+      radiusY
+    )
 
     // 绘制印章类型
-    this.drawStampType(this.drawStampConfigs.stampType, centerX, centerY, radiusX)
+    this.drawStampType(offscreenCtx, this.drawStampConfigs.stampType, centerX, centerY, radiusX)
 
     // 绘制印章编码
-    this.drawCode(this.drawStampConfigs.code, centerX, centerY, radiusX, radiusY)
+    this.drawCode(offscreenCtx, this.drawStampConfigs.code, centerX, centerY, radiusX, radiusY)
 
     // 绘制纳税识别号
-    this.drawTaxNumber(this.drawStampConfigs.taxNumber, centerX, centerY)
+    this.drawTaxNumber(offscreenCtx, this.drawStampConfigs.taxNumber, centerX, centerY)
 
     // 将离屏 canvas 的内容作为蒙版应用到主 canvas
-    // this.canvasCtx.save()
-    // this.canvasCtx.globalCompositeOperation = 'source-over'
-    // this.canvasCtx.fillStyle = borderColor
-    // this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height)
-    // this.canvasCtx.globalCompositeOperation = 'destination-in'
-    // this.canvasCtx.drawImage(offscreenCanvas, 0, 0)
-    // this.canvasCtx.restore()
+    ctx.save()
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.fillStyle = borderColor
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    ctx.globalCompositeOperation = 'destination-in'
+    ctx.drawImage(offscreenCanvas, 0, 0)
+    ctx.restore()
 
     // 在绘制完所有内容后，添加做旧效果
     if (refreshOld) {
-      this.addAgingEffect(this.canvas.width, this.canvas.height, refreshOld)
+      this.addAgingEffect(offscreenCtx, this.canvas.width, this.canvas.height, refreshOld)
     }
 
-    this.drawRuler(this.canvas.width, RULER_HEIGHT, true)
-    this.drawRuler(this.canvas.height, RULER_HEIGHT, false)
-    this.drawFullRuler(this.canvas.width, this.canvas.height)
+    this.drawRuler(ctx, this.canvas.width, RULER_HEIGHT, true)
+    this.drawRuler(ctx, this.canvas.height, RULER_HEIGHT, false)
+    this.drawFullRuler(ctx, this.canvas.width, this.canvas.height)
   }
 }

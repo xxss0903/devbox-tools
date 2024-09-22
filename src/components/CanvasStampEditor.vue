@@ -860,7 +860,7 @@ const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean 
     centerY,
     circleRadius.value * MM_PER_PIXEL,
     circleRadius.value * MM_PER_PIXEL * 0.75,
-    refreshSecurityPattern
+    true
   )
 
   // 在 drawStamp 函数中调用 drawCompanyName 时，传入椭圆的长轴和短轴半径
