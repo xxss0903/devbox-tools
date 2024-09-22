@@ -1,5 +1,5 @@
 // 防伪纹路
-type ISecurityPattern = {
+export type ISecurityPattern = {
   openSecurityPattern: boolean // 是否启用防伪纹路
   securityPatternWidth: number // 防伪纹路宽度
   securityPatternLength: number // 防伪纹路长度
@@ -8,7 +8,7 @@ type ISecurityPattern = {
 }
 
 // 绘制印章的公司
-type ICompany = {
+export type ICompany = {
   companyName: string // 公司名称
   compression: number // 公司名称压缩比例
   borderOffset: number // 边框偏移量
@@ -18,7 +18,7 @@ type ICompany = {
 }
 
 // 印章编码
-type ICode = {
+export type ICode = {
   code: string // 编码
   compression: number // 编码压缩比例
   fontHeight: number // 编码字体大小
@@ -27,7 +27,7 @@ type ICode = {
   fontWidth: number // 编码字体宽度
 }
 
-type ITaxNumber = {
+export type ITaxNumber = {
   code: string // 税号
   compression: number // 税号压缩比例
   fontHeight: number // 税号字体大小
@@ -39,7 +39,7 @@ type ITaxNumber = {
 }
 
 // 做旧效果参数
-type IAgingEffectParams = {
+export type IAgingEffectParams = {
   x: number
   y: number
   noiseSize: number
@@ -51,13 +51,13 @@ type IAgingEffectParams = {
 }
 
 // 做旧效果
-type IAgingEffect = {
+export type IAgingEffect = {
   applyAging: boolean
   agingIntensity: number
 }
 
 // 绘制五角星
-type IDrawStar = {
+export type IDrawStar = {
   drawStar: boolean
   starDiameter: number
 }
@@ -73,13 +73,14 @@ type IStampType = {
 }
 
 // 是否绘制标尺
-type IShowRuler = {
+export type IShowRuler = {
   showRuler: boolean
   showFullRuler: boolean
 }
 
 // 绘制印章的参数
-type IDrawStampConfig = {
+export type IDrawStampConfig = {
+  agingEffect: IAgingEffect
   ruler: IShowRuler
   drawStar: IDrawStar
   securityPattern: ISecurityPattern
@@ -106,13 +107,16 @@ const RULER_HEIGHT = 80
 export class DrawStampUtils {
   // 主色
   private primaryColor: string = 'red'
+  // 毫米到像素的
   private mmToPixel: number
+  // 主canvas的context
   private canvasCtx: CanvasRenderingContext2D
+  // 离屏的canvas
   private offscreenCanvas: HTMLCanvasElement
+  // 主canvas
   private canvas: HTMLCanvasElement
   private stampOffsetX: number = 0
   private stampOffsetY: number = 0
-  private applyAging: boolean = false
   private agingIntensity: number = 50
   private ruler: IShowRuler = {
     showRuler: true,
@@ -128,7 +132,7 @@ export class DrawStampUtils {
     securityPatternWidth: 0.15,
     securityPatternLength: 3,
     securityPatternCount: 5,
-    securityPatternAngleRange: 30
+    securityPatternAngleRange: 40
   }
   private company: ICompany = {
     companyName: '印章绘制有限责任公司',
@@ -164,6 +168,11 @@ export class DrawStampUtils {
     letterSpacing: 0,
     positionY: -3
   }
+  // 做旧效果
+  private agingEffect: IAgingEffect = {
+    applyAging: false,
+    agingIntensity: 50
+  }
   // 总的印章绘制参数
   private drawStampConfigs: IDrawStampConfig = {
     ruler: this.ruler,
@@ -178,7 +187,8 @@ export class DrawStampUtils {
     borderWidth: 1,
     refreshSecurityPattern: false,
     refreshOld: false,
-    taxNumber: this.taxNumber
+    taxNumber: this.taxNumber,
+    agingEffect: this.agingEffect
   }
 
   private securityPatternParams: Array<{ angle: number; lineAngle: number }> = []
@@ -213,7 +223,15 @@ export class DrawStampUtils {
   private dragStartX = 0
   private dragStartY = 0
 
-  addCanvasListener() {
+  getDrawConfigs() {
+    return this.drawStampConfigs
+  }
+
+  setDrawConfigs(drawConfigs: IDrawStampConfig) {
+    this.drawStampConfigs = drawConfigs
+  }
+
+  private addCanvasListener() {
     this.canvas.addEventListener('mousemove', (event) => {
       this.onMouseMove(event)
     })
@@ -231,28 +249,28 @@ export class DrawStampUtils {
     })
   }
 
-  onMouseUp = () => {
+  private onMouseUp = () => {
     this.isDragging = false
   }
 
   // 点击印章区域，比如五角星等位置然后进行相应的跳转之类的
-  onCanvasClick = (event: MouseEvent) => {
+  private onCanvasClick = (event: MouseEvent) => {
     const canvas = this.canvas
     if (!canvas) return
   }
 
-  onMouseLeave = (event: MouseEvent) => {
+  private onMouseLeave = (event: MouseEvent) => {
     this.isDragging = false
     this.refreshStamp()
   }
 
-  onMouseDown = (event: MouseEvent) => {
+  private onMouseDown = (event: MouseEvent) => {
     this.isDragging = true
     this.dragStartX = event.clientX - this.stampOffsetX * this.mmToPixel
     this.dragStartY = event.clientY - this.stampOffsetY * this.mmToPixel
   }
 
-  onMouseMove = (event: MouseEvent) => {
+  private onMouseMove = (event: MouseEvent) => {
     if (this.isDragging) {
       const newOffsetX = (event.clientX - this.dragStartX) / this.mmToPixel
       const newOffsetY = (event.clientY - this.dragStartY) / this.mmToPixel
@@ -273,7 +291,7 @@ export class DrawStampUtils {
     }
   }
 
-  highlightRulerPosition = (ctx: CanvasRenderingContext2D, mmX: number, mmY: number) => {
+  private highlightRulerPosition = (ctx: CanvasRenderingContext2D, mmX: number, mmY: number) => {
     const x = mmX * this.mmToPixel + RULER_WIDTH
     const y = mmY * this.mmToPixel + RULER_HEIGHT
 
@@ -292,7 +310,7 @@ export class DrawStampUtils {
     ctx.fillText(`${mmX.toFixed(1)}mm, ${mmY.toFixed(1)}mm`, RULER_WIDTH + 5, RULER_HEIGHT + 5)
   }
 
-  drawCrossLines = (x: number, y: number) => {
+  private drawCrossLines = (x: number, y: number) => {
     const canvas = this.offscreenCanvas
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -325,13 +343,13 @@ export class DrawStampUtils {
     }
   }
 
-  setSecurityPattern(securityPattern: ISecurityPattern) {
+  private setSecurityPattern(securityPattern: ISecurityPattern) {
     this.securityPattern = securityPattern
     // 刷新防伪纹路
     this.refreshSecurityPattern()
   }
 
-  refreshSecurityPattern() {
+  private refreshSecurityPattern() {
     this.securityPatternParams = []
   }
 
@@ -342,7 +360,7 @@ export class DrawStampUtils {
    * @param y 圆心y坐标
    * @param r 半径
    */
-  drawStarShape(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  private drawStarShape(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
     const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
     const pathData = starPath.split(/(?=[MLZ])/)
 
@@ -382,7 +400,7 @@ export class DrawStampUtils {
    * @param positionY 文字位置
    * @param fillColor 填充颜色
    */
-  drawStampType(
+  private drawStampType(
     ctx: CanvasRenderingContext2D,
     stampType: IStampType,
     centerX: number,
@@ -431,7 +449,7 @@ export class DrawStampUtils {
    * @param securityPatternWidth 纹路宽度
    * @param securityPatternLength 纹路长度
    */
-  drawSecurityPattern(
+  private drawSecurityPattern(
     ctx: CanvasRenderingContext2D,
     centerX: number,
     centerY: number,
@@ -488,7 +506,7 @@ export class DrawStampUtils {
    * @param borderWidth 边框宽度
    * @param borderColor 边框颜色
    */
-  drawEllipse(
+  private drawEllipse(
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -513,7 +531,7 @@ export class DrawStampUtils {
    * @param text 公司名称文本
    * @param fontSize 字体大小
    */
-  drawCompanyName(
+  private drawCompanyName(
     ctx: CanvasRenderingContext2D,
     company: ICompany,
     centerX: number,
@@ -562,7 +580,7 @@ export class DrawStampUtils {
    * @param text 编码文本
    * @param fontSize 字体大小
    */
-  drawCode(
+  private drawCode(
     ctx: CanvasRenderingContext2D,
     code: ICode,
     centerX: number,
@@ -609,7 +627,7 @@ export class DrawStampUtils {
    * @param centerX 圆心x坐标
    * @param centerY 圆心y坐标
    */
-  drawTaxNumber(
+  private drawTaxNumber(
     ctx: CanvasRenderingContext2D,
     taxNumber: ITaxNumber,
     centerX: number,
@@ -671,12 +689,13 @@ export class DrawStampUtils {
    * @param height 画布高度
    * @param forceRefresh 是否强制刷新
    */
-  addAgingEffect(
+  private addAgingEffect(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
     forceRefresh: boolean = false
   ) {
+    if (!this.drawStampConfigs.agingEffect.applyAging) return
     const imageData = ctx.getImageData(0, 0, width, height)
     const data = imageData.data
 
@@ -697,7 +716,7 @@ export class DrawStampUtils {
             data[index + 1] < 50 &&
             data[index + 2] < 50
           ) {
-            const intensityFactor = 0.5 // 可以根据需要调整
+            const intensityFactor = this.drawStampConfigs.agingEffect.agingIntensity / 100 // 可以根据需要调整
             const seed = Math.random()
             this.agingEffectParams.push({
               x,
@@ -767,7 +786,7 @@ export class DrawStampUtils {
    * @param width 画布宽度
    * @param height 画布高度
    */
-  drawFullRuler(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  private drawFullRuler(ctx: CanvasRenderingContext2D, width: number, height: number) {
     if (!this.ruler.showFullRuler) return
 
     ctx.save()
@@ -800,7 +819,7 @@ export class DrawStampUtils {
    * @param rulerSize 标尺宽度
    * @param isHorizontal 是否为水平标尺
    */
-  drawRuler(
+  private drawRuler(
     ctx: CanvasRenderingContext2D,
     rulerLength: number,
     rulerSize: number,
@@ -919,7 +938,7 @@ export class DrawStampUtils {
 
     // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
     if (this.applyAging) {
-      this.addAgingEffect(outputSize, outputSize, false)
+      this.addAgingEffect(saveCtx, outputSize, outputSize, false)
     }
 
     // 将新的 canvas 转换为 PNG 数据 URL

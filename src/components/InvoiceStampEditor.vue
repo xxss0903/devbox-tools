@@ -229,7 +229,7 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { DrawStampUtils } from './stamps/DrawStampUtils'
+import { DrawStampUtils, type ISecurityPattern } from './stamps/DrawStampUtils'
 const editorControls = ref<HTMLDivElement | null>(null)
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
 const MM_PER_PIXEL = 10 // 毫米换算像素
@@ -296,113 +296,6 @@ const taxNumberCompression = ref(1) // 税号文字宽度缩放比例
 const taxNumberLetterSpacing = ref(0.3) // 税号文字间距（单位：毫米）
 const taxNumberPositionY = ref(0) // 税号垂直位置调整，默认为0
 
-// 新增一个响应式变量来存储做旧效果的参数
-const agingEffectParams = ref<
-  Array<{
-    x: number
-    y: number
-    noiseSize: number
-    noise: number
-    strongNoiseSize: number
-    strongNoise: number
-    fade: number
-    seed: number // 保存随机数字
-  }>
->([])
-
-const addAgingEffect = (
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  forceRefresh: boolean = false
-) => {
-  const imageData = ctx.getImageData(0, 0, width, height)
-  const data = imageData.data
-
-  const centerX = width / 2
-  const centerY = height / 2
-  const radius = (circleRadius.value + 1) * MM_PER_PIXEL
-
-  // 如果需要刷新或者参数数组为空,则重新生成参数
-  if (forceRefresh || agingEffectParams.value.length === 0) {
-    agingEffectParams.value = []
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const index = (y * width + x) * 4
-        const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
-        if (
-          distanceFromCenter <= radius &&
-          data[index] > 200 &&
-          data[index + 1] < 50 &&
-          data[index + 2] < 50
-        ) {
-          const intensityFactor = agingIntensity.value / 100
-          let seed = Math.random()
-          agingEffectParams.value.push({
-            x,
-
-            y,
-            noiseSize: Math.random() * 3 + 1,
-            noise: Math.random() * 200 * intensityFactor,
-            strongNoiseSize: Math.random() * 5 + 2,
-            strongNoise: Math.random() * 250 * intensityFactor + 5,
-            fade: Math.random() * 50 * intensityFactor,
-            seed: seed
-          })
-        }
-      }
-    }
-  }
-
-  // 使用保存的参数应用做旧效果
-  agingEffectParams.value.forEach((param) => {
-    const { x, y, noiseSize, noise, strongNoiseSize, strongNoise, fade, seed } = param
-    const index = (y * width + x) * 4
-
-    if (seed < 0.4) {
-      addCircularNoise(data, width, x, y, noiseSize, noise)
-    }
-
-    if (seed < 0.05) {
-      addCircularNoise(data, width, x, y, strongNoiseSize, strongNoise)
-    }
-
-    if (seed < 0.2) {
-      data[index] = Math.min(255, data[index] + fade)
-      data[index + 1] = Math.min(255, data[index + 1] + fade)
-      data[index + 2] = Math.min(255, data[index + 2] + fade)
-    }
-  })
-
-  ctx.putImageData(imageData, 0, 0)
-}
-
-// 辅助函数,用于添加圆形噪点
-const addCircularNoise = (
-  data: Uint8ClampedArray,
-  width: number,
-  x: number,
-  y: number,
-  size: number,
-  intensity: number
-) => {
-  const radiusSquared = (size * size) / 4
-  for (let dy = -size / 2; dy < size / 2; dy++) {
-    for (let dx = -size / 2; dx < size / 2; dx++) {
-      if (dx * dx + dy * dy <= radiusSquared) {
-        const nx = Math.round(x + dx)
-        const ny = Math.round(y + dy)
-        const nIndex = (ny * width + nx) * 4
-        if (nIndex >= 0 && nIndex < data.length) {
-          data[nIndex] = Math.min(255, data[nIndex] + intensity)
-          data[nIndex + 1] = Math.min(255, data[nIndex + 1] + intensity)
-          data[nIndex + 2] = Math.min(255, data[nIndex + 2] + intensity)
-        }
-      }
-    }
-  }
-}
-
 const saveStampAsPNG = () => {
   drawStampUtils.saveStampAsPNG()
 }
@@ -421,9 +314,26 @@ const initDrawStampUtils = () => {
   drawStampUtils = new DrawStampUtils(stampCanvas.value, MM_PER_PIXEL)
 }
 
-const drawStamp = () => {
+const drawStamp = (refreshSecurityPattern: boolean = false, refreshOld: boolean = false) => {
   // 使用drawstamputils进行绘制
-  drawStampUtils.refreshStamp()
+  drawStampUtils.refreshStamp(refreshSecurityPattern, refreshOld)
+}
+
+// 更新绘制配置
+const updateDrawConfigs = () => {
+  const drawConfigs = drawStampUtils.getDrawConfigs()
+  // 做旧效果
+  const agingEffect = drawConfigs.agingEffect
+  agingEffect.applyAging = applyAging.value
+  agingEffect.agingIntensity = agingIntensity.value
+  // 防伪纹路
+  const securityPattern: ISecurityPattern = drawConfigs.securityPattern
+  securityPattern.openSecurityPattern = securityPatternEnabled.value
+  securityPattern.securityPatternCount = securityPatternCount.value
+  securityPattern.securityPatternWidth = securityPatternWidth.value
+  securityPattern.securityPatternLength = securityPatternLength.value
+
+  drawStamp()
 }
 
 onMounted(() => {
@@ -458,7 +368,6 @@ watch(
     bottomTextCompression,
     codeCompression,
     bottomTextLetterSpacing,
-    securityPatternDensity,
     securityPatternColor,
     securityPatternDensity,
     securityPatternColor,
@@ -476,7 +385,7 @@ watch(
     starDiameter
   ],
   () => {
-    drawStamp()
+    updateDrawConfigs()
   }
 )
 </script>
