@@ -117,7 +117,7 @@
         </label>
         <label>
           边距 (mm):
-          <input type="number" v-model.number="codeMarginMM" min="-10" max="20" step="0.01" />
+          <input type="number" v-model.number="codeMarginMM" min="-10" max="20" step="0.05" />
         </label>
       </div>
 
@@ -227,6 +227,7 @@ import {
   DrawStampUtils,
   type ICode,
   type ICompany,
+  type IDrawStar,
   type ISecurityPattern,
   type IStampType,
   type ITaxNumber
@@ -298,7 +299,7 @@ const taxNumberLetterSpacing = ref(0.3) // 税号文字间距（单位：毫米�
 const taxNumberPositionY = ref(0) // 税号垂直位置调整，默认为0
 
 const saveStampAsPNG = () => {
-  drawStampUtils.saveStampAsPNG()
+  drawStampUtils.saveStampAsPNG(512)
 }
 
 const drawStampWidth = ref(40)
@@ -366,6 +367,18 @@ const updateDrawConfigs = () => {
   code.borderOffset = codeMarginMM.value
   code.textDistributionFactor = codeDistributionFactor.value
 
+  // 印章配置
+  drawConfigs.primaryColor = circleBorderColor.value
+  drawConfigs.borderWidth = circleBorderWidth.value
+  drawConfigs.width = drawStampWidth.value
+  drawConfigs.height = drawStampHeight.value
+
+  // 五角星
+  const drawStar: IDrawStar = drawConfigs.drawStar
+  drawStar.drawStar = shouldDrawStar.value
+  drawStar.starDiameter = starDiameter.value
+  drawStar.starPositionY = starPositionY.value
+
   drawStamp()
 }
 
@@ -407,6 +420,9 @@ const restoreDrawConfigs = () => {
   shouldDrawStar.value = drawConfigs.drawStar.drawStar
   starDiameter.value = drawConfigs.drawStar.starDiameter
   starPositionY.value = drawConfigs.drawStar.starPositionY
+
+  // 主题颜色
+  circleBorderColor.value = drawConfigs.primaryColor
 }
 
 onMounted(() => {

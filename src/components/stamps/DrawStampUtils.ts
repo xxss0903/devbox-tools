@@ -96,6 +96,7 @@ export type IDrawStampConfig = {
   primaryColor: string
   refreshSecurityPattern: boolean
   refreshOld: boolean
+  shouldDrawRuler: boolean
 }
 
 // 标尺宽度
@@ -108,7 +109,7 @@ const RULER_HEIGHT = 80
  */
 export class DrawStampUtils {
   // 主色
-  private primaryColor: string = 'red'
+  private primaryColor: string = '#ff0000'
   // 毫米到像素的
   private mmToPixel: number
   // 主canvas的context
@@ -192,7 +193,8 @@ export class DrawStampUtils {
     refreshSecurityPattern: false,
     refreshOld: false,
     taxNumber: this.taxNumber,
-    agingEffect: this.agingEffect
+    agingEffect: this.agingEffect,
+    shouldDrawRuler: true
   }
 
   private securityPatternParams: Array<{ angle: number; lineAngle: number }> = []
@@ -690,6 +692,36 @@ export class DrawStampUtils {
     // ctx.restore()
   }
 
+  private addAgingEffectForSave(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    if (!this.drawStampConfigs.agingEffect.applyAging) return
+    const imageData = ctx.getImageData(0, 0, width, height)
+    const data = imageData.data
+
+    // 使用保存的参数应用做旧效果
+    this.agingEffectParams.forEach((param) => {
+      const { x, y, noiseSize, noise, strongNoiseSize, strongNoise, fade, seed } = param
+      const realX = x
+      const realY = y
+      const index = (realY * width + realX) * 4
+
+      if (seed < 0.4) {
+        this.addCircularNoise(data, width, realX, realY, noiseSize, noise)
+      }
+
+      if (seed < 0.05) {
+        this.addCircularNoise(data, width, realX, realY, strongNoiseSize, strongNoise)
+      }
+
+      if (seed < 0.2) {
+        data[index] = Math.min(255, data[index] + fade)
+        data[index + 1] = Math.min(255, data[index + 1] + fade)
+        data[index + 2] = Math.min(255, data[index + 2] + fade)
+      }
+    })
+
+    ctx.putImageData(imageData, 0, 0)
+  }
+
   /**
    * 添加做旧效果
    * @param width 画布宽度
@@ -909,62 +941,72 @@ export class DrawStampUtils {
    * @param outputSize 输出图片的尺寸
    */
   saveStampAsPNG(outputSize: number = 512) {
-    // 创建一个新的 canvas 元素，大小为 outputSize x outputSize
-    const saveCanvas = document.createElement('canvas')
-    saveCanvas.width = outputSize
-    saveCanvas.height = outputSize
-    const saveCtx = saveCanvas.getContext('2d')
-    if (!saveCtx) return
+    // 首先隐藏虚线
+    this.drawStampConfigs.shouldDrawRuler = false
+    this.refreshStamp()
+    setTimeout(() => {
+      // 创建一个新的 canvas 元素，大小为 outputSize x outputSize
+      const saveCanvas = document.createElement('canvas')
+      saveCanvas.width = outputSize
+      saveCanvas.height = outputSize
+      const saveCtx = saveCanvas.getContext('2d')
+      if (!saveCtx) return
 
-    // 清除画布，使背景透明
-    saveCtx.clearRect(0, 0, outputSize, outputSize)
+      // 清除画布，使背景透明
+      saveCtx.clearRect(0, 0, outputSize, outputSize)
 
-    // 计算原始 canvas 中印章的位置和大小
-    const originalStampSize =
-      (Math.max(this.drawStampConfigs.width, this.drawStampConfigs.height) + 2) * this.mmToPixel
-    const sourceX = (this.canvas.width - originalStampSize) / 2 + this.stampOffsetX * this.mmToPixel
-    const sourceY =
-      (this.canvas.height - originalStampSize) / 2 + this.stampOffsetY * this.mmToPixel
+      // 计算原始 canvas 中印章的位置和大小
+      const originalStampSize =
+        (Math.max(this.drawStampConfigs.width, this.drawStampConfigs.height) + 2) * this.mmToPixel
+      const sourceX =
+        (this.canvas.width - originalStampSize) / 2 + this.stampOffsetX * this.mmToPixel
+      const sourceY =
+        (this.canvas.height - originalStampSize) / 2 + this.stampOffsetY * this.mmToPixel
 
-    // 设置2%的边距
-    const margin = outputSize * 0.01
-    const drawSize = outputSize - 2 * margin
+      // 设置2%的边距
+      const margin = outputSize * 0.01
+      const drawSize = outputSize - 2 * margin
 
-    // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并调整大小
-    saveCtx.drawImage(
-      this.canvas,
-      sourceX,
-      sourceY,
-      originalStampSize,
-      originalStampSize,
-      margin,
-      margin,
-      drawSize,
-      drawSize
-    )
+      // 将原始 canvas 中的印章部分绘制到新的 canvas 上，并调整大小
+      saveCtx.drawImage(
+        this.canvas,
+        sourceX,
+        sourceY,
+        originalStampSize,
+        originalStampSize,
+        margin,
+        margin,
+        drawSize,
+        drawSize
+      )
 
-    // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
-    if (this.drawStampConfigs.agingEffect.applyAging) {
-      this.addAgingEffect(saveCtx, outputSize, outputSize, false)
-    }
+      // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
+      if (this.drawStampConfigs.agingEffect.applyAging) {
+        this.addAgingEffect(saveCtx, outputSize, outputSize, false)
+      }
 
-    // 将新的 canvas 转换为 PNG 数据 URL
-    const dataURL = saveCanvas.toDataURL('image/png')
+      // 将新的 canvas 转换为 PNG 数据 URL
+      const dataURL = saveCanvas.toDataURL('image/png')
 
-    // 创建一个临时的 <a> 元素来触发下载
-    const link = document.createElement('a')
-    link.href = dataURL
-    link.download = '印章.png'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      // 创建一个临时的 <a> 元素来触发下载
+      const link = document.createElement('a')
+      link.href = dataURL
+      link.download = '印章.png'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // 首先隐藏虚线
+      this.drawStampConfigs.shouldDrawRuler = true
+      this.refreshStamp()
+    }, 300)
   }
 
   // 刷新印章绘制
   refreshStamp(refreshSecurityPattern: boolean = false, refreshOld: boolean = false) {
     // 计算画布中心点
-    const x = 33 * this.mmToPixel
-    const y = 28 * this.mmToPixel
+    const x = this.canvas.width / 2
+    const y = this.canvas.height / 2
     const mmToPixel = this.mmToPixel
     const drawRadiusX = (this.drawStampConfigs.width - this.drawStampConfigs.borderWidth) / 2
     const drawRadiusY = (this.drawStampConfigs.height - this.drawStampConfigs.borderWidth) / 2
@@ -1062,7 +1104,7 @@ export class DrawStampUtils {
     // 绘制五角星
     if (this.drawStampConfigs.drawStar.drawStar) {
       const drawStarDia = this.drawStampConfigs.drawStar.starDiameter / 2
-      this.drawStarShape(ctx, centerX, centerY, drawStarDia * this.mmToPixel)
+      this.drawStarShape(offscreenCtx, centerX, centerY, drawStarDia * this.mmToPixel)
     }
 
     // 绘制公司名称
@@ -1096,8 +1138,12 @@ export class DrawStampUtils {
     // 在绘制完所有内容后，添加做旧效果
     this.addAgingEffect(ctx, this.canvas.width, this.canvas.height, refreshOld)
 
-    this.drawRuler(ctx, this.canvas.width, RULER_HEIGHT, true)
-    this.drawRuler(ctx, this.canvas.height, RULER_HEIGHT, false)
-    this.drawFullRuler(ctx, this.canvas.width, this.canvas.height)
+    if (this.drawStampConfigs.shouldDrawRuler) {
+      // 绘制标尺
+      this.drawRuler(ctx, this.canvas.width, RULER_HEIGHT, true)
+      this.drawRuler(ctx, this.canvas.height, RULER_HEIGHT, false)
+      // 将全尺寸标尺绘制到离屏canvas上
+      this.drawFullRuler(ctx, this.canvas.width, this.canvas.height)
+    }
   }
 }
