@@ -97,43 +97,37 @@
       <!-- 印章编码设置 -->
       <div class="control-group" id="code-settings">
         <h3>印章编码设置</h3>
-        <label>印章编码: <input v-model="code" /></label>
+        <label>印章编码: <input v-model="stampCode" /></label>
         <label
           >字体大小 (mm): <input type="number" v-model.number="codeFontSizeMM" step="0.1"
         /></label>
         <label>
           <span>压缩比例：{{ codeCompression.toFixed(2) }}</span>
-          <input type="range" v-model.number="codeCompression" min="0.5" max="1.5" step="0.05" />
+          <input type="range" v-model.number="codeCompression" min="0.0" max="3" step="0.01" />
         </label>
         <label>
           <span>分布因子: {{ codeDistributionFactor.toFixed(1) }}</span>
           <input
             type="range"
             v-model.number="codeDistributionFactor"
-            min="10"
-            max="40"
+            min="0"
+            max="100"
             step="0.5"
           />
         </label>
         <label>
           边距 (mm):
-          <input type="number" v-model.number="codeMarginMM" min="-10" max="10" step="0.05" />
+          <input type="number" v-model.number="codeMarginMM" min="-10" max="20" step="0.01" />
         </label>
       </div>
 
       <!-- 税号设置 -->
       <div class="control-group" id="tax-number-settings">
         <h3>税号设置</h3>
-        <label>税号: <input v-model="taxNumber" /></label>
+        <label>税号: <input v-model="taxNumberValue" /></label>
         <label>
           <span>压缩比例：{{ taxNumberCompression.toFixed(2) }}</span>
-          <input
-            type="range"
-            v-model.number="taxNumberCompression"
-            min="0.5"
-            max="1.5"
-            step="0.05"
-          />
+          <input type="range" v-model.number="taxNumberCompression" min="0.0" max="3" step="0.01" />
         </label>
         <label>
           <span>字符间距 (mm)：{{ taxNumberLetterSpacing.toFixed(2) }}</span>
@@ -229,7 +223,14 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { DrawStampUtils, type ISecurityPattern } from './stamps/DrawStampUtils'
+import {
+  DrawStampUtils,
+  type ICode,
+  type ICompany,
+  type ISecurityPattern,
+  type IStampType,
+  type ITaxNumber
+} from './stamps/DrawStampUtils'
 const editorControls = ref<HTMLDivElement | null>(null)
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
 const MM_PER_PIXEL = 10 // 毫米换算像素
@@ -237,15 +238,15 @@ const MM_PER_PIXEL = 10 // 毫米换算像素
 // 添加响应式数据
 const companyName = ref('绘制印章有限责任公司')
 // 印章编码
-const code = ref('1234567890123')
+const stampCode = ref('1234567890123')
 // 税号
-const taxNumber = ref('000000000000000000')
+const taxNumberValue = ref('000000000000000000')
 // 公司名称字体大小（毫米）
 const companyFontSizeMM = ref(4.2)
 // 编码字体大小（毫米）
-const codeFontSizeMM = ref(2.2)
+const codeFontSizeMM = ref(1.2)
 // 编码字体宽度（毫米）
-const codeFontWidthMM = ref(1.7)
+const codeFontWidthMM = ref(1.2)
 // 圆形印章半径（毫米）
 const circleRadius = ref(20)
 // 圆形边框宽度（毫米）
@@ -333,11 +334,85 @@ const updateDrawConfigs = () => {
   securityPattern.securityPatternWidth = securityPatternWidth.value
   securityPattern.securityPatternLength = securityPatternLength.value
 
+  // 公司名称
+  const company: ICompany = drawConfigs.company
+  company.companyName = companyName.value
+  company.textDistributionFactor = textDistributionFactor.value
+  company.borderOffset = textMarginMM.value
+  company.fontHeight = companyFontSizeMM.value
+  company.compression = companyNameCompression.value
+
+  // 税号
+  const taxNumber: ITaxNumber = drawConfigs.taxNumber
+  taxNumber.code = taxNumberValue.value
+  taxNumber.compression = taxNumberCompression.value
+  taxNumber.positionY = taxNumberPositionY.value
+  taxNumber.letterSpacing = taxNumberLetterSpacing.value
+
+  // 印章类型
+  const stampType: IStampType = drawConfigs.stampType
+  stampType.stampType = bottomText.value
+  stampType.fontHeight = bottomTextFontSizeMM.value
+  stampType.fontWidth = bottomTextFontWidthMM.value
+  stampType.letterSpacing = bottomTextLetterSpacing.value
+  stampType.positionY = bottomTextPositionY.value
+
+  // 印章编码
+  const code: ICode = drawConfigs.stampCode
+  code.code = stampCode.value
+  code.compression = codeCompression.value
+  code.fontHeight = codeFontSizeMM.value
+  code.fontWidth = codeFontWidthMM.value
+  code.borderOffset = codeMarginMM.value
+  code.textDistributionFactor = codeDistributionFactor.value
+
   drawStamp()
+}
+
+const restoreDrawConfigs = () => {
+  const drawConfigs = drawStampUtils.getDrawConfigs()
+  const company: ICompany = drawConfigs.company
+
+  // 公司名称
+  companyName.value = company.companyName
+  companyFontSizeMM.value = company.fontHeight
+  companyNameCompression.value = company.compression
+  textDistributionFactor.value = company.textDistributionFactor
+  textMarginMM.value = company.borderOffset
+
+  // 印章编码
+  const stampCodeConfig: ICode = drawConfigs.stampCode
+  stampCode.value = stampCodeConfig.code
+  codeFontSizeMM.value = stampCodeConfig.fontHeight
+  codeFontWidthMM.value = stampCodeConfig.fontWidth
+  codeDistributionFactor.value = stampCodeConfig.textDistributionFactor
+  codeMarginMM.value = stampCodeConfig.borderOffset
+
+  // 税号
+  const taxNumber: ITaxNumber = drawConfigs.taxNumber
+  taxNumberValue.value = taxNumber.code
+  taxNumberCompression.value = taxNumber.compression
+  taxNumberLetterSpacing.value = taxNumber.letterSpacing
+  taxNumberPositionY.value = taxNumber.positionY
+
+  // 印章类型
+  const stampTypeConfig: IStampType = drawConfigs.stampType
+  bottomText.value = stampTypeConfig.stampType
+  bottomTextFontSizeMM.value = stampTypeConfig.fontHeight
+  bottomTextFontWidthMM.value = stampTypeConfig.fontWidth
+  bottomTextLetterSpacing.value = stampTypeConfig.letterSpacing
+  bottomTextPositionY.value = stampTypeConfig.positionY
+
+  // 五角星
+  shouldDrawStar.value = drawConfigs.drawStar.drawStar
+  starDiameter.value = drawConfigs.drawStar.starDiameter
+  starPositionY.value = drawConfigs.drawStar.starPositionY
 }
 
 onMounted(() => {
   initDrawStampUtils()
+  // 将绘制参数反射到当前界面
+  restoreDrawConfigs()
   drawStamp()
 })
 
@@ -345,7 +420,7 @@ onMounted(() => {
 watch(
   [
     companyName,
-    code,
+    stampCode,
     companyFontSizeMM,
     codeFontSizeMM,
     circleRadius,
@@ -361,7 +436,7 @@ watch(
     bottomTextFontSizeMM,
     bottomTextLetterSpacing,
     bottomTextPositionY,
-    taxNumber,
+    taxNumberValue,
     applyAging,
     agingIntensity,
     companyNameCompression,

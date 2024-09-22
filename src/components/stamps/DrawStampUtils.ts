@@ -25,6 +25,7 @@ export type ICode = {
   fontFamily: string // 编码字体
   borderOffset: number // 编码边框偏移量
   fontWidth: number // 编码字体宽度
+  textDistributionFactor: number // 文字分布因子
 }
 
 export type ITaxNumber = {
@@ -60,10 +61,11 @@ export type IAgingEffect = {
 export type IDrawStar = {
   drawStar: boolean
   starDiameter: number
+  starPositionY: number
 }
 
 // 印章类型
-type IStampType = {
+export type IStampType = {
   stampType: string
   fontHeight: number
   compression: number
@@ -85,7 +87,7 @@ export type IDrawStampConfig = {
   drawStar: IDrawStar
   securityPattern: ISecurityPattern
   company: ICompany
-  code: ICode
+  stampCode: ICode
   taxNumber: ITaxNumber
   stampType: IStampType
   width: number
@@ -124,7 +126,8 @@ export class DrawStampUtils {
   }
   private drawStar: IDrawStar = {
     drawStar: false,
-    starDiameter: 14
+    starDiameter: 14,
+    starPositionY: 0
   }
   // 防伪纹路
   private securityPattern: ISecurityPattern = {
@@ -152,13 +155,14 @@ export class DrawStampUtils {
     positionY: 0,
     totalWidth: 26
   }
-  private code: ICode = {
+  private stampCode: ICode = {
     code: '1234567890',
     compression: 1,
     fontHeight: 1.2,
     fontFamily: 'Arial',
     borderOffset: 1,
-    fontWidth: 1.2
+    fontWidth: 1.2,
+    textDistributionFactor: 50
   }
   private stampType: IStampType = {
     stampType: '发票专用章',
@@ -179,7 +183,7 @@ export class DrawStampUtils {
     drawStar: this.drawStar,
     securityPattern: this.securityPattern,
     company: this.company,
-    code: this.code,
+    stampCode: this.stampCode,
     width: 40,
     height: 30,
     stampType: this.stampType,
@@ -601,19 +605,22 @@ export class DrawStampUtils {
     const characterCount = characters.length
 
     // 动态调整总角度
-    const totalAngle = Math.PI * (characterCount / 20) * 0.5
+    // const totalAngle = Math.PI * (characterCount / 20) * 0.5
+    const totalAngle = Math.PI * ((1 + characterCount) / code.textDistributionFactor)
     const startAngle = Math.PI / 2 + totalAngle / 2
     const anglePerChar = totalAngle / (characterCount - 1)
 
     characters.forEach((char, index) => {
       const angle = startAngle - anglePerChar * index
-      const x = centerX + Math.cos(angle) * (radiusX - fontSize / 2 - 1 * this.mmToPixel)
-      const y = centerY + Math.sin(angle) * (radiusY - fontSize / 2 - 1 * this.mmToPixel)
+      const x =
+        centerX + Math.cos(angle) * (radiusX - fontSize / 2 - code.borderOffset * this.mmToPixel)
+      const y =
+        centerY + Math.sin(angle) * (radiusY - fontSize / 2 - code.borderOffset * this.mmToPixel)
 
       ctx.save()
       ctx.translate(x, y)
       ctx.rotate(angle - Math.PI / 2) // 逆时针旋转文字
-      ctx.scale(1, 1) // 应用压缩
+      ctx.scale(code.compression, 1) // 应用压缩
       ctx.fillText(char, 0, 0)
       ctx.restore()
     })
@@ -937,7 +944,7 @@ export class DrawStampUtils {
     )
 
     // 如果启用了做旧效果，在新的 canvas 上应用做旧效果
-    if (this.applyAging) {
+    if (this.drawStampConfigs.agingEffect.applyAging) {
       this.addAgingEffect(saveCtx, outputSize, outputSize, false)
     }
 
@@ -1072,7 +1079,7 @@ export class DrawStampUtils {
     this.drawStampType(offscreenCtx, this.drawStampConfigs.stampType, centerX, centerY, radiusX)
 
     // 绘制印章编码
-    this.drawCode(offscreenCtx, this.drawStampConfigs.code, centerX, centerY, radiusX, radiusY)
+    this.drawCode(offscreenCtx, this.drawStampConfigs.stampCode, centerX, centerY, radiusX, radiusY)
 
     // 绘制纳税识别号
     this.drawTaxNumber(offscreenCtx, this.drawStampConfigs.taxNumber, centerX, centerY)
