@@ -162,9 +162,9 @@ export class DrawStampUtils {
     stampType: '发票专用章',
     fontHeight: 4.6,
     fontWidth: 3,
-    compression: 1,
+    compression: 0.75,
     letterSpacing: 0,
-    positionY: 0
+    positionY: -3
   }
   // 总的印章绘制参数
   private drawStampConfigs: IDrawStampConfig = {
@@ -390,7 +390,6 @@ export class DrawStampUtils {
    */
   drawStampType(stampType: IStampType, centerX: number, centerY: number, radiusX: number) {
     const fontSize = stampType.fontHeight * this.mmToPixel
-    const textCompression = stampType.compression
     const letterSpacing = stampType.letterSpacing
     const positionY = stampType.positionY
 
@@ -405,7 +404,6 @@ export class DrawStampUtils {
 
     this.canvasCtx.save()
     this.canvasCtx.translate(centerX, textY)
-    this.canvasCtx.scale(textCompression, 1) // 应用压缩
 
     const chars = stampType.stampType.split('')
     const charWidths = chars.map((char) => this.canvasCtx.measureText(char).width)
@@ -415,6 +413,7 @@ export class DrawStampUtils {
 
     let currentX = -totalWidth / 2 // 从文本的左边缘开始
 
+    this.canvasCtx.scale(this.drawStampConfigs.stampType.compression, 1)
     chars.forEach((char, index) => {
       this.canvasCtx.fillText(char, currentX + charWidths[index] / 2, 0) // 绘制在字符的中心
       currentX += charWidths[index] + letterSpacing * this.mmToPixel
@@ -915,8 +914,8 @@ export class DrawStampUtils {
   // 刷新印章绘制
   refreshStamp() {
     // 计算画布中心点
-    const x = this.canvas.width / 2
-    const y = this.canvas.height / 2
+    const x = 33 * this.mmToPixel
+    const y = 28 * this.mmToPixel
     const mmToPixel = this.mmToPixel
     const drawRadiusX = (this.drawStampConfigs.width - this.drawStampConfigs.borderWidth) / 2
     const drawRadiusY = (this.drawStampConfigs.height - this.drawStampConfigs.borderWidth) / 2
