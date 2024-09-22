@@ -1,9 +1,8 @@
 // 防伪纹路
 type ISecurityPattern = {
-  openSecurityPattern: boolean
+  openSecurityPattern: boolean // 是否启用防伪纹路
   securityPatternWidth: number // 防伪纹路宽度
   securityPatternLength: number // 防伪纹路长度
-  securityPatternEnabled: boolean // 是否启用防伪纹路
   securityPatternCount: number // 防伪纹路数量
   securityPatternAngleRange: number // 防伪纹路角度范围
 }
@@ -126,9 +125,8 @@ export class DrawStampUtils {
   // 防伪纹路
   private securityPattern: ISecurityPattern = {
     openSecurityPattern: true,
-    securityPatternWidth: 0.1,
-    securityPatternLength: 0.1,
-    securityPatternEnabled: false,
+    securityPatternWidth: 0.15,
+    securityPatternLength: 3,
     securityPatternCount: 5,
     securityPatternAngleRange: 30
   }
@@ -937,7 +935,7 @@ export class DrawStampUtils {
   }
 
   // 刷新印章绘制
-  refreshStamp() {
+  refreshStamp(refreshSecurityPattern: boolean = false, refreshOld: boolean = false) {
     // 计算画布中心点
     const x = 33 * this.mmToPixel
     const y = 28 * this.mmToPixel
@@ -957,8 +955,8 @@ export class DrawStampUtils {
       drawRadiusY * mmToPixel,
       this.drawStampConfigs.borderWidth * mmToPixel,
       this.drawStampConfigs.primaryColor,
-      this.drawStampConfigs.refreshSecurityPattern,
-      this.drawStampConfigs.refreshOld
+      refreshSecurityPattern,
+      refreshOld
     )
   }
 
@@ -1004,7 +1002,7 @@ export class DrawStampUtils {
     // if (!offscreenCtx) return
 
     // 在离屏 canvas 上绘制椭圆边框
-    const offscreenCanvas = document.createElement('canvas')
+    const offscreenCanvas = this.offscreenCanvas
     offscreenCanvas.width = this.canvas.width
     offscreenCanvas.height = this.canvas.height
     const offscreenCtx = offscreenCanvas.getContext('2d')
@@ -1019,7 +1017,7 @@ export class DrawStampUtils {
     offscreenCtx.fillStyle = 'white'
 
     // 设置画布背景
-    // ctx.fillStyle = 'white'
+    ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
     // 绘制椭圆
@@ -1070,9 +1068,7 @@ export class DrawStampUtils {
     ctx.restore()
 
     // 在绘制完所有内容后，添加做旧效果
-    if (refreshOld) {
-      this.addAgingEffect(offscreenCtx, this.canvas.width, this.canvas.height, refreshOld)
-    }
+    this.addAgingEffect(ctx, this.canvas.width, this.canvas.height, refreshOld)
 
     this.drawRuler(ctx, this.canvas.width, RULER_HEIGHT, true)
     this.drawRuler(ctx, this.canvas.height, RULER_HEIGHT, false)
