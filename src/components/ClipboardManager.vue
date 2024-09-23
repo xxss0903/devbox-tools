@@ -31,7 +31,10 @@
       <ul v-else class="clipboard-list">
         <li v-for="item in filteredClipboardHistory" :key="item.id" class="clipboard-item" @click="clickItem(item)">
           <div class="item-content">
-            <span v-if="item.type === 'text'" class="text-content">{{ item.content }}</span>
+            <span v-if="item.type === 'text'" class="text-content">
+              <a v-if="isUrl(item.content)" :href="item.content" target="_blank">{{ item.content }}</a>
+              <span v-else>{{ item.content }}</span>
+            </span>
             <img
               v-else-if="item.type === 'image'"
               :src="item.content"
@@ -180,17 +183,17 @@ const previewImage = async (imagePath: string) => {
   }
 }
 
+const isUrl = (str: string) => {
+  try {
+    new URL(str);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 const clickItem = (item: ClipboardItem) => {
   if (item.type === 'text') {
-    const isUrl = (str: string) => {
-      try {
-        new URL(str);
-        return true;
-      } catch (_) {
-        return false;
-      }
-    }
-
     if (isUrl(item.content)) {
       openUrl(item.content)
     } else {
@@ -276,6 +279,11 @@ const clickItem = (item: ClipboardItem) => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.text-content a {
+  color: blue;
+  text-decoration: underline;
 }
 
 .image-content {
