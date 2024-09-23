@@ -504,6 +504,32 @@ export class DrawStampUtils {
     }).join(' ');
   }
 
+  private drawSVGPath(
+    ctx: CanvasRenderingContext2D,
+    svgPath: string,
+    x: number,
+    y: number,
+    scale: number = 1
+  ) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+  
+    // 创建 Path2D 对象
+    const path = new Path2D(svgPath);
+  
+    // 填充路径
+    ctx.fillStyle = this.primaryColor;
+    ctx.fill(path);
+  
+    // 如果需要描边，可以添加以下代码
+    // ctx.strokeStyle = 'black';
+    // ctx.lineWidth = 1;
+    // ctx.stroke(path);
+  
+    ctx.restore();
+  }
+
   /**
    * 根据解析的SVG路径数据绘制图形
    * @param ctx 画布上下文
@@ -512,7 +538,7 @@ export class DrawStampUtils {
    * @param y 绘制的y坐标
    * @param scale 缩放比例
    */
-  private drawSVGPath(
+  private drawSVGPath2(
     ctx: CanvasRenderingContext2D,
     path: Array<{ command: string; params: number[] }>,
     x: number,
@@ -638,19 +664,18 @@ export class DrawStampUtils {
             currentY = y;
           }
           break;
-        case 'A':
-        case 'a':
-          for (let i = 0; i < paramCount; i += 7) {
+          case 'A':
+            case 'a':
+              for (let i = 0; i < paramCount; i += 7) {
             const [rx, ry, xAxisRotation, largeArcFlag, sweepFlag, x, y] = command === 'A'
-              ? params.slice(i, i + 7)
-              : [...params.slice(i, i + 5), params[i + 5] + currentX, params[i + 6] + currentY];
+                  ? params.slice(i, i + 7)
+                  : [...params.slice(i, i + 5), params[i + 5] + currentX, params[i + 6] + currentY];
             // 这里应该使用更复杂的弧线绘制逻辑，目前使用简化版本
             ctx.ellipse(x, y, rx, ry, xAxisRotation, 0, 2 * Math.PI);
-            currentX = x;
-            currentY = y;
-          }
-          console.warn('Arc command not fully implemented');
-          break;
+                currentX = x;
+                currentY = y;
+              }
+              break;
         case 'Z':
         case 'z':
           ctx.closePath();
@@ -708,13 +733,50 @@ export class DrawStampUtils {
    */
   private drawStarShape(ctx: CanvasRenderingContext2D, starSvgData: IDrawStar, x: number, y: number) {
     const drawStarDia = starSvgData.starDiameter / 2 * this.mmToPixel
-    let svgDataStr = starSvgData.svgPath  
-    if(starSvgData.scaleToSmallStar){
-      svgDataStr = this.scaleSVGPathTo10mm(svgDataStr)
+    if(starSvgData.svgPath.startsWith('<svg')){
+      this.drawSVGContent(ctx, starSvgData.svgPath, x, y, 1)
+    }else{
+      this.drawSVGPath(ctx, starSvgData.svgPath, x, y, drawStarDia)
     }
-    const svgData = this.parseSVGPath(svgDataStr)
-    console.log("svg data", svgData)
-    this.drawSVGPath(ctx, svgData, x, y, drawStarDia)
+  }
+
+  private drawSVGContent(ctx: CanvasRenderingContext2D, svgContent: string, x: number, y: number, scale: number = 1) {
+    // 创建一个临时的 SVG 元素
+    const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgElement.innerHTML = svgContent;
+    const svgContentEle = svgElement.firstChild as SVGElement
+    
+    // 获取 SVG 的宽度和高度
+    const svgWidth = parseFloat(svgContentEle.getAttribute('width') || '0');
+    const svgHeight = parseFloat(svgContentEle.getAttribute('height') || '0');
+    
+    // 创建一个新的 Image 对象
+    const img = new Image();
+    
+    // 将 SVG 转换为 data URL
+    const svgBlob = new Blob([svgContent], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    
+    // 当图片加载完成时，在 canvas 上绘制它
+    img.onload = () => {
+      console.log("svg content img loaded", x, y, svgWidth, svgHeight, img);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, -svgWidth / 2, -svgHeight / 2, svgWidth, svgHeight);
+      ctx.restore();
+  
+      // 清理 URL 对象
+      URL.revokeObjectURL(url);
+    };
+  
+    // 设置图片源为 SVG 的 data URL
+    img.src = url;
+
+    // 添加错误处理
+    img.onerror = (error) => {
+      console.error("加载SVG图像时出错:", error);
+    };
   }
 
   /**
