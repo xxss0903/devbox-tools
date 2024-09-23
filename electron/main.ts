@@ -6,7 +6,9 @@ import {
   dialog,
   session,
   clipboard,
-  Menu
+  Menu,
+  shell,
+  nativeImage
 } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
@@ -15,7 +17,6 @@ import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
 import { desktopCapturer } from 'electron/main'
 import Screenshots from 'electron-screenshots'
-import { nativeImage } from 'electron/common'
 const fs = require('fs').promises
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -549,6 +550,16 @@ ipcMain.handle('delete-clipboard-item', async (event, id) => {
 
 ipcMain.handle('write-text-to-clipboard', async (event, text) => {
   clipboard.writeText(text)
+})
+
+ipcMain.handle('open-url', async (event, text) => {
+  // 打开url
+  shell.openExternal(text)
+})
+
+ipcMain.handle('preview-clipboard-image', async (event, text) => {  
+  // 打开图片
+  shell.openPath(text)
 })
 
 ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {

@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    previewClipboardImage: (text) => electron_1.ipcRenderer.invoke('preview-clipboard-image', text),
+    openClipboardUrl: (text) => electron_1.ipcRenderer.invoke('open-url', text),
     writeTextToClipboard: (text) => electron_1.ipcRenderer.invoke('write-text-to-clipboard', text),
     writeImageToClipboard: (dataURL) => electron_1.ipcRenderer.invoke('write-image-to-clipboard', dataURL),
     // 删除粘贴板单个内容

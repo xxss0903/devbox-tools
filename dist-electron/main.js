@@ -11,7 +11,6 @@ const sqlite3_1 = __importDefault(require("sqlite3"));
 const sqlite_1 = require("sqlite");
 const main_1 = require("electron/main");
 const electron_screenshots_1 = __importDefault(require("electron-screenshots"));
-const common_1 = require("electron/common");
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -266,7 +265,7 @@ async function createWindow() {
     // 监听截图完成事件
     screenshots.on('ok', (e, buffer, data) => {
         console.log('data', data);
-        const image = common_1.nativeImage.createFromBuffer(buffer);
+        const image = electron_1.nativeImage.createFromBuffer(buffer);
         const base64 = image.toDataURL();
         console.log('截图已捕获');
         // 将截图保存到系统粘贴板
@@ -457,8 +456,16 @@ electron_1.ipcMain.handle('delete-clipboard-item', async (event, id) => {
 electron_1.ipcMain.handle('write-text-to-clipboard', async (event, text) => {
     electron_1.clipboard.writeText(text);
 });
+electron_1.ipcMain.handle('open-url', async (event, text) => {
+    // 打开url
+    electron_1.shell.openExternal(text);
+});
+electron_1.ipcMain.handle('preview-clipboard-image', async (event, text) => {
+    // 打开图片
+    electron_1.shell.openPath(text);
+});
 electron_1.ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
-    const img = common_1.nativeImage.createFromDataURL(dataURL);
+    const img = electron_1.nativeImage.createFromDataURL(dataURL);
     electron_1.clipboard.writeImage(img);
 });
 // 添加删除日记条目的方法

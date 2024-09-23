@@ -29,7 +29,7 @@
         <p>复制或截图内容后将显示在这里</p>
       </div>
       <ul v-else class="clipboard-list">
-        <li v-for="item in filteredClipboardHistory" :key="item.id" class="clipboard-item">
+        <li v-for="item in filteredClipboardHistory" :key="item.id" class="clipboard-item" @click="clickItem(item)">
           <div class="item-content">
             <span v-if="item.type === 'text'" class="text-content">{{ item.content }}</span>
             <img
@@ -48,6 +48,12 @@
     </div>
     <div v-if="showCopySuccess" class="copy-success-toast">复制成功！</div>
   </div>
+  <div v-if="imagePreviewModal" class="modal">
+       <div class="modal-content">
+         <span class="close" @click="imagePreviewModal = false">&times;</span>
+         <img :src="imagePreviewSrc" alt="Image Preview" />
+       </div>
+     </div>
 </template>
 
 <script setup lang="ts">
@@ -150,6 +156,50 @@ const clearSearch = () => {
   searchText.value = ''
   filterClipboardHistory()
 }
+
+
+const openUrl = async (url: string) => {
+  try {
+    await window.electronAPI.openClipboardUrl(url)
+  } catch (error) {
+    console.error('打开URL失败:', error)
+  }
+}
+const imagePreviewModal = ref(false)
+const imagePreviewSrc = ref('')
+const showImagePreview = (imagePath: string) => {
+  imagePreviewSrc.value = imagePath
+  imagePreviewModal.value = true
+}
+const previewImage = async (imagePath: string) => {
+  try {
+    console.log('预览图片:', imagePath)
+    showImagePreview(imagePath)
+  } catch (error) {
+    console.error('预览图片失败:', error)
+  }
+}
+
+const clickItem = (item: ClipboardItem) => {
+  if (item.type === 'text') {
+    const isUrl = (str: string) => {
+      try {
+        new URL(str);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (isUrl(item.content)) {
+      openUrl(item.content)
+    } else {
+      copyToClipboard(item)
+    }
+  } else if (item.type === 'image') {
+    previewImage(item.content)
+  }
+}
 </script>
 
 <style scoped>
@@ -212,6 +262,7 @@ const clearSearch = () => {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  cursor: pointer;
 }
 
 .item-content {
@@ -345,5 +396,43 @@ const clearSearch = () => {
 
 .clear-search-button:hover {
   color: #495057;
+}
+
+
+/* 添加图片预览弹窗样式 */
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
+}
+
+.modal-content img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5em;
+  cursor: pointer;
 }
 </style>

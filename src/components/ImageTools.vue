@@ -78,7 +78,7 @@ const defaultImageTools = [
   {
     name: '印章编辑器',
     route: 'StampEditor',
-    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+    image: 'https://img.icons8.com/?size=100&id=22964&format=png&color=000000'
   }
 ]
 

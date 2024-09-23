@@ -3,6 +3,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  previewClipboardImage: (text: string) => ipcRenderer.invoke('preview-clipboard-image', text),
+  openClipboardUrl: (text: string) => ipcRenderer.invoke('open-url', text),
   writeTextToClipboard: (text: string) => ipcRenderer.invoke('write-text-to-clipboard', text),
   writeImageToClipboard: (dataURL: string) =>
     ipcRenderer.invoke('write-image-to-clipboard', dataURL),
