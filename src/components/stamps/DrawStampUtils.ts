@@ -63,6 +63,7 @@ export type IDrawStar = {
   drawStar: boolean
   starDiameter: number
   starPositionY: number
+  scaleToSmallStar: boolean
 }
 
 // 印章类型
@@ -139,7 +140,8 @@ export class DrawStampUtils {
     svgPath: 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z',
     drawStar: false,
     starDiameter: 14,
-    starPositionY: 0
+    starPositionY: 0,
+    scaleToSmallStar: false
   }
   // 防伪纹路
   private securityPattern: ISecurityPattern = {
@@ -387,16 +389,119 @@ export class DrawStampUtils {
    * @returns 解析后的路径命令数组
    */
   private parseSVGPath(svgPath: string): Array<{ command: string; params: number[] }> {
-    const commands = svgPath.match(/([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)/g) || []
-    return commands.map((cmd) => {
-      const command = cmd[0]
-      const params = cmd
-        .slice(1)
-        .trim()
-        .split(/[\s,]+/)
-        .map(parseFloat)
-      return { command, params }
-    })
+    const commands: Array<{ command: string; params: number[] }> = [];
+    const regex = /([MmLlHhVvCcSsQqTtAaZz])|(-?\d*\.?\d+)/g;
+    let match;
+    let currentCommand = '';
+    let currentParams: number[] = [];
+  
+    while ((match = regex.exec(svgPath)) !== null) {
+      if (match[1]) {
+        // 如果匹配到命令
+        if (currentCommand) {
+          // 保存前一个命令
+          commands.push({ command: currentCommand, params: currentParams });
+          currentParams = [];
+        }
+        currentCommand = match[1];
+      } else if (match[2]) {
+        // 如果匹配到数字
+        currentParams.push(parseFloat(match[2]));
+      }
+    }
+  
+    // 添加最后一个命令
+    if (currentCommand) {
+      commands.push({ command: currentCommand, params: currentParams });
+    }
+  
+    return commands;
+  }
+
+  private scaleSVGPathTo10mm(svgPath: string): string {
+    const pathData = this.parseSVGPath(svgPath);
+    
+    // 计算SVG的边界框
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let currentX = 0, currentY = 0;
+  
+    pathData.forEach(({ command, params }) => {
+      switch (command) {
+        case 'M':
+        case 'L':
+        case 'C':
+        case 'S':
+        case 'Q':
+        case 'T':
+          for (let i = 0; i < params.length; i += 2) {
+            minX = Math.min(minX, params[i]);
+            maxX = Math.max(maxX, params[i]);
+            minY = Math.min(minY, params[i + 1]);
+            maxY = Math.max(maxY, params[i + 1]);
+          }
+          break;
+        case 'm':
+        case 'l':
+        case 'c':
+        case 's':
+        case 'q':
+        case 't':
+          for (let i = 0; i < params.length; i += 2) {
+            currentX += params[i];
+            currentY += params[i + 1];
+            minX = Math.min(minX, currentX);
+            maxX = Math.max(maxX, currentX);
+            minY = Math.min(minY, currentY);
+            maxY = Math.max(maxY, currentY);
+          }
+          break;
+        case 'H':
+          minX = Math.min(minX, params[0]);
+          maxX = Math.max(maxX, params[0]);
+          break;
+        case 'h':
+          currentX += params[0];
+          minX = Math.min(minX, currentX);
+          maxX = Math.max(maxX, currentX);
+          break;
+        case 'V':
+          minY = Math.min(minY, params[0]);
+          maxY = Math.max(maxY, params[0]);
+          break;
+        case 'v':
+          currentY += params[0];
+          minY = Math.min(minY, currentY);
+          maxY = Math.max(maxY, currentY);
+          break;
+      }
+    });
+  
+    // 计算原始SVG的宽度和高度
+    const width = maxX - minX;
+    const height = maxY - minY;
+  
+    // 计算缩放比例
+    const scale = 5 / Math.max(width, height);
+  
+    // 缩放路径数据
+    const scaledPathData = pathData.map(({ command, params }) => {
+      const scaledParams = params.map(param => param * scale);
+      return { command, params: scaledParams };
+    });
+  
+    // 将缩放后的路径数据转换回字符串
+    return this.convertPathDataToString(scaledPathData);
+  }
+  
+  /**
+   * 将解析后的路径数据转换为字符串
+   * @param pathData 解析后的路径数据
+   * @returns SVG路径字符串
+   */
+  private convertPathDataToString(pathData: Array<{ command: string; params: number[] }>): string {
+    return pathData.map(({ command, params }) => {
+      return command + params.map(p => p.toFixed(2)).join(' ');
+    }).join(' ');
   }
 
   /**
@@ -414,123 +519,184 @@ export class DrawStampUtils {
     y: number,
     scale: number = 1
   ) {
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.scale(scale, scale)
-    ctx.beginPath()
-
-    let currentX = 0
-    let currentY = 0
-    let startX = 0
-    let startY = 0
-
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.beginPath();
+  
+    let currentX = 0;
+    let currentY = 0;
+    let startX = 0;
+    let startY = 0;
+    let controlX = 0;
+    let controlY = 0;
+  
     path.forEach(({ command, params }) => {
+      const paramCount = params.length;
       switch (command) {
         case 'M':
-          currentX = params[0]
-          currentY = params[1]
-          ctx.moveTo(currentX, currentY)
-          startX = currentX
-          startY = currentY
-          break
         case 'm':
-          currentX += params[0]
-          currentY += params[1]
-          ctx.moveTo(currentX, currentY)
-          startX = currentX
-          startY = currentY
-          break
+          if (command === 'M') {
+            currentX = params[0];
+            currentY = params[1];
+          } else {
+            currentX += params[0];
+            currentY += params[1];
+          }
+          ctx.moveTo(currentX, currentY);
+          startX = currentX;
+          startY = currentY;
+          break;
         case 'L':
-          currentX = params[0]
-          currentY = params[1]
-          ctx.lineTo(currentX, currentY)
-          break
         case 'l':
-          currentX += params[0]
-          currentY += params[1]
-          ctx.lineTo(currentX, currentY)
-          break
+          for (let i = 0; i < paramCount; i += 2) {
+            if (command === 'L') {
+              currentX = params[i];
+              currentY = params[i + 1];
+            } else {
+              currentX += params[i];
+              currentY += params[i + 1];
+            }
+            ctx.lineTo(currentX, currentY);
+          }
+          break;
         case 'H':
-          currentX = params[0]
-          ctx.lineTo(currentX, currentY)
-          break
         case 'h':
-          currentX += params[0]
-          ctx.lineTo(currentX, currentY)
-          break
+          for (let i = 0; i < paramCount; i++) {
+            if (command === 'H') {
+              currentX = params[i];
+            } else {
+              currentX += params[i];
+            }
+            ctx.lineTo(currentX, currentY);
+          }
+          break;
         case 'V':
-          currentY = params[0]
-          ctx.lineTo(currentX, currentY)
-          break
         case 'v':
-          currentY += params[0]
-          ctx.lineTo(currentX, currentY)
-          break
+          for (let i = 0; i < paramCount; i++) {
+            if (command === 'V') {
+              currentY = params[i];
+            } else {
+              currentY += params[i];
+            }
+            ctx.lineTo(currentX, currentY);
+          }
+          break;
         case 'C':
-          ctx.bezierCurveTo(params[0], params[1], params[2], params[3], params[4], params[5])
-          currentX = params[4]
-          currentY = params[5]
-          break
         case 'c':
-          ctx.bezierCurveTo(
-            currentX + params[0],
-            currentY + params[1],
-            currentX + params[2],
-            currentY + params[3],
-            currentX + params[4],
-            currentY + params[5]
-          )
-          currentX += params[4]
-          currentY += params[5]
-          break
+          for (let i = 0; i < paramCount; i += 6) {
+            const [cp1x, cp1y, cp2x, cp2y, x, y] = command === 'C'
+              ? params.slice(i, i + 6)
+              : params.slice(i, i + 6).map((p, index) => index % 2 === 0 ? p + currentX : p + currentY);
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
+            controlX = cp2x;
+            controlY = cp2y;
+            currentX = x;
+            currentY = y;
+          }
+          break;
         case 'S':
-          // 实现S命令的逻辑
-          break
         case 's':
-          // 实现s命令的逻辑
-          break
+          for (let i = 0; i < paramCount; i += 4) {
+            let [cp2x, cp2y, x, y] = command === 'S'
+              ? params.slice(i, i + 4)
+              : params.slice(i, i + 4).map((p, index) => index % 2 === 0 ? p + currentX : p + currentY);
+            const cp1x = currentX + (currentX - controlX);
+            const cp1y = currentY + (currentY - controlY);
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
+            controlX = cp2x;
+            controlY = cp2y;
+            currentX = x;
+            currentY = y;
+          }
+          break;
         case 'Q':
-          ctx.quadraticCurveTo(params[0], params[1], params[2], params[3])
-          currentX = params[2]
-          currentY = params[3]
-          break
         case 'q':
-          ctx.quadraticCurveTo(
-            currentX + params[0],
-            currentY + params[1],
-            currentX + params[2],
-            currentY + params[3]
-          )
-          currentX += params[2]
-          currentY += params[3]
-          break
+          for (let i = 0; i < paramCount; i += 4) {
+            const [cpx, cpy, x, y] = command === 'Q'
+              ? params.slice(i, i + 4)
+              : params.slice(i, i + 4).map((p, index) => index % 2 === 0 ? p + currentX : p + currentY);
+            ctx.quadraticCurveTo(cpx, cpy, x, y);
+            controlX = cpx;
+            controlY = cpy;
+            currentX = x;
+            currentY = y;
+          }
+          break;
         case 'T':
-          // 实现T命令的逻辑
-          break
         case 't':
-          // 实现t命令的逻辑
-          break
+          for (let i = 0; i < paramCount; i += 2) {
+            const [x, y] = command === 'T'
+              ? params.slice(i, i + 2)
+              : [params[i] + currentX, params[i + 1] + currentY];
+            const cpx = currentX + (currentX - controlX);
+            const cpy = currentY + (currentY - controlY);
+            ctx.quadraticCurveTo(cpx, cpy, x, y);
+            controlX = cpx;
+            controlY = cpy;
+            currentX = x;
+            currentY = y;
+          }
+          break;
         case 'A':
-          // 实现A命令的逻辑 (椭圆弧)
-          console.warn('Arc command not fully implemented')
-          break
         case 'a':
-          // 实现a命令的逻辑 (相对椭圆弧)
-          console.warn('Relative arc command not fully implemented')
-          break
+          for (let i = 0; i < paramCount; i += 7) {
+            const [rx, ry, xAxisRotation, largeArcFlag, sweepFlag, x, y] = command === 'A'
+              ? params.slice(i, i + 7)
+              : [...params.slice(i, i + 5), params[i + 5] + currentX, params[i + 6] + currentY];
+            // 这里应该使用更复杂的弧线绘制逻辑，目前使用简化版本
+            ctx.ellipse(x, y, rx, ry, xAxisRotation, 0, 2 * Math.PI);
+            currentX = x;
+            currentY = y;
+          }
+          console.warn('Arc command not fully implemented');
+          break;
         case 'Z':
         case 'z':
-          ctx.closePath()
-          currentX = startX
-          currentY = startY
-          break
+          ctx.closePath();
+          currentX = startX;
+          currentY = startY;
+          break;
       }
-    })
+    });
+  
+    ctx.fillStyle = this.primaryColor;
+    ctx.fill();
+  
+    ctx.restore();
+  }
 
-    ctx.fillStyle = this.primaryColor
-    ctx.fill()
-
-    ctx.restore()
+  /**
+   * 绘制SVG路径数据
+   * @param ctx Canvas上下文
+   * @param svgData SVG路径数据
+   * @param x 绘制中心的x坐标
+   * @param y 绘制中心的y坐标
+   * @param size 绘制大小
+   */
+  private drawSVGData(ctx: CanvasRenderingContext2D, svgData: string, x: number, y: number, size: number) {
+    ctx.save();
+    ctx.translate(x, y);
+    
+    const path = new Path2D(svgData);
+    
+    // 计算缩放比例
+    const svgViewBox = [0, 0, 24, 24]; // 假设原始viewBox为24x24
+    const scale = size / Math.max(svgViewBox[2], svgViewBox[3]);
+    
+    ctx.scale(scale, scale);
+    
+    // 将绘制原点移到中心
+    ctx.translate(-svgViewBox[2] / 2, -svgViewBox[3] / 2);
+    
+    ctx.fillStyle = this.primaryColor;
+    ctx.fill(path);
+    
+    ctx.strokeStyle = this.primaryColor;
+    ctx.lineWidth = 1.5 / scale; // 保持线宽一致
+    ctx.stroke(path);
+    
+    ctx.restore();
   }
 
   /**
@@ -540,9 +706,15 @@ export class DrawStampUtils {
    * @param y 圆心y坐标
    * @param r 半径
    */
-  private drawStarShape(ctx: CanvasRenderingContext2D, svgPath: string, x: number, y: number, r: number) {
-    const svgData = this.parseSVGPath(svgPath)
-    this.drawSVGPath(ctx, svgData, x, y, r)
+  private drawStarShape(ctx: CanvasRenderingContext2D, starSvgData: IDrawStar, x: number, y: number) {
+    const drawStarDia = starSvgData.starDiameter / 2 * this.mmToPixel
+    let svgDataStr = starSvgData.svgPath  
+    if(starSvgData.scaleToSmallStar){
+      svgDataStr = this.scaleSVGPathTo10mm(svgDataStr)
+    }
+    const svgData = this.parseSVGPath(svgDataStr)
+    console.log("svg data", svgData)
+    this.drawSVGPath(ctx, svgData, x, y, drawStarDia)
   }
 
   /**
@@ -1264,8 +1436,7 @@ export class DrawStampUtils {
 
     // 绘制五角星
     if (this.drawStampConfigs.drawStar.drawStar) {
-      const drawStarDia = this.drawStampConfigs.drawStar.starDiameter / 2
-      this.drawStarShape(offscreenCtx, this.drawStampConfigs.drawStar.svgPath, centerX, centerY, drawStarDia * this.mmToPixel)
+      this.drawStarShape(offscreenCtx, this.drawStampConfigs.drawStar, centerX, centerY)
     }
 
     // 绘制公司名称

@@ -383,6 +383,7 @@ const updateDrawConfigs = () => {
   stampType.fontWidth = bottomTextFontWidthMM.value
   stampType.letterSpacing = bottomTextLetterSpacing.value
   stampType.positionY = bottomTextPositionY.value
+  stampType.compression = bottomTextCompression.value
 
   // 印章编码
   const code: ICode = drawConfigs.stampCode
@@ -404,6 +405,9 @@ const updateDrawConfigs = () => {
   drawStar.drawStar = shouldDrawStar.value
   drawStar.starDiameter = starDiameter.value
   drawStar.starPositionY = starPositionY.value
+  // if(drawStar.drawStar) {
+  //   drawStar.svgPath = `M7.4541,1.6942 C7.65606,1.20862 8.34393,1.20862 8.5459,1.6942 L10.1307,5.50456 C10.1667,5.59112 10.2481,5.65026 10.3416,5.65776 L14.4552,5.98754 C14.9794,6.02957 15.192,6.68377 14.7926,7.0259 L11.6584,9.71062 C11.5872,9.77161 11.5561,9.8673 11.5779,9.95849 L12.5354,13.9727 C12.6574,14.4842 12.1009,14.8885 11.6521,14.6144 L8.13031,12.4633 C8.05031,12.4144 7.94969,12.4144 7.86969,12.4633 L4.34786,14.6144 C3.89906,14.8885 3.34256,14.4842 3.46458,13.9727 L4.42211,9.95849 C4.44387,9.8673 4.41277,9.77161 4.34158,9.71062 L1.20744,7.0259 C0.80804,6.68377 1.0206,6.02957 1.54482,5.98754 L5.65843,5.65776 C5.75188,5.65026 5.83328,5.59112 5.86928,5.50456 L7.4541,1.6942 Z`
+  // }
 
   // 内圈圆
   const innerCircle: IInnerCircle = drawConfigs.innerCircle
