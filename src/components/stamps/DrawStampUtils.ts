@@ -59,6 +59,7 @@ export type IAgingEffect = {
 
 // 绘制五角星
 export type IDrawStar = {
+  svgPath: string
   drawStar: boolean
   starDiameter: number
   starPositionY: number
@@ -135,6 +136,7 @@ export class DrawStampUtils {
     showFullRuler: true
   }
   private drawStar: IDrawStar = {
+    svgPath: 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z',
     drawStar: false,
     starDiameter: 14,
     starPositionY: 0
@@ -538,9 +540,8 @@ export class DrawStampUtils {
    * @param y 圆心y坐标
    * @param r 半径
    */
-  private drawStarShape(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
-    const starPath = 'M 0 -1 L 0.588 0.809 L -0.951 -0.309 L 0.951 -0.309 L -0.588 0.809 Z'
-    const svgData = this.parseSVGPath(starPath)
+  private drawStarShape(ctx: CanvasRenderingContext2D, svgPath: string, x: number, y: number, r: number) {
+    const svgData = this.parseSVGPath(svgPath)
     this.drawSVGPath(ctx, svgData, x, y, r)
   }
 
@@ -1264,7 +1265,7 @@ export class DrawStampUtils {
     // 绘制五角星
     if (this.drawStampConfigs.drawStar.drawStar) {
       const drawStarDia = this.drawStampConfigs.drawStar.starDiameter / 2
-      this.drawStarShape(offscreenCtx, centerX, centerY, drawStarDia * this.mmToPixel)
+      this.drawStarShape(offscreenCtx, this.drawStampConfigs.drawStar.svgPath, centerX, centerY, drawStarDia * this.mmToPixel)
     }
 
     // 绘制公司名称
