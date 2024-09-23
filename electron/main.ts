@@ -7,8 +7,7 @@ import {
   session,
   clipboard,
   Menu,
-  shell,
-  nativeImage
+  shell
 } from 'electron'
 import path from 'path'
 import { execFile } from 'child_process'
@@ -17,6 +16,7 @@ import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
 import { desktopCapturer } from 'electron/main'
 import Screenshots from 'electron-screenshots'
+import { nativeImage } from 'electron/common'
 const fs = require('fs').promises
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
