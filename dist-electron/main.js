@@ -11,6 +11,7 @@ const sqlite3_1 = __importDefault(require("sqlite3"));
 const sqlite_1 = require("sqlite");
 const main_1 = require("electron/main");
 const electron_screenshots_1 = __importDefault(require("electron-screenshots"));
+const common_1 = require("electron/common");
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -265,7 +266,7 @@ async function createWindow() {
     // 监听截图完成事件
     screenshots.on('ok', (e, buffer, data) => {
         console.log('data', data);
-        const image = electron_1.nativeImage.createFromBuffer(buffer);
+        const image = common_1.nativeImage.createFromBuffer(buffer);
         const base64 = image.toDataURL();
         console.log('截图已捕获');
         // 将截图保存到系统粘贴板
@@ -315,8 +316,22 @@ async function watchClipboard(win) {
 async function updateClipboardHistory(win, type, content) {
     try {
         const db = await getDatabase();
-        await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', type, content, Date.now());
-        console.log('剪贴板内容已添加到历史记录');
+        const existingItem = await db.get('SELECT * FROM clipboard_history WHERE content = ?', content);
+        if (existingItem) {
+            await db.run('UPDATE clipboard_history SET timestamp = ? WHERE id = ?', Date.now(), existingItem.id);
+            console.log('剪贴板内容已更新到最近的时间内');
+        }
+        else {
+            await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', type, content, Date.now());
+            console.log('剪贴板内容已添加到历史记录');
+        }
+        // await db.run(
+        //   'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+        //   type,
+        //   content,
+        //   Date.now()
+        // )
+        // console.log('剪贴板内容已添加到历史记录')
         // 获取最新的剪贴板历史记录
         const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50');
         // 通知渲染进程更新剪贴板历史，并发送最新的历史记录
@@ -465,7 +480,7 @@ electron_1.ipcMain.handle('preview-clipboard-image', async (event, text) => {
     electron_1.shell.openPath(text);
 });
 electron_1.ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
-    const img = electron_1.nativeImage.createFromDataURL(dataURL);
+    const img = common_1.nativeImage.createFromDataURL(dataURL);
     electron_1.clipboard.writeImage(img);
 });
 // 添加删除日记条目的方法

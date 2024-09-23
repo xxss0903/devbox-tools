@@ -29,8 +29,8 @@
         <p>复制或截图内容后将显示在这里</p>
       </div>
       <ul v-else class="clipboard-list">
-        <li v-for="item in filteredClipboardHistory" :key="item.id" class="clipboard-item" @click="clickItem(item)">
-          <div class="item-content">
+        <li v-for="item in filteredClipboardHistory" :key="item.id" class="clipboard-item">
+          <div class="item-content"  @click="clickItem(item)">
             <span v-if="item.type === 'text'" class="text-content">
               <a v-if="isUrl(item.content)" :href="item.content" target="_blank">{{ item.content }}</a>
               <span v-else>{{ item.content }}</span>

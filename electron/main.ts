@@ -379,13 +379,33 @@ async function watchClipboard(win: BrowserWindow) {
 async function updateClipboardHistory(win: BrowserWindow, type: string, content: string) {
   try {
     const db = await getDatabase()
-    await db.run(
-      'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-      type,
-      content,
-      Date.now()
-    )
-    console.log('剪贴板内容已添加到历史记录')
+
+    
+    const existingItem = await db.get('SELECT * FROM clipboard_history WHERE content = ?', content)
+    if (existingItem) {
+      await db.run(
+        'UPDATE clipboard_history SET timestamp = ? WHERE id = ?',
+        Date.now(),
+        existingItem.id
+      )
+      console.log('剪贴板内容已更新到最近的时间内')
+    } else {
+      await db.run(
+        'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+        type,
+        content,
+        Date.now()
+      )
+      console.log('剪贴板内容已添加到历史记录')
+    }
+
+    // await db.run(
+    //   'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
+    //   type,
+    //   content,
+    //   Date.now()
+    // )
+    // console.log('剪贴板内容已添加到历史记录')
     
     // 获取最新的剪贴板历史记录
     const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50')
