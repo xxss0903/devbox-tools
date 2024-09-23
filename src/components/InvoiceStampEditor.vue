@@ -49,6 +49,30 @@
             <input type="number" v-model.number="innerCircleHeight" min="1" max="50" step="0.5" />
           </label>
         </div>
+      <div class="control-group" id="out-thin-circle-settings">
+        <h3>外部细圈设置</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="drawOutThinCircle" /> 绘制外部细圈
+        </label>
+        <label>
+          外部细圈线宽 (mm):
+          <input
+            type="number"
+            v-model.number="outThinCircleLineWidth"
+            min="0.1"
+            max="2"
+            step="0.1"
+          />
+        </label>
+        <label>
+          外部细圈宽度 (mm):
+          <input type="number" v-model.number="outThinCircleWidth" min="1" max="50" step="0.5" />
+        </label>
+        <label>
+          外部细圈高度 (mm):
+          <input type="number" v-model.number="outThinCircleHeight" min="1" max="50" step="0.5" />
+        </label>
+      </div>
       </div>
       <!-- 公司名称设置 -->
       <div class="control-group" id="company-name-settings">
@@ -322,7 +346,11 @@ const taxNumberPositionY = ref(0) // 税号垂直位置调整，默认为0
 const drawInnerCircle = ref(false) // 是否绘制内圈圆
 const innerCircleLineWidth = ref(0.5) // 内圈圆线宽，单位为毫米
 const innerCircleWidth = ref(15) // 内圈圆宽度，单位为毫米
-const innerCircleHeight = ref(12) // 内圈圆高度，单位为毫米
+const innerCircleHeight = ref(12) // 内圈圆高度，单位为毫米 
+const drawOutThinCircle = ref(false) // 是否绘制内圈圆
+const outThinCircleLineWidth = ref(0.5) // 内圈圆线宽，单位为毫米
+const outThinCircleWidth = ref(15) // 内圈圆宽度，单位为毫米
+const outThinCircleHeight = ref(12) // 内圈圆高度，单位为毫米
 
 const saveStampAsPNG = () => {
   drawStampUtils.saveStampAsPNG(512)
@@ -405,14 +433,14 @@ const updateDrawConfigs = () => {
   drawStar.drawStar = shouldDrawStar.value
   drawStar.starDiameter = starDiameter.value
   drawStar.starPositionY = starPositionY.value
-  if(drawStar.drawStar) {
-    drawStar.svgPath = `<svg width="40px" height="40px" viewBox="0 0 24 24" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
- <g transform="translate(0 -1028.4)">
-  <path d="m12 1028.4 4 9 8 1-6 5 2 9-8-5-8 5 2-9-6-5 8-1z" fill="#f39c12"/>
-  <path d="m12 1028.4-4 9-6.9688 0.8 4.9688 4.2-0.1875 0.8 0.1875 0.2-1.75 7.8 7.75-4.8 7.75 4.8-1.75-7.8 0.188-0.2-0.188-0.8 4.969-4.2-6.969-0.8-4-9z" fill="#f1c40f"/>
- </g>
-</svg>`
-  }
+//   if(drawStar.drawStar) {
+//     drawStar.svgPath = `<svg width="40px" height="40px" viewBox="0 0 24 24" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+//  <g transform="translate(0 -1028.4)">
+//   <path d="m12 1028.4 4 9 8 1-6 5 2 9-8-5-8 5 2-9-6-5 8-1z" fill="#f39c12"/>
+//   <path d="m12 1028.4-4 9-6.9688 0.8 4.9688 4.2-0.1875 0.8 0.1875 0.2-1.75 7.8 7.75-4.8 7.75 4.8-1.75-7.8 0.188-0.2-0.188-0.8 4.969-4.2-6.969-0.8-4-9z" fill="#f1c40f"/>
+//  </g>
+// </svg>`
+//   }
 
   // 内圈圆
   const innerCircle: IInnerCircle = drawConfigs.innerCircle
@@ -420,6 +448,13 @@ const updateDrawConfigs = () => {
   innerCircle.innerCircleLineWidth = innerCircleLineWidth.value
   innerCircle.innerCircleLineRadiusX = innerCircleWidth.value
   innerCircle.innerCircleLineRadiusY = innerCircleHeight.value
+
+  // 外部细圈
+  const outThinCircle: IInnerCircle = drawConfigs.outThinCircle
+  outThinCircle.drawInnerCircle = drawOutThinCircle.value
+  outThinCircle.innerCircleLineWidth = outThinCircleLineWidth.value
+  outThinCircle.innerCircleLineRadiusX = outThinCircleWidth.value
+  outThinCircle.innerCircleLineRadiusY = outThinCircleHeight.value
 
   drawStamp()
 }
@@ -519,7 +554,11 @@ watch(
     drawInnerCircle,
     innerCircleLineWidth,
     innerCircleWidth,
-    innerCircleHeight
+    innerCircleHeight,
+    outThinCircleLineWidth,
+    outThinCircleWidth,
+    outThinCircleHeight,
+    drawOutThinCircle
   ],
   () => {
     updateDrawConfigs()

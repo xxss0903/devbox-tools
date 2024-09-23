@@ -108,6 +108,7 @@ export type IDrawStampConfig = {
   refreshOld: boolean
   shouldDrawRuler: boolean
   innerCircle: IInnerCircle
+  outThinCircle: IInnerCircle
 }
 
 // 标尺宽度
@@ -199,6 +200,13 @@ export class DrawStampUtils {
     innerCircleLineRadiusX: 16,
     innerCircleLineRadiusY: 12
   }
+  // 比外圈细的稍微内圈
+  private outThinCircle: IInnerCircle = {
+    drawInnerCircle: true,
+    innerCircleLineWidth: 0.2,
+    innerCircleLineRadiusX: 36,
+    innerCircleLineRadiusY: 27
+  }
   // 总的印章绘制参数
   private drawStampConfigs: IDrawStampConfig = {
     ruler: this.ruler,
@@ -216,7 +224,8 @@ export class DrawStampUtils {
     taxNumber: this.taxNumber,
     agingEffect: this.agingEffect,
     shouldDrawRuler: true,
-    innerCircle: this.innerCircle
+    innerCircle: this.innerCircle,
+    outThinCircle: this.outThinCircle
   }
 
   private securityPatternParams: Array<{ angle: number; lineAngle: number }> = []
@@ -1482,6 +1491,25 @@ export class DrawStampUtils {
         innerCircleWidth * this.mmToPixel,
         innerCircleHeight * this.mmToPixel,
         innerCircle.innerCircleLineWidth * this.mmToPixel,
+        this.drawStampConfigs.primaryColor
+      )
+    }
+
+    // 内部细圈
+    if (this.drawStampConfigs.outThinCircle.drawInnerCircle) {
+      const outThinCircle = this.drawStampConfigs.outThinCircle
+      const outThinCircleWidth =
+        (outThinCircle.innerCircleLineRadiusX - outThinCircle.innerCircleLineWidth) / 2
+      const outThinCircleHeight =
+        (outThinCircle.innerCircleLineRadiusY - outThinCircle.innerCircleLineWidth) / 2
+      // 绘制外部细圈椭圆
+      this.drawEllipse(
+        offscreenCtx,
+        centerX,
+        centerY,
+        outThinCircleWidth * this.mmToPixel,
+        outThinCircleHeight * this.mmToPixel,
+        outThinCircle.innerCircleLineWidth * this.mmToPixel,
         this.drawStampConfigs.primaryColor
       )
     }
