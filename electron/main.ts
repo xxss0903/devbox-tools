@@ -605,8 +605,8 @@ let reminderWindow: BrowserWindow | null = null
 
 function createReminderWindow(message: string) {
   reminderWindow = new BrowserWindow({
-    width: 300,
-    height: 200,
+    width: 340,
+    height: 380,
     show: false,
     frame: false,
     alwaysOnTop: true,

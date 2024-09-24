@@ -500,8 +500,8 @@ electron_1.ipcMain.handle('delete-diary-entry', async (event, date) => {
 let reminderWindow = null;
 function createReminderWindow(message) {
     reminderWindow = new electron_1.BrowserWindow({
-        width: 300,
-        height: 200,
+        width: 340,
+        height: 380,
         show: false,
         frame: false,
         alwaysOnTop: true,

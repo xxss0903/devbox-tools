@@ -294,8 +294,18 @@ const deleteDiaryEntry = async () => {
 }
 
 const setReminder = () => {
-  const reminderTime = new Date(Date.now() + 2 * 1000) // 2秒后
-  window.electronAPI.setReminder(reminderTime.toISOString())
+  let debug = true
+  if (debug) {
+    const reminderTime = new Date(Date.now() + 2 * 1000) // 2秒后
+    window.electronAPI.setReminder(reminderTime.toISOString())
+  } else {
+    const now = new Date()
+    const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0) // 今天的18:00
+    if (reminderTime < now) {
+      reminderTime.setDate(reminderTime.getDate() + 1) // 如果当前时间已经超过18:00，则设置为明天的18:00
+    }
+    window.electronAPI.setReminder(reminderTime.toISOString())
+  }
 }
 </script>
 
