@@ -508,16 +508,14 @@ function createReminderWindow(message) {
         webPreferences: {
             preload: path_1.default.join(__dirname, 'preload.js'),
         },
+        icon: path_1.default.join(__dirname, '../public/icon.png'),
     });
-    reminderWindow.loadURL(`data:text/html,
-    <html>
-      <body>
-        <h2>提醒!</h2>
-        <p>${message}</p>
-        <button onclick="window.electronAPI.closeReminder()">关闭</button>
-      </body>
-    </html>
-  `);
+    // 加载 workdiary.html 文件
+    reminderWindow.loadFile(path_1.default.join(__dirname, '../public/workdiary_reminder.html'));
+    // 传递提醒消息到渲染进程
+    reminderWindow.webContents.once('did-finish-load', () => {
+        reminderWindow?.webContents.send('set-reminder-message', message);
+    });
     reminderWindow.once('ready-to-show', () => {
         reminderWindow?.show();
     });
