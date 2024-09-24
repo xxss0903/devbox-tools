@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    setDailyWorkDiaryAlarm: () => electron_1.ipcRenderer.send('set-daily-work-diary-alarm'),
     // 工作提醒
     setReminder: (time) => electron_1.ipcRenderer.send('set-reminder', time),
     closeReminder: () => electron_1.ipcRenderer.send('close-reminder'),
@@ -23,6 +24,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
         return electron_1.ipcRenderer.invoke('execute-adb', command);
     },
     selectFolder: () => electron_1.ipcRenderer.invoke('select-folder'),
+    refreshWorkDiary: () => electron_1.ipcRenderer.invoke('refresh-work-diary'),
     saveDiaryEntry: (date, content, todos) => electron_1.ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
     getDiaryEntries: () => electron_1.ipcRenderer.invoke('get-diary-entries'),
     getDiaryEntryByDate: (date) => electron_1.ipcRenderer.invoke('get-diary-entry-by-date', date),
@@ -57,6 +59,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     },
     onClipboardUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
     onClipboardImageUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
-    deleteDiaryEntry: (date) => electron_1.ipcRenderer.invoke('delete-diary-entry', date),
+    deleteDiaryEntry: (date) => electron_1.ipcRenderer.invoke('delete-diary-entry', date)
 });
 console.log('electronAPI exposed');

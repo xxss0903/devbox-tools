@@ -54,6 +54,14 @@ async function getDatabase(): Promise<Database> {
     driver: sqlite3.Database
   })
 
+  // 创建 alarms 表
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS alarms (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      time TEXT
+    )
+  `)
+
   // 创建现有的diary_entries表
   await db.exec(`
     CREATE TABLE IF NOT EXISTS diary_entries (
@@ -336,6 +344,13 @@ async function createWindow() {
   screenshots.on('cancel', () => {
     console.log('Screenshot cancelled')
   })
+
+  // 检查并设置闹钟
+  const db = await getDatabase()
+  const alarm = await db.get('SELECT * FROM alarms WHERE id = 1')
+  if (alarm) {
+    scheduleDailyAlarm(win?.webContents)
+  }
 }
 
 async function checkAndUpdateClipboard() {
@@ -346,7 +361,7 @@ async function checkAndUpdateClipboard() {
 
   console.log('get latestcontent 1:', latestItem)
 
-  if(latestItem) {
+  if (latestItem) {
     if (latestItem.type === 'text') {
       lastClipboardContent = latestItem.content
     } else if (latestItem.type === 'image') {
@@ -380,7 +395,6 @@ async function updateClipboardHistory(win: BrowserWindow, type: string, content:
   try {
     const db = await getDatabase()
 
-    
     const existingItem = await db.get('SELECT * FROM clipboard_history WHERE content = ?', content)
     if (existingItem) {
       await db.run(
@@ -406,10 +420,10 @@ async function updateClipboardHistory(win: BrowserWindow, type: string, content:
     //   Date.now()
     // )
     // console.log('剪贴板内容已添加到历史记录')
-    
+
     // 获取最新的剪贴板历史记录
     const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50')
-    
+
     // 通知渲染进程更新剪贴板历史，并发送最新的历史记录
     win?.webContents.send('clipboard-history-update', history)
     console.log('最新的剪贴板历史记录已发送到渲染进程')
@@ -577,7 +591,7 @@ ipcMain.handle('open-url', async (event, text) => {
   shell.openExternal(text)
 })
 
-ipcMain.handle('preview-clipboard-image', async (event, text) => {  
+ipcMain.handle('preview-clipboard-image', async (event, text) => {
   // 打开图片
   shell.openPath(text)
 })
@@ -600,10 +614,15 @@ ipcMain.handle('delete-diary-entry', async (event, date) => {
   }
 })
 
+ipcMain.handle('refresh-work-diary', async () => {
+  console.log('refresh-work-diary')
+})
+
 // 工作提醒
 let reminderWindow: BrowserWindow | null = null
 
 function createReminderWindow(message: string) {
+  console.log('createReminderWindow', message)
   reminderWindow = new BrowserWindow({
     width: 340,
     height: 380,
@@ -611,9 +630,9 @@ function createReminderWindow(message: string) {
     frame: false,
     alwaysOnTop: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: path.join(__dirname, '../public/icon.png')
   })
 
   // 加载 workdiary.html 文件
@@ -637,9 +656,41 @@ ipcMain.on('set-reminder', (event, time) => {
   }, delay)
 })
 
+// 设置每天6点钟的闹钟
+ipcMain.on('set-daily-work-diary-alarm', async (event) => {
+  console.log('set-daily-work-diary-alarm to 21:55')
+  const db = await getDatabase()
+  await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', '23:00')
+  scheduleDailyAlarm(event.sender)
+})
+
 ipcMain.on('close-reminder', () => {
   reminderWindow?.close()
   reminderWindow = null
   console.log('close-reminder')
 })
 
+// 调度每天21:50的闹钟
+import moment from 'moment'
+
+function scheduleDailyAlarm(sender: Electron.WebContents) {
+  const now = moment()
+
+  const nextAlarm = moment(moment().format('YYYY-MM-DD') + ' 23:06')
+
+  if (now.isAfter(nextAlarm)) {
+    nextAlarm.add(1, 'day')
+  }
+
+  const delay = nextAlarm.diff(now)
+  console.log('scheduleDailyAlarm', delay)
+  setTimeout(() => {
+    triggerAlarm(sender)
+    setInterval(() => triggerAlarm(sender), 24 * 60 * 60 * 1000) // 每24小时触发一次
+  }, delay)
+}
+
+// 触发闹钟事件
+function triggerAlarm(sender: Electron.WebContents) {
+  createReminderWindow('您设置的提醒时间到了')
+}

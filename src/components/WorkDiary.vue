@@ -277,7 +277,6 @@ const closeSummaryModal = () => {
   showSummaryModal.value = false
 }
 
-
 const deleteDiaryEntry = async () => {
   if (confirm('确定要删除当前日期的日记吗？此操作不可逆！')) {
     try {
@@ -293,18 +292,25 @@ const deleteDiaryEntry = async () => {
   }
 }
 
+// 设置每天6点钟的闹钟
+function setDailyWorkDiaryAlarm() {
+  window.electronAPI.setDailyWorkDiaryAlarm()
+}
+
 const setReminder = () => {
-  let debug = true
+  let debug = false
   if (debug) {
     const reminderTime = new Date(Date.now() + 2 * 1000) // 2秒后
     window.electronAPI.setReminder(reminderTime.toISOString())
   } else {
-    const now = new Date()
-    const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0) // 今天的18:00
-    if (reminderTime < now) {
-      reminderTime.setDate(reminderTime.getDate() + 1) // 如果当前时间已经超过18:00，则设置为明天的18:00
-    }
-    window.electronAPI.setReminder(reminderTime.toISOString())
+    // const now = new Date()
+    // const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0) // 今天的18:00
+    // if (reminderTime < now) {
+    //   reminderTime.setDate(reminderTime.getDate() + 1) // 如果当前时间已经超过18:00，则设置为明天的18:00
+    // }
+    // window.electronAPI.setReminder(reminderTime.toISOString())
+
+    setDailyWorkDiaryAlarm()
   }
 }
 </script>
@@ -991,7 +997,6 @@ const setReminder = () => {
 .close-button:hover {
   background-color: #2980b9;
 }
-
 
 .delete-button {
   padding: 8px 16px;

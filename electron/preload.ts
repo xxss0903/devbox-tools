@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  setDailyWorkDiaryAlarm: () => ipcRenderer.send('set-daily-work-diary-alarm'),
   // 工作提醒
   setReminder: (time: string) => ipcRenderer.send('set-reminder', time),
   closeReminder: () => ipcRenderer.send('close-reminder'),
@@ -27,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('execute-adb', command)
   },
   selectFolder: () => ipcRenderer.invoke('select-folder'),
+  refreshWorkDiary: () => ipcRenderer.invoke('refresh-work-diary'),
   saveDiaryEntry: (date: string, content: string, todos: string) =>
     ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
   getDiaryEntries: () => ipcRenderer.invoke('get-diary-entries'),
@@ -69,7 +71,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
   onClipboardImageUpdate: (callback: (dataUrl: string) => void) =>
     ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
-  deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date),
+  deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date)
 })
 
 console.log('electronAPI exposed')

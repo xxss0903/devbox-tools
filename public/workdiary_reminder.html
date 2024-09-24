@@ -69,6 +69,8 @@
           console.log('content:', content)
           let timeStampValue = moment().format('YYYY-MM-DD')
           window.electronAPI.saveDiaryEntry(timeStampValue, content, '')
+          // 刷新 workdiary.vue
+          window.electronAPI.refreshWorkDiary()
         }
       })
     </script>

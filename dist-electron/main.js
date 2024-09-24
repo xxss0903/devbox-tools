@@ -40,6 +40,13 @@ async function getDatabase() {
         filename: path_1.default.join(electron_1.app.getPath('userData'), 'workdiary.sqlite'),
         driver: sqlite3_1.default.Database
     });
+    // 创建 alarms 表
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS alarms (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      time TEXT
+    )
+  `);
     // 创建现有的diary_entries表
     await db.exec(`
     CREATE TABLE IF NOT EXISTS diary_entries (
@@ -278,6 +285,12 @@ async function createWindow() {
     screenshots.on('cancel', () => {
         console.log('Screenshot cancelled');
     });
+    // 检查并设置闹钟
+    const db = await getDatabase();
+    const alarm = await db.get('SELECT * FROM alarms WHERE id = 1');
+    if (alarm) {
+        scheduleDailyAlarm(win?.webContents);
+    }
 }
 async function checkAndUpdateClipboard() {
     if (!win)
@@ -496,9 +509,13 @@ electron_1.ipcMain.handle('delete-diary-entry', async (event, date) => {
         return { success: false, message: '删除日记条目时出错' };
     }
 });
+electron_1.ipcMain.handle('refresh-work-diary', async () => {
+    console.log('refresh-work-diary');
+});
 // 工作提醒
 let reminderWindow = null;
 function createReminderWindow(message) {
+    console.log('createReminderWindow', message);
     reminderWindow = new electron_1.BrowserWindow({
         width: 340,
         height: 380,
@@ -506,9 +523,9 @@ function createReminderWindow(message) {
         frame: false,
         alwaysOnTop: true,
         webPreferences: {
-            preload: path_1.default.join(__dirname, 'preload.js'),
+            preload: path_1.default.join(__dirname, 'preload.js')
         },
-        icon: path_1.default.join(__dirname, '../public/icon.png'),
+        icon: path_1.default.join(__dirname, '../public/icon.png')
     });
     // 加载 workdiary.html 文件
     reminderWindow.loadFile(path_1.default.join(__dirname, '../public/workdiary_reminder.html'));
@@ -527,8 +544,34 @@ electron_1.ipcMain.on('set-reminder', (event, time) => {
         createReminderWindow('您设置的提醒时间到了');
     }, delay);
 });
+// 设置每天6点钟的闹钟
+electron_1.ipcMain.on('set-daily-work-diary-alarm', async (event) => {
+    console.log('set-daily-work-diary-alarm to 21:55');
+    const db = await getDatabase();
+    await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', '23:00');
+    scheduleDailyAlarm(event.sender);
+});
 electron_1.ipcMain.on('close-reminder', () => {
     reminderWindow?.close();
     reminderWindow = null;
     console.log('close-reminder');
 });
+// 调度每天21:50的闹钟
+const moment_1 = __importDefault(require("moment"));
+function scheduleDailyAlarm(sender) {
+    const now = (0, moment_1.default)();
+    const nextAlarm = (0, moment_1.default)((0, moment_1.default)().format('YYYY-MM-DD') + ' 23:06');
+    if (now.isAfter(nextAlarm)) {
+        nextAlarm.add(1, 'day');
+    }
+    const delay = nextAlarm.diff(now);
+    console.log('scheduleDailyAlarm', delay);
+    setTimeout(() => {
+        triggerAlarm(sender);
+        setInterval(() => triggerAlarm(sender), 24 * 60 * 60 * 1000); // 每24小时触发一次
+    }, delay);
+}
+// 触发闹钟事件
+function triggerAlarm(sender) {
+    createReminderWindow('您设置的提醒时间到了');
+}
