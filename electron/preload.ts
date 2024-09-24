@@ -3,6 +3,10 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // 工作提醒
+  setReminder: (time: string) => ipcRenderer.send('set-reminder', time),
+  closeReminder: () => ipcRenderer.send('close-reminder'),
+  // 预览粘贴板的图片
   previewClipboardImage: (text: string) => ipcRenderer.invoke('preview-clipboard-image', text),
   openClipboardUrl: (text: string) => ipcRenderer.invoke('open-url', text),
   writeTextToClipboard: (text: string) => ipcRenderer.invoke('write-text-to-clipboard', text),

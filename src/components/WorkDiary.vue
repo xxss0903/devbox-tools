@@ -7,6 +7,7 @@
       <button @click="clearDatabase" class="clear-button">清空日志</button>
       <button @click="generateWeeklySummary" class="summary-button">生成周报</button>
       <button @click="deleteDiaryEntry" class="delete-button">删除当前日记</button>
+      <button @click="setReminder" class="reminder-button">设置提醒</button>
     </div>
     <div class="work-diary-content">
       <div class="left-panel">
@@ -290,6 +291,11 @@ const deleteDiaryEntry = async () => {
       console.error('删除日记时出错:', error)
     }
   }
+}
+
+const setReminder = () => {
+  const reminderTime = new Date(Date.now() + 2 * 1000) // 2秒后
+  window.electronAPI.setReminder(reminderTime.toISOString())
 }
 </script>
 

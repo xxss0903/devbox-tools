@@ -599,3 +599,48 @@ ipcMain.handle('delete-diary-entry', async (event, date) => {
     return { success: false, message: '删除日记条目时出错' }
   }
 })
+
+// 工作提醒
+let reminderWindow: BrowserWindow | null = null
+
+function createReminderWindow(message: string) {
+  reminderWindow = new BrowserWindow({
+    width: 300,
+    height: 200,
+    show: false,
+    frame: false,
+    alwaysOnTop: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  })
+
+  reminderWindow.loadURL(`data:text/html,
+    <html>
+      <body>
+        <h2>提醒!</h2>
+        <p>${message}</p>
+        <button onclick="window.electronAPI.closeReminder()">关闭</button>
+      </body>
+    </html>
+  `)
+
+  reminderWindow.once('ready-to-show', () => {
+    reminderWindow?.show()
+  })
+}
+
+ipcMain.on('set-reminder', (event, time) => {
+  const delay = new Date(time).getTime() - Date.now()
+  console.log('set-reminder', delay)
+  setTimeout(() => {
+    createReminderWindow('您设置的提醒时间到了')
+  }, delay)
+})
+
+ipcMain.on('close-reminder', () => {
+  reminderWindow?.close()
+  reminderWindow = null
+  console.log('close-reminder')
+})
+

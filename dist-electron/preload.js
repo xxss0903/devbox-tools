@@ -3,6 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    // 工作提醒
+    setReminder: (time) => electron_1.ipcRenderer.send('set-reminder', time),
+    closeReminder: () => electron_1.ipcRenderer.send('close-reminder'),
+    // 预览粘贴板的图片
     previewClipboardImage: (text) => electron_1.ipcRenderer.invoke('preview-clipboard-image', text),
     openClipboardUrl: (text) => electron_1.ipcRenderer.invoke('open-url', text),
     writeTextToClipboard: (text) => electron_1.ipcRenderer.invoke('write-text-to-clipboard', text),
