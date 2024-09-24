@@ -77,7 +77,7 @@ const showCopySuccess = ref(false)
 const searchText = ref('')
 
 const goBack = () => {
-  router.push({ name: 'Home' })
+  router.back()
 }
 
 const updateClipboardHistory = (history: ClipboardItem[]) => {

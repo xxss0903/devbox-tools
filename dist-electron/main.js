@@ -325,13 +325,6 @@ async function updateClipboardHistory(win, type, content) {
             await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', type, content, Date.now());
             console.log('剪贴板内容已添加到历史记录');
         }
-        // await db.run(
-        //   'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-        //   type,
-        //   content,
-        //   Date.now()
-        // )
-        // console.log('剪贴板内容已添加到历史记录')
         // 获取最新的剪贴板历史记录
         const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50');
         // 通知渲染进程更新剪贴板历史，并发送最新的历史记录

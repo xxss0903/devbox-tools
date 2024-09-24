@@ -172,6 +172,7 @@ defineExpose({ crop })
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  height: 80%;
 }
 
 .controls {

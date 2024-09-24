@@ -1,10 +1,11 @@
 // 防伪纹路
-export type ISecurityPattern = {
+export type ISecurityPattern = {  
   openSecurityPattern: boolean // 是否启用防伪纹路
   securityPatternWidth: number // 防伪纹路宽度
   securityPatternLength: number // 防伪纹路长度
   securityPatternCount: number // 防伪纹路数量
   securityPatternAngleRange: number // 防伪纹路角度范围
+  securityPatternParams: Array<{ angle: number; lineAngle: number }> // 保存防伪纹路的参数数组
 }
 
 // 绘制印章的公司
@@ -41,39 +42,40 @@ export type ITaxNumber = {
 
 // 做旧效果参数
 export type IAgingEffectParams = {
-  x: number
-  y: number
-  noiseSize: number
-  noise: number
-  strongNoiseSize: number
-  strongNoise: number
-  fade: number
-  seed: number
+  x: number // x轴位置
+  y: number // y轴位置
+  noiseSize: number // 噪声大小
+  noise: number // 噪声强度
+  strongNoiseSize: number // 强噪声大小
+  strongNoise: number // 强噪声强度
+  fade: number // 淡化强度
+  seed: number // 随机种子
 }
 
 // 做旧效果
 export type IAgingEffect = {
-  applyAging: boolean
-  agingIntensity: number
+  applyAging: boolean // 是否应用做旧效果
+  agingIntensity: number // 做旧效果强度
+  agingEffectParams: IAgingEffectParams[] // 保存做旧效果的参数数组
 }
 
 // 绘制五角星
 export type IDrawStar = {
-  svgPath: string
-  drawStar: boolean
-  starDiameter: number
-  starPositionY: number
-  scaleToSmallStar: boolean
+  svgPath: string // svg路径
+  drawStar: boolean // 是否绘制五角星
+  starDiameter: number // 五角星直径
+  starPositionY: number // 五角星位置
+  scaleToSmallStar: boolean // 是否缩放为小五角星
 }
 
 // 印章类型
 export type IStampType = {
-  stampType: string
-  fontHeight: number
-  compression: number
-  letterSpacing: number
-  positionY: number
-  fontWidth: number
+  stampType: string // 印章类型
+  fontHeight: number // 字体高度  
+  compression: number // 压缩比例
+  letterSpacing: number // 字符间距
+  positionY: number // 位置
+  fontWidth: number // 字体宽度
 }
 
 // 内圈圆
@@ -86,29 +88,30 @@ export type IInnerCircle = {
 
 // 是否绘制标尺
 export type IShowRuler = {
-  showRuler: boolean
-  showFullRuler: boolean
+  showRuler: boolean // 是否绘制标尺
+  showFullRuler: boolean // 是否绘制全标尺  
 }
 
 // 绘制印章的参数
 export type IDrawStampConfig = {
-  agingEffect: IAgingEffect
-  ruler: IShowRuler
-  drawStar: IDrawStar
+  agingEffect: IAgingEffect // 做旧效果
+  ruler: IShowRuler // 是否绘制标尺
+  drawStar: IDrawStar // 是否绘制五角星
   securityPattern: ISecurityPattern
-  company: ICompany
-  stampCode: ICode
-  taxNumber: ITaxNumber
-  stampType: IStampType
-  width: number
-  height: number
-  borderWidth: number
-  primaryColor: string
-  refreshSecurityPattern: boolean
-  refreshOld: boolean
-  shouldDrawRuler: boolean
-  innerCircle: IInnerCircle
-  outThinCircle: IInnerCircle
+  company: ICompany // 公司
+  stampCode: ICode // 印章编码
+  taxNumber: ITaxNumber // 税号
+  stampType: IStampType // 印章类型
+  width: number // 印章宽度
+  height: number // 印章高度
+  borderWidth: number // 印章边框宽度
+  primaryColor: string // 印章主色
+  refreshSecurityPattern: boolean // 是否刷新防伪纹路
+  refreshOld: boolean // 是否刷新做旧效果
+  shouldDrawRuler: boolean // 是否绘制标尺
+  innerCircle: IInnerCircle // 内圈圆
+  outThinCircle: IInnerCircle // 比外圈细的稍微内圈
+  openManualAging: boolean // 是否开启手动做旧效果
 }
 
 // 标尺宽度
@@ -150,7 +153,8 @@ export class DrawStampUtils {
     securityPatternWidth: 0.15,
     securityPatternLength: 3,
     securityPatternCount: 5,
-    securityPatternAngleRange: 40
+    securityPatternAngleRange: 40,
+    securityPatternParams: []
   }
   private company: ICompany = {
     companyName: '印章绘制有限责任公司',
@@ -190,7 +194,8 @@ export class DrawStampUtils {
   // 做旧效果
   private agingEffect: IAgingEffect = {
     applyAging: false,
-    agingIntensity: 50
+    agingIntensity: 50,
+    agingEffectParams: []
   }
 
   // 内圈圆
@@ -225,10 +230,9 @@ export class DrawStampUtils {
     agingEffect: this.agingEffect,
     shouldDrawRuler: true,
     innerCircle: this.innerCircle,
-    outThinCircle: this.outThinCircle
+    outThinCircle: this.outThinCircle,
+    openManualAging: false
   }
-
-  private securityPatternParams: Array<{ angle: number; lineAngle: number }> = []
 
   /**
    * 构造函数
@@ -265,6 +269,42 @@ export class DrawStampUtils {
     return this.drawStampConfigs
   }
 
+  /**
+   * 手动做旧效果
+   * @param x 
+   * @param y 
+   * @param intensity 
+   */
+  addManualAgingEffect(x: number, y: number, intensityFactor: number) {
+    console.log('手动做旧   1', x, y, this.drawStampConfigs.agingEffect.agingEffectParams)
+    const radius = 1.5 * this.mmToPixel; // 直径3mm，半径1.5mm
+    this.canvasCtx.beginPath();
+    this.canvasCtx.arc(x, y, radius, 0, Math.PI * 2, true);
+    this.canvasCtx.fillStyle = 'black'; // 圆圈颜色
+    this.canvasCtx.fill();
+
+    // const intensityFactor = this.drawStampConfigs.agingEffect.agingIntensity / 100
+    for(let i = 0; i < 10; i++) {
+            // 将点击的地方增加一个做旧数据到做旧的列表里面
+            this.drawStampConfigs.agingEffect.agingEffectParams.push({
+              x: x,
+              y: y,
+              noiseSize: Math.random() * 3 + 1,
+              noise: Math.random() * 200 * intensityFactor,
+              strongNoiseSize: Math.random() * 5 + 2,
+              strongNoise: Math.random() * 250 * intensityFactor + 5,
+              fade: Math.random() * 50 * intensityFactor,
+              seed: Math.random()
+            })
+    }
+
+    // 立即刷新画布以显示效果
+    this.refreshStamp(false, false);
+
+    console.log('手动做旧   2', x, y, this.drawStampConfigs.agingEffect.agingEffectParams)
+
+  }
+
   // 设置绘制印章的配置，比如可以保存某些印章的配置，然后保存之后直接设置绘制，更加方便
   setDrawConfigs(drawConfigs: IDrawStampConfig) {
     this.drawStampConfigs = drawConfigs
@@ -279,6 +319,15 @@ export class DrawStampUtils {
     })
     this.canvas.addEventListener('mousedown', (event) => {
       this.onMouseDown(event)
+      if(this.drawStampConfigs.openManualAging) {
+        // 添加手动做旧效果
+        const rect = this.canvas.getBoundingClientRect()
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        // 增加做旧效果的强度
+        const agingIntensity = this.drawStampConfigs.agingEffect.agingIntensity / 100; // 将强度调整为原来的2倍
+        this.addManualAgingEffect(x, y, agingIntensity);
+      }
     })
     this.canvas.addEventListener('mouseup', (event) => {
       this.onMouseUp()
@@ -310,6 +359,9 @@ export class DrawStampUtils {
   }
 
   private onMouseMove = (event: MouseEvent) => {
+    if(this.drawStampConfigs.openManualAging) {
+      return
+    }
     if (this.isDragging) {
       const newOffsetX = (event.clientX - this.dragStartX) / this.mmToPixel
       const newOffsetY = (event.clientY - this.dragStartY) / this.mmToPixel
@@ -380,16 +432,6 @@ export class DrawStampUtils {
         mainCtx.drawImage(canvas, 0, 0)
       }
     }
-  }
-
-  private setSecurityPattern(securityPattern: ISecurityPattern) {
-    this.securityPattern = securityPattern
-    // 刷新防伪纹路
-    this.refreshSecurityPattern()
-  }
-
-  private refreshSecurityPattern() {
-    this.securityPatternParams = []
   }
 
   /**
@@ -866,18 +908,18 @@ export class DrawStampUtils {
     const angleRangeRad = (this.securityPattern.securityPatternAngleRange * Math.PI) / 180
 
     // 如果需要刷新或者参数数组为空,则重新生成参数
-    if (forceRefresh || this.securityPatternParams.length === 0) {
-      this.securityPatternParams = []
+    if (forceRefresh ||  this.drawStampConfigs.securityPattern.securityPatternParams.length === 0) {
+      this.drawStampConfigs.securityPattern.securityPatternParams = []
       for (let i = 0; i < this.securityPattern.securityPatternCount; i++) {
         const angle = Math.random() * Math.PI * 2
         const normalAngle = Math.atan2(radiusY * Math.cos(angle), radiusX * Math.sin(angle))
         const lineAngle = normalAngle + (Math.random() - 0.5) * angleRangeRad
-        this.securityPatternParams.push({ angle, lineAngle })
+        this.drawStampConfigs.securityPattern.securityPatternParams.push({ angle, lineAngle })
       }
     }
 
     // 使用保存的参数绘制纹路
-    this.securityPatternParams.forEach(({ angle, lineAngle }) => {
+    this.drawStampConfigs.securityPattern.securityPatternParams.forEach(({ angle, lineAngle }) => {
       const x = centerX + radiusX * Math.cos(angle)
       const y = centerY + radiusY * Math.sin(angle)
 
@@ -1091,7 +1133,7 @@ export class DrawStampUtils {
     const data = imageData.data
 
     // 使用保存的参数应用做旧效果
-    this.agingEffectParams.forEach((param) => {
+    this.drawStampConfigs.agingEffect.agingEffectParams.forEach((param) => {
       const { x, y, noiseSize, noise, strongNoiseSize, strongNoise, fade, seed } = param
       const realX = x
       const realY = y
@@ -1136,8 +1178,8 @@ export class DrawStampUtils {
     const radius = (Math.max(width, height) / 2) * this.mmToPixel
 
     // 如果需要刷新或者参数数组为空,则重新生成参数
-    if (forceRefresh || this.agingEffectParams.length === 0) {
-      this.agingEffectParams = []
+    if (forceRefresh || this.drawStampConfigs.agingEffect.agingEffectParams.length === 0) {
+      this.drawStampConfigs.agingEffect.agingEffectParams = []
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const index = (y * width + x) * 4
@@ -1150,7 +1192,7 @@ export class DrawStampUtils {
           ) {
             const intensityFactor = this.drawStampConfigs.agingEffect.agingIntensity / 100 // 可以根据需要调整
             const seed = Math.random()
-            this.agingEffectParams.push({
+            this.drawStampConfigs.agingEffect.agingEffectParams.push({
               x,
               y,
               noiseSize: Math.random() * 3 + 1,
@@ -1166,7 +1208,7 @@ export class DrawStampUtils {
     }
 
     // 使用保存的参数应用做旧效果
-    this.agingEffectParams.forEach((param) => {
+    this.drawStampConfigs.agingEffect.agingEffectParams.forEach((param) => {
       const { x, y, noiseSize, noise, strongNoiseSize, strongNoise, fade, seed } = param
       const index = (y * width + x) * 4
 
@@ -1420,17 +1462,6 @@ export class DrawStampUtils {
       refreshOld
     )
   }
-
-  private agingEffectParams: Array<{
-    x: number
-    y: number
-    noiseSize: number
-    noise: number
-    strongNoiseSize: number
-    strongNoise: number
-    fade: number
-    seed: number
-  }> = []
 
   /**
    * 绘制印章
