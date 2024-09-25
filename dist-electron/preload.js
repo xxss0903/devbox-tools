@@ -59,6 +59,9 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     },
     onClipboardUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
     onClipboardImageUpdate: (callback) => electron_1.ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
-    deleteDiaryEntry: (date) => electron_1.ipcRenderer.invoke('delete-diary-entry', date)
+    deleteDiaryEntry: (date) => electron_1.ipcRenderer.invoke('delete-diary-entry', date),
+    executeCommand: (command) => electron_1.ipcRenderer.invoke('execute-command', command),
+    openPDFBoxApp: (filePath) => electron_1.ipcRenderer.invoke('open-pdfbox-app', filePath),
+    getFilePath: () => electron_1.ipcRenderer.invoke('get-file-path')
 });
 console.log('electronAPI exposed');

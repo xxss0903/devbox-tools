@@ -71,7 +71,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
   onClipboardImageUpdate: (callback: (dataUrl: string) => void) =>
     ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
-  deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date)
+  deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date),
+  executeCommand: (command: string) => ipcRenderer.invoke('execute-command', command),
+  openPDFBoxApp: (filePath: string) => ipcRenderer.invoke('open-pdfbox-app', filePath),
+  getFilePath: () => ipcRenderer.invoke('get-file-path')
 })
 
 console.log('electronAPI exposed')

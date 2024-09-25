@@ -19,6 +19,8 @@ import SvgEditor from './components/SvgEditor.vue'
 import Calculator from './components/Calculator.vue'
 import CanvasStampEditor from './components/CanvasStampEditor.vue'
 import StampEditor from './components/StampEditor.vue'
+import PDFTools from './components/PDFTools.vue'
+import PDFBoxApp from './components/PDFBoxApp.vue'
 
 const routes = [
   {
@@ -42,6 +44,11 @@ const routes = [
     name: 'ImageTools',
     component: ImageTools,
     meta: { title: '图片工具', searchable: true, keywords: ['image', 'tools', '图片', '工具'] }
+  },{
+    path: '/pdf-tools',
+    name: 'PDFTools',
+    component: PDFTools,
+    meta: { title: 'PDF工具', searchable: true, keywords: ['pdf', 'tools', 'pdf', '工具'] }
   },
   {
     path: '/image-compressor',
@@ -154,6 +161,12 @@ const routes = [
     name: 'StampEditor',
     component: StampEditor,
     meta: { title: '印章编辑器', searchable: true, keywords: ['stamp', 'editor', '印章', '编辑器'] }
+  },
+  {
+    path: '/pdf-box-app',
+    name: 'PDFBoxApp',
+    component: PDFBoxApp,
+    meta: { title: 'PDF结构工具', searchable: true, keywords: ['pdf', 'tools', 'pdf', '工具'] }
   }
 ]
 

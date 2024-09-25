@@ -575,3 +575,44 @@ function scheduleDailyAlarm(sender) {
 function triggerAlarm(sender) {
     createReminderWindow('您设置的提醒时间到了');
 }
+electron_1.ipcMain.handle('execute-command', async (_, command) => {
+    return new Promise((resolve, reject) => {
+        (0, child_process_1.exec)(command, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            }
+            else {
+                resolve(stdout);
+            }
+        });
+    });
+});
+// 打开pdf的接口工具
+electron_1.ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
+    return new Promise((resolve, reject) => {
+        const pdfBoxPath = path_1.default.join(electron_1.app.getAppPath(), 'public', 'pdfbox-app.jar');
+        (0, child_process_1.exec)(`java -jar "${pdfBoxPath}" debug "${filePath}"`, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            }
+            else {
+                resolve(stdout);
+            }
+        });
+    });
+});
+// 选择文件
+electron_1.ipcMain.handle('get-file-path', async (event, options) => {
+    const result = await electron_1.dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+            { name: 'PDF Files', extensions: ['pdf'] }
+        ]
+    });
+    if (result.canceled) {
+        return null;
+    }
+    else {
+        return result.filePaths[0];
+    }
+});
