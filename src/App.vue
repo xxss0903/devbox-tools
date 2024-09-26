@@ -235,11 +235,12 @@ const navigateToChild = (child: CustomModule) => {
 
 .container {
   display: flex;
-  max-width: 1200px;
+  max-width: 1400px;
   width: 100%;
   height: 90vh;
   background-color: #ffffff;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
 }
 
 .title-list {
