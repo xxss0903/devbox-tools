@@ -699,35 +699,37 @@ ipcMain.handle('execute-command', async (_, command) => {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        reject(error);
+        reject(error)
       } else {
-        resolve(stdout);
+        resolve(stdout)
       }
-    });
-  });
-});
+    })
+  })
+})
 
 // 打开pdf的接口工具
 ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
+  const javaPath = path.join(app.getAppPath(), 'public', 'jdk-17.0.12', 'bin', 'java')
+  const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
+  const command = `${javaPath} -jar "${pdfBoxPath}" debug "${filePath}"`
+  // const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
+
   return new Promise((resolve, reject) => {
-    const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar');
-    exec(`java -jar "${pdfBoxPath}" debug "${filePath}"`, (error, stdout, stderr) => {
+    exec(command, (error, stdout, stderr) => {
       if (error) {
-        reject(error);
+        reject(error)
       } else {
-        resolve(stdout);
+        resolve(stdout)
       }
-    });
-  });
-});
+    })
+  })
+})
 
 // 选择文件
 ipcMain.handle('get-file-path', async (event, options) => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
-    filters: [
-      { name: 'PDF Files', extensions: ['pdf'] }
-    ]
+    filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
   })
   if (result.canceled) {
     return null
