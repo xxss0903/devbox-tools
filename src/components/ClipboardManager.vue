@@ -183,10 +183,19 @@ const previewImage = async (imagePath: string) => {
   }
 }
 
+
 const isUrl = (str: string) => {
+  // 去除首尾空格
+  const trimmedStr = str.trim();
+  
+  // 检查去除空格后的字符串是否为空
+  if (!trimmedStr) {
+    return false;
+  }
+
   try {
-    new URL(str);
-    return true;
+    const url = new URL(trimmedStr);
+    return url.protocol === 'http:' || url.protocol === 'https:';
   } catch (_) {
     return false;
   }
