@@ -174,7 +174,7 @@ async function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false,
+      nodeIntegration: true,
       webviewTag: true,
       webSecurity: false, // 注意：这可能会带来安全风险，仅在开发环境使用
       sandbox: false,

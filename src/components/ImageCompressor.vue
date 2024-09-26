@@ -58,6 +58,7 @@ const handleFolderSelect = async () => {
 const handleDragEnter = (event: DragEvent) => {
   event.preventDefault()
   event.stopPropagation()
+  console.log('handleDragEnter', event.dataTransfer?.files)
   dragCounter.value++
   if (dragCounter.value === 1) {
     requestAnimationFrame(() => {
@@ -81,40 +82,23 @@ const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
   event.stopPropagation()
   dragCounter.value = 0
+  console.log('handleDrop', event.dataTransfer?.files)
   requestAnimationFrame(() => {
     isDragging.value = false
   })
 
   if (event.dataTransfer?.files) {
-    const files = Array.from(event.dataTransfer.files)
-      .filter((file) => file.path) // 确保文件有路径
-      .map((file) => file.path)
-
-    console.log('Dropped files:', files)
-
-    if (files.length > 0) {
-      try {
-        const processedFiles = await window.electronAPI.processDroppedFiles(files)
-        console.log('Processed files:', processedFiles)
-        nextTick(() => {
-          selectedFiles.value = [...selectedFiles.value, ...processedFiles]
-        })
-      } catch (error) {
-        console.error('Error processing dropped files:', error)
-      }
-    } else {
-      console.log('No valid files dropped')
+    let filesList = []
+    for (const file of event.dataTransfer.files) {
+      console.log('Dropped file:', file)
+      filesList.push(file)
     }
+    await addFiles(filesList)
   }
 }
 
 onMounted(() => {
-  window.electronAPI.handleFileDrop(async (processedFiles: any) => {
-    console.log('Received processed files:', processedFiles)
-    nextTick(() => {
-      selectedFiles.value = [...selectedFiles.value, ...processedFiles]
-    })
-  })
+  
 })
 
 const compressImages = async () => {
