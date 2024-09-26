@@ -50,13 +50,13 @@
       </ul>
     </div>
     <div v-if="showCopySuccess" class="copy-success-toast">复制成功！</div>
-  </div>
-  <div v-if="imagePreviewModal" class="modal">
+    <div v-if="imagePreviewModal" class="modal">
        <div class="modal-content">
          <span class="close" @click="imagePreviewModal = false">&times;</span>
          <img :src="imagePreviewSrc" alt="Image Preview" />
        </div>
      </div>
+  </div>
 </template>
 
 <script setup lang="ts">
