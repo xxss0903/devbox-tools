@@ -1,223 +1,287 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>OpenCV.js 文本检测</title>
+    <script src="https://docs.opencv.org/4.5.2/opencv.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  </head>
 
-<head>
-  <meta charset="utf-8">
-  <title>OpenCV.js 文本检测</title>
-  <script src="https://docs.opencv.org/4.5.2/opencv.js"></script>
-  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
-</head>
+  <body>
+    <h2>OpenCV.js 文本检测示例</h2>
+    <div>
+      <input type="file" id="fileInput" name="file" accept="image/*" />
+    </div>
+    <div>
+      <button id="edgeDetectButton">边缘检测</button>
+      <button id="ocrButton">OCR文本检测</button>
+      <button id="extractRedButton">提取红色</button>
+    </div>
+    <div class="inputoutput">
+      <img id="imageSrc" alt="No Image" />
+      <div class="caption">原图</div>
+    </div>
 
-<body>
-  <h2>OpenCV.js 文本检测示例</h2>
-  <div>
-    <input type="file" id="fileInput" name="file" accept="image/*" />
-  </div>
-  <div>
-    <button id="edgeDetectButton">边缘检测</button>
-    <button id="ocrButton">OCR文本检测</button>
-  </div>
-  <div class="inputoutput">
-    <img id="imageSrc" alt="No Image" />
-    <div class="caption">原图</div>
-  </div>
+    <div class="inputoutput">
+      <canvas id="edgeCanvas"></canvas>
+      <div class="caption">处理结果</div>
+    </div>
+    <div>
+      <pre id="result"></pre>
+    </div>
+    <script type="text/javascript">
+      let imgElement = document.getElementById('imageSrc')
+      let inputElement = document.getElementById('fileInput')
+      let edgeDetectButton = document.getElementById('edgeDetectButton')
+      let ocrButton = document.getElementById('ocrButton')
+      let canvasElement = document.getElementById('edgeCanvas')
+      let extractRedButton = document.getElementById('extractRedButton')
 
-  <div class="inputoutput">
-    <canvas id="edgeCanvas"></canvas>
-    <div class="caption">处理结果</div>
-  </div>
-  <div>
-    <pre id="result"></pre>
-  </div>
-  <script type="text/javascript">
-    let imgElement = document.getElementById('imageSrc');
-    let inputElement = document.getElementById('fileInput');
-    let edgeDetectButton = document.getElementById('edgeDetectButton');
-    let ocrButton = document.getElementById('ocrButton');
-    let canvasElement = document.getElementById('edgeCanvas');
+      inputElement.addEventListener(
+        'change',
+        (e) => {
+          imgElement.src = URL.createObjectURL(e.target.files[0])
+        },
+        false
+      )
 
+      edgeDetectButton.addEventListener('click', detectEdges)
+      ocrButton.addEventListener('click', performOCR)
+      extractRedButton.addEventListener('click', extractRed)
 
-    inputElement.addEventListener('change', (e) => {
-      imgElement.src = URL.createObjectURL(e.target.files[0]);
-    }, false);
+      function detectEdges() {
+        let mat = cv.imread(imgElement)
+        let edges = new cv.Mat()
+        cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY, 0)
+        cv.Canny(mat, edges, 50, 150, 3, false)
+        cv.imshow('edgeCanvas', edges)
+        mat.delete()
+        edges.delete()
+      }
 
-    edgeDetectButton.addEventListener('click', detectEdges);
-    ocrButton.addEventListener('click', performOCR);
+      imgElement.onload = function () {
+        canvasElement.width = imgElement.width
+        canvasElement.height = imgElement.height
+      }
 
-    function detectEdges() {
-      let mat = cv.imread(imgElement);
-      let edges = new cv.Mat();
-      cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY, 0);
-      cv.Canny(mat, edges, 50, 150, 3, false);
-      cv.imshow('edgeCanvas', edges);
-      mat.delete();
-      edges.delete();
-    }
+      async function performOCR() {
+        try {
+          // 计算图片中心
+          let centerX = canvasElement.width / 2
+          let centerY = canvasElement.height / 2
 
+          const worker = await Tesseract.createWorker('chi_sim')
+          const { data } = await worker.recognize(imgElement)
 
-    imgElement.onload = function () {
-      canvasElement.width = imgElement.width;
-      canvasElement.height = imgElement.height;
-    };
+          // 在canvas上绘制边框
+          let ctx = canvasElement.getContext('2d')
+          ctx.clearRect(0, 0, canvasElement.width, canvasElement.height)
+          ctx.drawImage(imgElement, 0, 0, canvasElement.width, canvasElement.height)
 
+          // 读取原始图像到 OpenCV Mat
+          let src = cv.imread(imgElement)
 
-    async function performOCR() {
-      try {
+          // 识别的单个文字
+          let charImgList = []
+          data.symbols.forEach((symbol) => {
+            let { bbox } = symbol
 
-        // 计算图片中心
-        let centerX = canvasElement.width / 2;
-        let centerY = canvasElement.height / 2;
+            // 计算文字中心
+            let wordCenterX = (bbox.x0 + bbox.x1) / 2
+            let wordCenterY = (bbox.y0 + bbox.y1) / 2
 
-        const worker = await Tesseract.createWorker('chi_sim');
-        const { data } = await worker.recognize(imgElement);
+            // 计算文字中心相对于图像中心的角度
+            let angle = Math.atan2(wordCenterY - centerY, wordCenterX - centerX)
+            // 将弧度转换为度数
+            let degrees = angle * (180 / Math.PI)
+            // 添加弧度值
+            let radians = angle.toFixed(1)
 
-        // 在canvas上绘制边框
-        let ctx = canvasElement.getContext('2d');
-        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        ctx.drawImage(imgElement, 0, 0, canvasElement.width, canvasElement.height);
+            ctx.strokeStyle = 'red'
+            ctx.lineWidth = 2
+            ctx.strokeRect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0)
 
-        // 读取原始图像到 OpenCV Mat
-        let src = cv.imread(imgElement);
+            // 裁剪文字框内容
+            let rect = new cv.Rect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0)
+            let croppedMat = src.roi(rect)
+            // 创建一个新的 canvas 来保存裁剪后的图像
+            let croppedCanvas = document.createElement('canvas')
+            cv.imshow(croppedCanvas, croppedMat)
+            // 将裁剪后的图像转换为 base64 格式
+            let imageData = croppedCanvas.toDataURL('image/png')
+            // 创建一个新的canvas来旋转图像
+            let rotatedCanvas = document.createElement('canvas')
+            let rotatedCtx = rotatedCanvas.getContext('2d')
 
-        // 识别的单个文字
-        let charImgList = [];
-        data.symbols.forEach(symbol => {
-          let { bbox } = symbol;
+            // 设置旋转后的canvas尺寸
+            rotatedCanvas.width = croppedMat.rows
+            rotatedCanvas.height = croppedMat.cols
 
-          // 计算文字中心
-          let wordCenterX = (bbox.x0 + bbox.x1) / 2;
-          let wordCenterY = (bbox.y0 + bbox.y1) / 2;
+            // 旋转图像
+            // 检查角度是否在-90度左右10度范围内
+            let rotateAngle = 0
+            console.log('char angle:', degrees)
+            if (degrees > -80 && degrees < 0) {
+              // 角度在-90到0，0到90的范围内，逆时针旋转
+              rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2)
+              rotateAngle = degrees + 90
+              rotatedCtx.rotate((-Math.abs(rotateAngle) * Math.PI) / 180)
+              rotatedCtx.drawImage(
+                croppedCanvas,
+                -croppedCanvas.width / 2,
+                -croppedCanvas.height / 2
+              )
+            } else if (degrees > 0 && degrees < 90) {
+              rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2)
+              rotateAngle = degrees + 90
+              rotatedCtx.rotate((-Math.abs(rotateAngle) * Math.PI) / 180)
+              rotatedCtx.drawImage(
+                croppedCanvas,
+                -croppedCanvas.width / 2,
+                -croppedCanvas.height / 2
+              )
+            } else if (degrees > -180 && degrees < -100) {
+              // 角度在90到180，180到-90的范围内，顺时针旋转
+              rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2)
+              rotateAngle = degrees + 90
+              rotatedCtx.rotate((Math.abs(rotateAngle) * Math.PI) / 180)
+              rotatedCtx.drawImage(
+                croppedCanvas,
+                -croppedCanvas.width / 2,
+                -croppedCanvas.height / 2
+              )
+            } else if (degrees > 100 && degrees < 180) {
+              rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2)
+              rotateAngle = degrees + 90
+              rotatedCtx.rotate((-Math.abs(rotateAngle) * Math.PI) / 180)
+              rotatedCtx.drawImage(
+                croppedCanvas,
+                -croppedCanvas.width / 2,
+                -croppedCanvas.height / 2
+              )
+            }
 
-          // 计算文字中心相对于图像中心的角度
-          let angle = Math.atan2(wordCenterY - centerY, wordCenterX - centerX);
-          // 将弧度转换为度数
-          let degrees = angle * (180 / Math.PI);
-          // 添加弧度值
-          let radians = angle.toFixed(1);
+            // 获取旋转后的图像数据
+            let rotatedImageData = rotatedCanvas.toDataURL('image/png')
 
-          ctx.strokeStyle = 'red';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
+            let charData = {
+              imgData: imageData,
+              bbox: bbox,
+              angle: degrees,
+              rotatedImageData: rotatedImageData,
+              rotateAngle: rotateAngle
+            }
+            charImgList.push(charData)
+            console.log('imageData:', charData, imageData, rotatedImageData)
 
-          // 裁剪文字框内容
-          let rect = new cv.Rect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
-          let croppedMat = src.roi(rect);
-          // 创建一个新的 canvas 来保存裁剪后的图像
-          let croppedCanvas = document.createElement('canvas');
-          cv.imshow(croppedCanvas, croppedMat);
-          // 将裁剪后的图像转换为 base64 格式
-          let imageData = croppedCanvas.toDataURL('image/png');
-          // 创建一个新的canvas来旋转图像
-          let rotatedCanvas = document.createElement('canvas');
-          let rotatedCtx = rotatedCanvas.getContext('2d');
+            // 释放 Mat 内存
+            croppedMat.delete()
 
-          // 设置旋转后的canvas尺寸
-          rotatedCanvas.width = croppedMat.rows;
-          rotatedCanvas.height = croppedMat.cols;
+            // 绘制从图片中心到文字中心的连线
+            ctx.beginPath()
+            ctx.moveTo(centerX, centerY)
+            ctx.lineTo(wordCenterX, wordCenterY)
+            ctx.strokeStyle = 'blue'
+            ctx.lineWidth = 1
+            ctx.stroke()
 
-          // 旋转图像
-          // 检查角度是否在-90度左右10度范围内
-          let rotateAngle = 0;
-          console.log("char angle:", degrees);
-          if (degrees > -80 && degrees < 0) {
-            // 角度在-90到0，0到90的范围内，逆时针旋转
-            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-            rotateAngle = degrees + 90
-            rotatedCtx.rotate(-Math.abs(rotateAngle) * Math.PI / 180);
-            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
-          } else if (degrees > 0 && degrees < 90) {
-            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-            rotateAngle = degrees + 90
-            rotatedCtx.rotate(-Math.abs(rotateAngle) * Math.PI / 180);
-            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
-          } else if ((degrees > -180 && degrees < -100)) {
-            // 角度在90到180，180到-90的范围内，顺时针旋转
-            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-            rotateAngle = (degrees + 90);
-            rotatedCtx.rotate(Math.abs(rotateAngle) * Math.PI / 180);
-            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
-          } else if (degrees > 100 && degrees < 180) {
-            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-            rotateAngle = (degrees + 90);
-            rotatedCtx.rotate(-Math.abs(rotateAngle) * Math.PI / 180);
-            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
+            // 在连线旁边显示角度
+            ctx.fillStyle = 'green'
+            ctx.font = '12px Arial'
+            ctx.fillText(
+              `${degrees.toFixed(1)}°`,
+              (centerX + wordCenterX) / 2,
+              (centerY + wordCenterY) / 2
+            )
+          })
+
+          // 对charImgList中的rotatedImageData进行单个OCR识别
+          let ocrResults = []
+          for (let i = 0; i < charImgList.length; i++) {
+            let charData = charImgList[i]
+            let rotatedImageData = charData.rotatedImageData
+
+            // 创建一个新的Image对象
+            let img = new Image()
+            img.src = rotatedImageData
+
+            // 等待图像加载完成
+            await new Promise((resolve) => {
+              img.onload = resolve
+            })
+
+            // 创建canvas并绘制旋转后的图像
+            let canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            let ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0)
+
+            // 对单个字符进行OCR识别
+            let result = await worker.recognize(rotatedImageData)
+
+            // 将OCR结果添加到charData中
+            charData.ocrText = result.data.text.trim()
+            ocrResults.push(charData.ocrText)
+
+            console.log(`字符 ${i + 1} OCR 结果:`, charData.ocrText, rotatedImageData)
           }
 
-          // 获取旋转后的图像数据
-          let rotatedImageData = rotatedCanvas.toDataURL('image/png');
+          // 更新OCR结果显示
+          document.getElementById('result').innerText +=
+            `\n单个字符识别结果：${ocrResults.join(', ')}`
+          console.log('data:', data)
+          await worker.terminate()
 
-          let charData = { imgData: imageData, bbox: bbox, angle: degrees, rotatedImageData: rotatedImageData, rotateAngle: rotateAngle };
-          charImgList.push(charData);
-          console.log("imageData:", charData, imageData, rotatedImageData);
-
-
-          // 释放 Mat 内存
-          croppedMat.delete();
-
-          // 绘制从图片中心到文字中心的连线
-          ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          ctx.lineTo(wordCenterX, wordCenterY);
-          ctx.strokeStyle = 'blue';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          // 在连线旁边显示角度
-          ctx.fillStyle = 'green';
-          ctx.font = '12px Arial';
-          ctx.fillText(`${degrees.toFixed(1)}°`, (centerX + wordCenterX) / 2, (centerY + wordCenterY) / 2);
-
-        });
-
-        // 对charImgList中的rotatedImageData进行单个OCR识别
-        let ocrResults = [];
-        for (let i = 0; i < charImgList.length; i++) {
-          let charData = charImgList[i];
-          let rotatedImageData = charData.rotatedImageData;
-          
-          // 创建一个新的Image对象
-          let img = new Image();
-          img.src = rotatedImageData;
-          
-          // 等待图像加载完成
-          await new Promise((resolve) => {
-            img.onload = resolve;
-          });
-
-          // 创建canvas并绘制旋转后的图像
-          let canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          let ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-
-          // 对单个字符进行OCR识别
-          let result = await worker.recognize(rotatedImageData);
-          
-          // 将OCR结果添加到charData中
-          charData.ocrText = result.data.text.trim();
-          ocrResults.push(charData.ocrText);
-
-          console.log(`字符 ${i + 1} OCR 结果:`, charData.ocrText, rotatedImageData);
+          // 显示OCR结果
+          document.getElementById('result').innerText = `OCR 文本检测结果：\n`
+        } catch (error) {
+          console.error('OCR 错误:', error)
+          document.getElementById('result').innerText = 'OCR 处理过程中发生错误'
         }
-
-
-
-        // 更新OCR结果显示
-        document.getElementById('result').innerText += `\n单个字符识别结果：${ocrResults.join(', ')}`;
-        console.log("data:", data);
-        await worker.terminate();
-
-        // 显示OCR结果
-        document.getElementById('result').innerText = `OCR 文本检测结果：\n`;
-      } catch (error) {
-        console.error('OCR 错误:', error);
-        document.getElementById('result').innerText = 'OCR 处理过程中发生错误';
       }
-    }
 
-    // ... 其他现有代码 ...
-  </script>
-</body>
+      function extractRed() {
+        let src = cv.imread(imgElement)
+        let dst = new cv.Mat()
+        let mask = new cv.Mat()
 
+        // 转换为HSV颜色空间
+        cv.cvtColor(src, dst, cv.COLOR_RGBA2RGB)
+        cv.cvtColor(dst, dst, cv.COLOR_RGB2HSV)
+
+        // 定义红色的HSV范围
+        let lowRedA = new cv.Mat(dst.rows, dst.cols, dst.type(), [0, 100, 100, 0])
+        let highRedA = new cv.Mat(dst.rows, dst.cols, dst.type(), [10, 255, 255, 255])
+        let lowRedB = new cv.Mat(dst.rows, dst.cols, dst.type(), [160, 100, 100, 0])
+        let highRedB = new cv.Mat(dst.rows, dst.cols, dst.type(), [180, 255, 255, 255])
+
+        // 创建掩码
+        let maskA = new cv.Mat()
+        let maskB = new cv.Mat()
+        cv.inRange(dst, lowRedA, highRedA, maskA)
+        cv.inRange(dst, lowRedB, highRedB, maskB)
+        cv.add(maskA, maskB, mask)
+
+        // 应用掩码到原始图像
+        cv.bitwise_and(src, src, dst, mask)
+
+        // 显示结果
+        cv.imshow('edgeCanvas', dst)
+
+        // 释放内存
+        src.delete()
+        dst.delete()
+        mask.delete()
+        maskA.delete()
+        maskB.delete()
+        lowRedA.delete()
+        highRedA.delete()
+        lowRedB.delete()
+        highRedB.delete()
+      }
+
+      // ... 其他现有的JavaScript代码 ...
+    </script>
+  </body>
 </html>
