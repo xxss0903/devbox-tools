@@ -2,143 +2,89 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>OpenCV.js 圆形检测和文字识别</title>
-<script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
+<title>OpenCV.js 文本检测</title>
+<script src="https://docs.opencv.org/4.5.2/opencv.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 </head>
 <body>
-<h2>OpenCV.js 圆形检测和文字识别</h2>
-<p id="status">OpenCV.js 正在加载...</p>
+<h2>OpenCV.js 文本检测示例</h2>
 <div>
-  <div class="inputoutput">
-    <img id="imageSrc" alt="无图像" />
-    <div class="caption">输入图像 <input type="file" id="fileInput" name="file" /></div>
-  </div>
-  <div class="inputoutput">
-    <canvas id="canvasOutput" ></canvas>
-    <div class="caption">输出结果</div>
-  </div>
+  <input type="file" id="fileInput" name="file" accept="image/*" />
 </div>
 <div>
-  <button id="detectCircles">检测圆形</button>
-  <button id="detectText">识别文字</button>
+  <button id="edgeDetectButton">边缘检测</button>
+  <button id="ocrButton">OCR文本检测</button>
 </div>
-<div id="shapeInfo"></div>
-<div id="textInfo"></div>
+<div class="inputoutput">
+  <img id="imageSrc" alt="No Image" />
+  <div class="caption">原图</div>
+</div>
+
+<div class="inputoutput">
+  <canvas id="edgeCanvas"></canvas>
+  <div class="caption">处理结果</div>
+</div>
+<div>
+  <pre id="result"></pre>
+</div>
 <script type="text/javascript">
 let imgElement = document.getElementById('imageSrc');
 let inputElement = document.getElementById('fileInput');
+let edgeDetectButton = document.getElementById('edgeDetectButton');
+let ocrButton = document.getElementById('ocrButton');
+let canvasElement = document.getElementById('edgeCanvas');
+
+
 inputElement.addEventListener('change', (e) => {
   imgElement.src = URL.createObjectURL(e.target.files[0]);
 }, false);
 
-function detectCircles(src) {
-  let gray = new cv.Mat();
+edgeDetectButton.addEventListener('click', detectEdges);
+ocrButton.addEventListener('click', performOCR);
+
+function detectEdges() {
+  let mat = cv.imread(imgElement);
   let edges = new cv.Mat();
-  let hierarchy = new cv.Mat();
-  let contours = new cv.MatVector();
-  
-  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-  cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-  cv.Canny(gray, edges, 50, 150, 3, false);
-  cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-  
-  let shapeInfoDiv = document.getElementById('shapeInfo');
-  shapeInfoDiv.innerHTML = '';
-  
-  let circleCount = 0;
-  let detectedCircles = [];
-  
-  for (let i = 0; i < contours.size(); ++i) {
-    let cnt = contours.get(i);
-    let area = cv.contourArea(cnt);
-    let perimeter = cv.arcLength(cnt, true);
-    
-    let circularity = 4 * Math.PI * area / (perimeter * perimeter);
-    
-    if (circularity > 0.8 && area > 1000) {
-      circleCount++;
-      
-      let rect = cv.minAreaRect(cnt);
-      let center = rect.center;
-      let radius = Math.max(rect.size.width, rect.size.height) / 2;
-      
-      cv.circle(src, center, radius, new cv.Scalar(255, 0, 0), 3);
-      
-      shapeInfoDiv.innerHTML += `圆 ${circleCount}: 中心(${center.x.toFixed(2)}, ${center.y.toFixed(2)}), 半径 ${radius.toFixed(2)}<br>`;
-      
-      detectedCircles.push({center: center, radius: radius});
-    }
-    cnt.delete();
-  }
-  
-  shapeInfoDiv.innerHTML = `检测到 ${circleCount} 个圆形：<br>` + shapeInfoDiv.innerHTML;
-  cv.imshow('canvasOutput', src);
-
-  gray.delete(); edges.delete(); hierarchy.delete(); contours.delete();
-  
-  return detectedCircles;
+  cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY, 0);
+  cv.Canny(mat, edges, 50, 150, 3, false);
+  cv.imshow('edgeCanvas', edges);
+  mat.delete();
+  edges.delete();
 }
 
-async function detectText(src, circles) {
-  let textInfoDiv = document.getElementById('textInfo');
-  textInfoDiv.innerHTML = '';
-  
-  for (let i = 0; i < circles.length; i++) {
-    let {center, radius} = circles[i];
-    
-    let mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
-    cv.circle(mask, center, radius * 0.9, new cv.Scalar(255, 255, 255), -1);
-    let roi = new cv.Mat();
-    cv.bitwise_and(src, src, roi, mask);
-    
-    cv.imshow('canvasOutput', roi);
-    let dataURL = document.getElementById('canvasOutput').toDataURL();
-    
-    try {
-      const result = await Tesseract.recognize(dataURL, 'chi_sim', { 
-        logger: m => console.log(m),
-        rectangle: { 
-          top: Math.max(0, center.y - radius),
-          left: Math.max(0, center.x - radius),
-          width: radius * 2,
-          height: radius * 2
-        }
-      });
-      textInfoDiv.innerHTML += `圆 ${i+1} 内的文字：<br>${result.data.text}<br><br>`;
-    } catch (error) {
-      console.error('文字检测出错:', error);
-      textInfoDiv.innerHTML += `圆 ${i+1} 内的文字检测失败<br><br>`;
-    }
-    
-    mask.delete();
-    roi.delete();
-  }
-}
 
-let detectedCircles = [];
-
-document.getElementById('detectCircles').addEventListener('click', function() {
-  let src = cv.imread(imgElement);
-  detectedCircles = detectCircles(src);
-  src.delete();
-});
-
-document.getElementById('detectText').addEventListener('click', async function() {
-  if (detectedCircles.length === 0) {
-    alert('请先检测圆形！');
-    return;
-  }
-  let src = cv.imread(imgElement);
-  await detectText(src, detectedCircles);
-  src.delete();
-});
-
-var Module = {
-  onRuntimeInitialized() {
-    document.getElementById('status').innerHTML = 'OpenCV.js 已准备就绪。';
-  }
+imgElement.onload = function() {
+    canvasElement.width = imgElement.width;
+    canvasElement.height = imgElement.height;
 };
+
+
+async function performOCR() {
+  try {
+    const worker = await Tesseract.createWorker('chi_sim');
+    const { data } = await worker.recognize(imgElement);
+    console.log("data:", data);
+    await worker.terminate();
+    // 在canvas上绘制边框
+    let ctx = canvasElement.getContext('2d');
+    ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    ctx.drawImage(imgElement, 0, 0, canvasElement.width, canvasElement.height);
+
+    data.symbols.forEach(symbol => {
+      let { bbox } = symbol;      
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
+    });
+    // 显示OCR结果
+    document.getElementById('result').innerText = `OCR 文本检测结果：\n`;
+  } catch (error) {
+    console.error('OCR 错误:', error);
+    document.getElementById('result').innerText = 'OCR 处理过程中发生错误';
+  }
+}
+
+// ... 其他现有代码 ...
 </script>
-<script async src="opencv.js" type="text/javascript"></script>
 </body>
 </html>
