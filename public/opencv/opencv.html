@@ -77,6 +77,11 @@
         ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         ctx.drawImage(imgElement, 0, 0, canvasElement.width, canvasElement.height);
 
+        // 读取原始图像到 OpenCV Mat
+        let src = cv.imread(imgElement);
+
+        // 识别的单个文字
+        let charImgList = [];
         data.symbols.forEach(symbol => {
           let { bbox } = symbol;
 
@@ -84,10 +89,71 @@
           let wordCenterX = (bbox.x0 + bbox.x1) / 2;
           let wordCenterY = (bbox.y0 + bbox.y1) / 2;
 
+          // 计算文字中心相对于图像中心的角度
+          let angle = Math.atan2(wordCenterY - centerY, wordCenterX - centerX);
+          // 将弧度转换为度数
+          let degrees = angle * (180 / Math.PI);
+          // 添加弧度值
+          let radians = angle.toFixed(1);
+
           ctx.strokeStyle = 'red';
           ctx.lineWidth = 2;
           ctx.strokeRect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
 
+          // 裁剪文字框内容
+          let rect = new cv.Rect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
+          let croppedMat = src.roi(rect);
+          // 创建一个新的 canvas 来保存裁剪后的图像
+          let croppedCanvas = document.createElement('canvas');
+          cv.imshow(croppedCanvas, croppedMat);
+          // 将裁剪后的图像转换为 base64 格式
+          let imageData = croppedCanvas.toDataURL('image/png');
+          // 创建一个新的canvas来旋转图像
+          let rotatedCanvas = document.createElement('canvas');
+          let rotatedCtx = rotatedCanvas.getContext('2d');
+
+          // 设置旋转后的canvas尺寸
+          rotatedCanvas.width = croppedMat.rows;
+          rotatedCanvas.height = croppedMat.cols;
+
+          // 旋转图像
+          // 检查角度是否在-90度左右10度范围内
+          let rotateAngle = 0;
+          console.log("char angle:", degrees);
+          if (degrees > -80 && degrees < 0) {
+            // 角度在-90到0，0到90的范围内，逆时针旋转
+            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+            rotateAngle = degrees + 90
+            rotatedCtx.rotate(-Math.abs(rotateAngle) * Math.PI / 180);
+            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
+          } else if (degrees > 0 && degrees < 90) {
+            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+            rotateAngle = degrees + 90
+            rotatedCtx.rotate(-Math.abs(rotateAngle) * Math.PI / 180);
+            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
+          } else if ((degrees > -180 && degrees < -100)) {
+            // 角度在90到180，180到-90的范围内，顺时针旋转
+            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+            rotateAngle = (degrees + 90);
+            rotatedCtx.rotate(Math.abs(rotateAngle) * Math.PI / 180);
+            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
+          } else if (degrees > 100 && degrees < 180) {
+            rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+            rotateAngle = (degrees + 90);
+            rotatedCtx.rotate(-Math.abs(rotateAngle) * Math.PI / 180);
+            rotatedCtx.drawImage(croppedCanvas, -croppedCanvas.width / 2, -croppedCanvas.height / 2);
+          }
+
+          // 获取旋转后的图像数据
+          let rotatedImageData = rotatedCanvas.toDataURL('image/png');
+
+          let charData = { imgData: imageData, bbox: bbox, angle: degrees, rotatedImageData: rotatedImageData, rotateAngle: rotateAngle };
+          charImgList.push(charData);
+          console.log("imageData:", charData, imageData, rotatedImageData);
+
+
+          // 释放 Mat 内存
+          croppedMat.delete();
 
           // 绘制从图片中心到文字中心的连线
           ctx.beginPath();
@@ -96,6 +162,12 @@
           ctx.strokeStyle = 'blue';
           ctx.lineWidth = 1;
           ctx.stroke();
+
+          // 在连线旁边显示角度
+          ctx.fillStyle = 'green';
+          ctx.font = '12px Arial';
+          ctx.fillText(`${degrees.toFixed(1)}°`, (centerX + wordCenterX) / 2, (centerY + wordCenterY) / 2);
+
         });
         // 显示OCR结果
         document.getElementById('result').innerText = `OCR 文本检测结果：\n`;
