@@ -1,90 +1,112 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>OpenCV.js 文本检测</title>
-<script src="https://docs.opencv.org/4.5.2/opencv.js"></script>
-<script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+  <meta charset="utf-8">
+  <title>OpenCV.js 文本检测</title>
+  <script src="https://docs.opencv.org/4.5.2/opencv.js"></script>
+  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 </head>
+
 <body>
-<h2>OpenCV.js 文本检测示例</h2>
-<div>
-  <input type="file" id="fileInput" name="file" accept="image/*" />
-</div>
-<div>
-  <button id="edgeDetectButton">边缘检测</button>
-  <button id="ocrButton">OCR文本检测</button>
-</div>
-<div class="inputoutput">
-  <img id="imageSrc" alt="No Image" />
-  <div class="caption">原图</div>
-</div>
+  <h2>OpenCV.js 文本检测示例</h2>
+  <div>
+    <input type="file" id="fileInput" name="file" accept="image/*" />
+  </div>
+  <div>
+    <button id="edgeDetectButton">边缘检测</button>
+    <button id="ocrButton">OCR文本检测</button>
+  </div>
+  <div class="inputoutput">
+    <img id="imageSrc" alt="No Image" />
+    <div class="caption">原图</div>
+  </div>
 
-<div class="inputoutput">
-  <canvas id="edgeCanvas"></canvas>
-  <div class="caption">处理结果</div>
-</div>
-<div>
-  <pre id="result"></pre>
-</div>
-<script type="text/javascript">
-let imgElement = document.getElementById('imageSrc');
-let inputElement = document.getElementById('fileInput');
-let edgeDetectButton = document.getElementById('edgeDetectButton');
-let ocrButton = document.getElementById('ocrButton');
-let canvasElement = document.getElementById('edgeCanvas');
-
-
-inputElement.addEventListener('change', (e) => {
-  imgElement.src = URL.createObjectURL(e.target.files[0]);
-}, false);
-
-edgeDetectButton.addEventListener('click', detectEdges);
-ocrButton.addEventListener('click', performOCR);
-
-function detectEdges() {
-  let mat = cv.imread(imgElement);
-  let edges = new cv.Mat();
-  cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY, 0);
-  cv.Canny(mat, edges, 50, 150, 3, false);
-  cv.imshow('edgeCanvas', edges);
-  mat.delete();
-  edges.delete();
-}
+  <div class="inputoutput">
+    <canvas id="edgeCanvas"></canvas>
+    <div class="caption">处理结果</div>
+  </div>
+  <div>
+    <pre id="result"></pre>
+  </div>
+  <script type="text/javascript">
+    let imgElement = document.getElementById('imageSrc');
+    let inputElement = document.getElementById('fileInput');
+    let edgeDetectButton = document.getElementById('edgeDetectButton');
+    let ocrButton = document.getElementById('ocrButton');
+    let canvasElement = document.getElementById('edgeCanvas');
 
 
-imgElement.onload = function() {
-    canvasElement.width = imgElement.width;
-    canvasElement.height = imgElement.height;
-};
+    inputElement.addEventListener('change', (e) => {
+      imgElement.src = URL.createObjectURL(e.target.files[0]);
+    }, false);
+
+    edgeDetectButton.addEventListener('click', detectEdges);
+    ocrButton.addEventListener('click', performOCR);
+
+    function detectEdges() {
+      let mat = cv.imread(imgElement);
+      let edges = new cv.Mat();
+      cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY, 0);
+      cv.Canny(mat, edges, 50, 150, 3, false);
+      cv.imshow('edgeCanvas', edges);
+      mat.delete();
+      edges.delete();
+    }
 
 
-async function performOCR() {
-  try {
-    const worker = await Tesseract.createWorker('chi_sim');
-    const { data } = await worker.recognize(imgElement);
-    console.log("data:", data);
-    await worker.terminate();
-    // 在canvas上绘制边框
-    let ctx = canvasElement.getContext('2d');
-    ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    ctx.drawImage(imgElement, 0, 0, canvasElement.width, canvasElement.height);
+    imgElement.onload = function () {
+      canvasElement.width = imgElement.width;
+      canvasElement.height = imgElement.height;
+    };
 
-    data.symbols.forEach(symbol => {
-      let { bbox } = symbol;      
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
-    });
-    // 显示OCR结果
-    document.getElementById('result').innerText = `OCR 文本检测结果：\n`;
-  } catch (error) {
-    console.error('OCR 错误:', error);
-    document.getElementById('result').innerText = 'OCR 处理过程中发生错误';
-  }
-}
 
-// ... 其他现有代码 ...
-</script>
+    async function performOCR() {
+      try {
+
+        // 计算图片中心
+        let centerX = canvasElement.width / 2;
+        let centerY = canvasElement.height / 2;
+
+        const worker = await Tesseract.createWorker('chi_sim');
+        const { data } = await worker.recognize(imgElement);
+        console.log("data:", data);
+        await worker.terminate();
+        // 在canvas上绘制边框
+        let ctx = canvasElement.getContext('2d');
+        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        ctx.drawImage(imgElement, 0, 0, canvasElement.width, canvasElement.height);
+
+        data.symbols.forEach(symbol => {
+          let { bbox } = symbol;
+
+          // 计算文字中心
+          let wordCenterX = (bbox.x0 + bbox.x1) / 2;
+          let wordCenterY = (bbox.y0 + bbox.y1) / 2;
+
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
+
+
+          // 绘制从图片中心到文字中心的连线
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.lineTo(wordCenterX, wordCenterY);
+          ctx.strokeStyle = 'blue';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+        // 显示OCR结果
+        document.getElementById('result').innerText = `OCR 文本检测结果：\n`;
+      } catch (error) {
+        console.error('OCR 错误:', error);
+        document.getElementById('result').innerText = 'OCR 处理过程中发生错误';
+      }
+    }
+
+    // ... 其他现有代码 ...
+  </script>
 </body>
+
 </html>
