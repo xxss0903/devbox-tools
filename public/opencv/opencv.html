@@ -263,8 +263,11 @@
         cv.inRange(dst, lowRedB, highRedB, maskB)
         cv.add(maskA, maskB, mask)
 
-        // 应用掩码到原始图像
-        cv.bitwise_and(src, src, dst, mask)
+        // 创建纯红色图像
+        let red = new cv.Mat(src.rows, src.cols, src.type(), [255, 0, 0, 255])
+
+        // 使用掩码将红色区域设置为纯红色
+        red.copyTo(dst, mask)
 
         // 显示结果
         cv.imshow('edgeCanvas', dst)
@@ -279,8 +282,8 @@
         highRedA.delete()
         lowRedB.delete()
         highRedB.delete()
+        red.delete()
       }
-
       // ... 其他现有的JavaScript代码 ...
     </script>
   </body>
