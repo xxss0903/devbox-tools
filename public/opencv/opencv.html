@@ -70,8 +70,7 @@
 
         const worker = await Tesseract.createWorker('chi_sim');
         const { data } = await worker.recognize(imgElement);
-        console.log("data:", data);
-        await worker.terminate();
+
         // 在canvas上绘制边框
         let ctx = canvasElement.getContext('2d');
         ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -169,6 +168,46 @@
           ctx.fillText(`${degrees.toFixed(1)}°`, (centerX + wordCenterX) / 2, (centerY + wordCenterY) / 2);
 
         });
+
+        // 对charImgList中的rotatedImageData进行单个OCR识别
+        let ocrResults = [];
+        for (let i = 0; i < charImgList.length; i++) {
+          let charData = charImgList[i];
+          let rotatedImageData = charData.rotatedImageData;
+          
+          // 创建一个新的Image对象
+          let img = new Image();
+          img.src = rotatedImageData;
+          
+          // 等待图像加载完成
+          await new Promise((resolve) => {
+            img.onload = resolve;
+          });
+
+          // 创建canvas并绘制旋转后的图像
+          let canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          let ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          // 对单个字符进行OCR识别
+          let result = await worker.recognize(rotatedImageData);
+          
+          // 将OCR结果添加到charData中
+          charData.ocrText = result.data.text.trim();
+          ocrResults.push(charData.ocrText);
+
+          console.log(`字符 ${i + 1} OCR 结果:`, charData.ocrText, rotatedImageData);
+        }
+
+
+
+        // 更新OCR结果显示
+        document.getElementById('result').innerText += `\n单个字符识别结果：${ocrResults.join(', ')}`;
+        console.log("data:", data);
+        await worker.terminate();
+
         // 显示OCR结果
         document.getElementById('result').innerText = `OCR 文本检测结果：\n`;
       } catch (error) {
