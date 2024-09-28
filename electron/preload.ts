@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  createScreenBlocker: (duration: number) => ipcRenderer.invoke('create-screen-blocker', duration),
   setDailyWorkDiaryAlarm: () => ipcRenderer.send('set-daily-work-diary-alarm'),
   // 工作提醒
   setReminder: (time: string) => ipcRenderer.send('set-reminder', time),

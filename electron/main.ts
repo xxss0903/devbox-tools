@@ -737,3 +737,32 @@ ipcMain.handle('get-file-path', async (event, options) => {
     return result.filePaths[0]
   }
 })
+
+let blockerWindow: BrowserWindow | null = null
+// 屏幕关闭
+// 创建遮挡整个屏幕的窗口
+function createScreenBlocker() {
+  blockerWindow = new BrowserWindow({
+    fullscreen: true,
+    frame: false,
+    alwaysOnTop: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+
+  blockerWindow.loadFile(path.join(__dirname, '../public/blocker.html'))
+}
+
+// 注册 IPC 处理程序来创建屏幕遮挡器
+ipcMain.handle('create-screen-blocker', (event, duration) => {
+  createScreenBlocker()
+  setTimeout(() => {
+    if (blockerWindow) {
+      blockerWindow.close()
+    }
+  }, duration * 1000)
+  return '屏幕遮挡器已创建'
+})

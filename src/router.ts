@@ -21,6 +21,7 @@ import CanvasStampEditor from './components/CanvasStampEditor.vue'
 import StampEditor from './components/StampEditor.vue'
 import PDFTools from './components/PDFTools.vue'
 import PDFBoxApp from './components/PDFBoxApp.vue'
+import ScreenBlocker from './components/ScreenBlocker.vue'
 
 const routes = [
   {
@@ -44,7 +45,8 @@ const routes = [
     name: 'ImageTools',
     component: ImageTools,
     meta: { title: '图片工具', searchable: true, keywords: ['image', 'tools', '图片', '工具'] }
-  },{
+  },
+  {
     path: '/pdf-tools',
     name: 'PDFTools',
     component: PDFTools,
@@ -167,6 +169,16 @@ const routes = [
     name: 'PDFBoxApp',
     component: PDFBoxApp,
     meta: { title: 'PDF结构工具', searchable: true, keywords: ['pdf', 'tools', 'pdf', '工具'] }
+  },
+  {
+    path: '/screen-blocker',
+    name: 'ScreenBlocker',
+    component: ScreenBlocker,
+    meta: {
+      title: '休息提醒',
+      searchable: true,
+      keywords: ['屏幕关闭', 'tools', 'ScreenBolocker', '休息']
+    }
   }
 ]
 

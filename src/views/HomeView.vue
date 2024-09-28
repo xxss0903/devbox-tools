@@ -54,6 +54,11 @@ const defaultTools = [
     name: '计算器',
     route: 'Calculator',
     image: 'https://img.icons8.com/?size=100&id=41LOFTWPsRas&format=png&color=000000'
+  },
+  {
+    name: '休息提醒',
+    route: 'ScreenBlocker',
+    image: 'https://img.icons8.com/?size=100&id=13841&format=png&color=000000'
   }
 ]
 

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    createScreenBlocker: (duration) => electron_1.ipcRenderer.invoke('create-screen-blocker', duration),
     setDailyWorkDiaryAlarm: () => electron_1.ipcRenderer.send('set-daily-work-diary-alarm'),
     // 工作提醒
     setReminder: (time) => electron_1.ipcRenderer.send('set-reminder', time),

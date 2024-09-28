@@ -589,9 +589,12 @@ electron_1.ipcMain.handle('execute-command', async (_, command) => {
 });
 // 打开pdf的接口工具
 electron_1.ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
+    const javaPath = path_1.default.join(electron_1.app.getAppPath(), 'public', 'jdk-17.0.12', 'bin', 'java');
+    const pdfBoxPath = path_1.default.join(electron_1.app.getAppPath(), 'public', 'pdfbox-app.jar');
+    const command = `${javaPath} -jar "${pdfBoxPath}" debug "${filePath}"`;
+    // const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
     return new Promise((resolve, reject) => {
-        const pdfBoxPath = path_1.default.join(electron_1.app.getAppPath(), 'public', 'pdfbox-app.jar');
-        (0, child_process_1.exec)(`java -jar "${pdfBoxPath}" debug "${filePath}"`, (error, stdout, stderr) => {
+        (0, child_process_1.exec)(command, (error, stdout, stderr) => {
             if (error) {
                 reject(error);
             }
@@ -605,9 +608,7 @@ electron_1.ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
 electron_1.ipcMain.handle('get-file-path', async (event, options) => {
     const result = await electron_1.dialog.showOpenDialog({
         properties: ['openFile'],
-        filters: [
-            { name: 'PDF Files', extensions: ['pdf'] }
-        ]
+        filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
     });
     if (result.canceled) {
         return null;
@@ -615,4 +616,30 @@ electron_1.ipcMain.handle('get-file-path', async (event, options) => {
     else {
         return result.filePaths[0];
     }
+});
+let blockerWindow = null;
+// 屏幕关闭
+// 创建遮挡整个屏幕的窗口
+function createScreenBlocker() {
+    blockerWindow = new electron_1.BrowserWindow({
+        fullscreen: true,
+        frame: false,
+        alwaysOnTop: true,
+        webPreferences: {
+            preload: path_1.default.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+    });
+    blockerWindow.loadFile(path_1.default.join(__dirname, '../public/blocker.html'));
+}
+// 注册 IPC 处理程序来创建屏幕遮挡器
+electron_1.ipcMain.handle('create-screen-blocker', (event, duration) => {
+    createScreenBlocker();
+    setTimeout(() => {
+        if (blockerWindow) {
+            blockerWindow.close();
+        }
+    }, duration * 1000);
+    return '屏幕遮挡器已创建';
 });

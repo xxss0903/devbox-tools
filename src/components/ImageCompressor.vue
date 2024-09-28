@@ -97,9 +97,7 @@ const handleDrop = async (event: DragEvent) => {
   }
 }
 
-onMounted(() => {
-  
-})
+onMounted(() => {})
 
 const compressImages = async () => {
   isCompressing.value = true
@@ -163,20 +161,20 @@ const downloadCompressedImages = async () => {
     const file = compressedFiles.value[0]
     const link = document.createElement('a')
     link.href = file.data
-    link.download = file.name  // 使用原始文件名
+    link.download = file.name // 使用原始文件名
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   } else {
     // 如果有多个文件,创建zip文件
     const zip = new JSZip()
-    
+
     for (const file of compressedFiles.value) {
       const base64Data = file.data.split(',')[1]
-      zip.file(file.name, base64Data, {base64: true})  // 使用原始文件名
+      zip.file(file.name, base64Data, { base64: true }) // 使用原始文件名
     }
-    
-    const content = await zip.generateAsync({type: 'blob'})
+
+    const content = await zip.generateAsync({ type: 'blob' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(content)
     link.download = 'compressed_images.zip'
@@ -290,7 +288,9 @@ const clearAll = () => {
       </div>
       <div v-if="compressedFiles.length > 0" class="compression-results">
         <h3>压缩结果：</h3>
-        <p class="total-compression">总压缩率: <span>{{ totalCompressionRate }}%</span></p>
+        <p class="total-compression">
+          总压缩率: <span>{{ totalCompressionRate }}%</span>
+        </p>
         <ul>
           <li v-for="file in compressedFiles" :key="file.name" class="file-item">
             <div class="file-info">
@@ -299,7 +299,10 @@ const clearAll = () => {
                 <span class="original-size">{{ formatFileSize(file.originalSize) }}</span>
                 <span class="arrow">→</span>
                 <span class="compressed-size">{{ formatFileSize(file.compressedSize) }}</span>
-                <span class="compression-rate">(压缩率: {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)</span>
+                <span class="compression-rate"
+                  >(压缩率:
+                  {{ ((1 - file.compressedSize / file.originalSize) * 100).toFixed(2) }}%)</span
+                >
               </div>
             </div>
             <button @click="downloadSingleFile(file)" class="button download-single">下载</button>
