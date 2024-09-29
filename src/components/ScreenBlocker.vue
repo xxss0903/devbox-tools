@@ -11,8 +11,6 @@ const blockDuration = ref(10) // 默认10分钟
 
 const startBlocker = (duration: number) => {
   window.electronAPI.createScreenBlocker(duration)
-  // 添加保存屏幕关闭时间的调用
-  window.electronAPI.saveScreenBlockTime(duration)
 }
 
 const goBack = () => {
@@ -23,7 +21,7 @@ const togglePeriodicBlocker = () => {
   if (timer) {
     clearInterval(timer)
   } else {
-    startBlocker(blockDuration.value)
+    startBlocker(blockDuration.value * 60 * 1000)
   }
 }
 
@@ -32,7 +30,7 @@ const startPeriodicBlocker = () => {
     clearInterval(timer)
   }
   timer = setInterval(() => {
-    startBlocker(blockDuration.value)
+    startBlocker(blockDuration.value * 60 * 1000)
   }, intervalTime.value * 60 * 1000)
 }
 
@@ -82,13 +80,13 @@ onUnmounted(() => {
     <div>
       <label>
         间隔时间（分钟）：
-        <input v-model.number="intervalTime" type="number" min="1" />
+        <input v-model.number="intervalTime" type="number" min="0" />
       </label>
     </div>
     <div>
       <label>
         休息时间（分钟）：
-        <input v-model.number="blockDuration" type="number" min="1" />
+        <input v-model.number="blockDuration" type="number" min="0" step="0.1"/>
       </label>
     </div>
     <button @click="saveSettings">保存设置</button>

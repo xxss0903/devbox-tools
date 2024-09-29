@@ -34,6 +34,17 @@
         font-size: 1.5em;
         margin-top: 20px;
       }
+      #time {
+        font-family: monospace; /* 使用等宽字体 */
+        font-size: 48px; /* 调整字体大小 */
+      }
+      #colon {
+        animation: blink 1s infinite;
+      }
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
     </style>
   </head>
   <body>
@@ -45,27 +56,32 @@
 
     <script>
       function updateTime() {
-        const now = new Date()
-        const timeElement = document.getElementById('time')
-        const dateElement = document.getElementById('date')
+        const now = new Date();
+        const timeElement = document.getElementById('time');
+        const dateElement = document.getElementById('date');
 
-        timeElement.textContent = now.toLocaleTimeString('zh-CN', {
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+
+        timeElement.innerHTML = `${hours}<span id="colon">:</span>${minutes}`;
+
         dateElement.textContent = now.toLocaleDateString('zh-CN', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
           weekday: 'long'
-        })
+        });
       }
 
-      updateTime()
-      setInterval(updateTime, 1000)
+      // 初始化时间显示
+      const timeElement = document.getElementById('time');
+      timeElement.innerHTML = '00<span id="colon">:</span>00';
+
+      updateTime();
+      setInterval(updateTime, 1000); // 每秒更新一次
 
       // 禁用右键菜单
-      document.addEventListener('contextmenu', (event) => event.preventDefault())
+      document.addEventListener('contextmenu', (event) => event.preventDefault());
     </script>
   </body>
 </html>
