@@ -640,7 +640,8 @@ let blockerWindowList = [];
 function createScreenBlocker(screenType) {
     console.log('createScreenBlocker', screenType);
     const displays = electron_1.screen.getAllDisplays();
-    blockerWindowList = displays.map(function (display, index, displays) {
+    console.log('displays', displays);
+    blockerWindowList = displays.map(function (display) {
         const tempWindow = new electron_1.BrowserWindow({
             skipTaskbar: true,
             fullscreen: true,
@@ -648,12 +649,17 @@ function createScreenBlocker(screenType) {
             kiosk: true,
             alwaysOnTop: true,
             focusable: false,
+            x: display.bounds.x,
+            y: display.bounds.y,
+            width: display.bounds.width,
+            height: display.bounds.height,
             webPreferences: {
                 preload: path_1.default.join(__dirname, 'preload.js'),
                 contextIsolation: true,
                 nodeIntegration: false
             }
         });
+        // 根据screenType加载不同的HTML文件
         if (screenType === 'windows-origin-blocker') {
             tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html'));
         }
@@ -665,13 +671,14 @@ function createScreenBlocker(screenType) {
         }
         return tempWindow;
     });
+    console.log('blockerWindowList', blockerWindowList);
 }
 // 注册 IPC 处理程序来创建屏幕遮挡器
 electron_1.ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
     createScreenBlocker(screenType);
     setTimeout(() => {
         if (blockerWindowList && blockerWindowList.length > 0) {
-            blockerWindowList.forEach(window => {
+            blockerWindowList.forEach((window) => {
                 window.close();
             });
         }
@@ -683,7 +690,10 @@ electron_1.ipcMain.handle('save-screen-block-time', async (event, duration) => {
     try {
         const db = await getDatabase();
         const startTime = Date.now();
-        await db.run('INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)', [startTime, duration]);
+        await db.run('INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)', [
+            startTime,
+            duration
+        ]);
         console.log('屏幕关闭时间已保存到数据库');
         return { success: true, message: '屏幕关闭时间已成功保存' };
     }

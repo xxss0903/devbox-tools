@@ -762,34 +762,44 @@ let blockerWindowList: BrowserWindow[] = []
 // 屏幕关闭
 // 创建遮挡整个屏幕的窗口
 function createScreenBlocker(screenType: string) {
-  console.log('createScreenBlocker', screenType)  
+  console.log('createScreenBlocker', screenType)
   const displays = screen.getAllDisplays()
-  blockerWindowList = displays.map(function (display, index, displays) {
-    const tempWindow = new BrowserWindow(
-      {
-        skipTaskbar: true,
-        fullscreen: true,
-        frame: false,
-        kiosk: true,
-        alwaysOnTop: true,
-        focusable: false,
-        webPreferences: {
-          preload: path.join(__dirname, 'preload.js'),
-          contextIsolation: true,
-          nodeIntegration: false
-        }
+  console.log('displays', displays)
+  blockerWindowList = displays.map(function (display) {
+    const tempWindow = new BrowserWindow({
+      skipTaskbar: true,
+      fullscreen: true,
+      frame: false,
+      kiosk: true,
+      alwaysOnTop: true,
+      focusable: false,
+      x: display.bounds.x,
+      y: display.bounds.y,
+      width: display.bounds.width,
+      height: display.bounds.height,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false
       }
-    );
+    })
+
+    // 根据screenType加载不同的HTML文件
     if (screenType === 'windows-origin-blocker') {
-      tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html'))
+      tempWindow.loadFile(
+        path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html')
+      )
     } else if (screenType === 'windows-3d-blocker') {
       tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-3d-blocker.html'))
     } else {
-      tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html'))
-    } 
+      tempWindow.loadFile(
+        path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html')
+      )
+    }
 
     return tempWindow
   })
+  console.log('blockerWindowList', blockerWindowList)
 }
 
 // 注册 IPC 处理程序来创建屏幕遮挡器
@@ -797,7 +807,7 @@ ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
   createScreenBlocker(screenType)
   setTimeout(() => {
     if (blockerWindowList && blockerWindowList.length > 0) {
-      blockerWindowList.forEach(window => {
+      blockerWindowList.forEach((window) => {
         window.close()
       })
     }
@@ -810,10 +820,10 @@ ipcMain.handle('save-screen-block-time', async (event, duration) => {
   try {
     const db = await getDatabase()
     const startTime = Date.now()
-    await db.run(
-      'INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)',
-      [startTime, duration]
-    )
+    await db.run('INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)', [
+      startTime,
+      duration
+    ])
     console.log('屏幕关闭时间已保存到数据库')
     return { success: true, message: '屏幕关闭时间已成功保存' }
   } catch (error) {
