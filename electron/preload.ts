@@ -3,6 +3,15 @@ import { contextBridge, ipcRenderer } from 'electron'
 console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // 保存屏幕关闭时间配置
+  saveScreenBlockSettings: (settings: any) => ipcRenderer.invoke('save-screen-block-settings', settings),
+  // 获取屏幕关闭时间配置
+  getScreenBlockSettings: () => ipcRenderer.invoke('get-screen-block-settings'),
+  // 保存屏幕关闭时间
+  saveScreenBlockTime: (duration: number) => ipcRenderer.invoke('save-screen-block-time', duration),
+  // 获取屏幕关闭时间历史
+  getScreenBlockHistory: () => ipcRenderer.invoke('get-screen-block-history'),
+  // 创建屏幕关闭计时器
   createScreenBlocker: (duration: number) => ipcRenderer.invoke('create-screen-blocker', duration),
   setDailyWorkDiaryAlarm: () => ipcRenderer.send('set-daily-work-diary-alarm'),
   // 工作提醒

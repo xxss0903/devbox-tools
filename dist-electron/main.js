@@ -65,6 +65,23 @@ async function getDatabase() {
       timestamp INTEGER
     )
   `);
+    // 创建屏幕关闭时间历史表，用于记录每次屏幕关闭的时间，以及持续时间，这个表是用来给用户查看的，以及配置
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS screen_block_times_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      start_time INTEGER,
+      duration INTEGER,
+      interval_time INTEGER
+    )
+  `);
+    // 创建屏幕关闭时间配置表，用于存储用户设置的屏幕关闭时间配置
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS screen_block_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      interval_time INTEGER,
+      block_duration INTEGER
+    )
+  `);
     return db;
 }
 // 添加选择文件夹的方法
@@ -617,65 +634,91 @@ electron_1.ipcMain.handle('get-file-path', async (event, options) => {
         return result.filePaths[0];
     }
 });
-let blockerWindow = null;
+let blockerWindowList = [];
 // 屏幕关闭
 // 创建遮挡整个屏幕的窗口
 function createScreenBlocker() {
-    blockerWindow = new electron_1.BrowserWindow({
-        fullscreen: true,
-        frame: false,
-        kiosk: true,
-        alwaysOnTop: true,
-        focusable: false,
-        webPreferences: {
-            preload: path_1.default.join(__dirname, 'preload.js'),
-            contextIsolation: true,
-            nodeIntegration: false
-        }
-    });
-    blockerWindow.loadFile(path_1.default.join(__dirname, '../public/blocker.html'));
-    blockerWindow.maximize();
-    // 禁用所有按键，包括 Win+Tab
-    blockerWindow.webContents.on('before-input-event', (event, input) => {
-        event.preventDefault();
-    });
-    // // 禁用鼠标事件
-    blockerWindow.setIgnoreMouseEvents(true);
-    // // 设置窗口属性
-    blockerWindow.setSkipTaskbar(true);
-    blockerWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    blockerWindow.setAlwaysOnTop(true, 'screen-saver');
-    // // 监听失去焦点事件，立即重新获取焦点
-    blockerWindow.on('blur', () => {
-        blockerWindow?.focus();
-    });
-    // // 监听窗口切换事件，防止切换到其他窗口
-    electron_1.app.on('browser-window-focus', (event, window) => {
-        if (window !== blockerWindow) {
-            blockerWindow?.focus();
-        }
-    });
-    // // 禁用窗口切换快捷键
-    electron_1.globalShortcut.register('Alt+Tab', () => {
-        return false;
-    });
-    electron_1.globalShortcut.register('CommandOrControl+Shift+Tab', () => {
-        return false;
-    });
-    electron_1.globalShortcut.register('Alt+Tab', () => {
-        return false;
-    });
-    electron_1.globalShortcut.register('Alt+Shift+Tab', () => {
-        return false;
+    const displays = electron_1.screen.getAllDisplays();
+    blockerWindowList = displays.map(function (display, index, displays) {
+        const tempWindow = new electron_1.BrowserWindow({
+            skipTaskbar: true,
+            fullscreen: true,
+            frame: false,
+            kiosk: true,
+            alwaysOnTop: true,
+            focusable: false,
+            webPreferences: {
+                preload: path_1.default.join(__dirname, 'preload.js'),
+                contextIsolation: true,
+                nodeIntegration: false
+            }
+        });
+        tempWindow.loadFile(path_1.default.join(__dirname, '../public/blocker.html'));
+        return tempWindow;
     });
 }
 // 注册 IPC 处理程序来创建屏幕遮挡器
 electron_1.ipcMain.handle('create-screen-blocker', (event, duration) => {
     createScreenBlocker();
     setTimeout(() => {
-        if (blockerWindow) {
-            blockerWindow.close();
+        if (blockerWindowList && blockerWindowList.length > 0) {
+            blockerWindowList.forEach(window => {
+                window.close();
+            });
         }
-    }, duration * 1000);
+    }, duration);
     return '屏幕遮挡器已创建';
+});
+// 添加新的 IPC 处理程序
+electron_1.ipcMain.handle('save-screen-block-time', async (event, duration) => {
+    try {
+        const db = await getDatabase();
+        const startTime = Date.now();
+        await db.run('INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)', [startTime, duration]);
+        console.log('屏幕关闭时间已保存到数据库');
+        return { success: true, message: '屏幕关闭时间已成功保存' };
+    }
+    catch (error) {
+        console.error('保存屏幕关闭时间时出错:', error);
+        return { success: false, message: '保存屏幕关闭时间时出错' };
+    }
+});
+// 如果需要,可以添加一个获取屏幕关闭时间历史的处理程序
+electron_1.ipcMain.handle('get-screen-block-history', async () => {
+    try {
+        const db = await getDatabase();
+        const history = await db.all('SELECT * FROM screen_block_times ORDER BY start_time DESC');
+        return history;
+    }
+    catch (error) {
+        console.error('获取屏幕关闭时间历史时出错:', error);
+        return [];
+    }
+});
+// 创建屏幕关闭时间配置表
+electron_1.ipcMain.handle('save-screen-block-settings', async (event, settings) => {
+    try {
+        console.log('save-screen-block-settings', settings);
+        const db = await getDatabase();
+        await db.run('DELETE FROM screen_block_settings');
+        const res = await db.run('INSERT INTO screen_block_settings (interval_time, block_duration) VALUES (?, ?)', settings.intervalTime, settings.blockDuration);
+        console.log('屏幕关闭时间配置已保存到数据库', res);
+        return { success: true, message: '屏幕关闭时间配置已成功保存' };
+    }
+    catch (error) {
+        console.error('保存屏幕关闭时间配置时出错:', error);
+        return { success: false, message: '保存屏幕关闭时间配置时出错' };
+    }
+});
+// 获取屏幕关闭时间配置
+electron_1.ipcMain.handle('get-screen-block-settings', async () => {
+    try {
+        const db = await getDatabase();
+        const settings = await db.get('SELECT * FROM screen_block_settings');
+        return settings;
+    }
+    catch (error) {
+        console.error('获取屏幕关闭时间配置时出错:', error);
+        return null;
+    }
 });

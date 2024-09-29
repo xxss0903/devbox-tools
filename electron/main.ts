@@ -83,6 +83,25 @@ async function getDatabase(): Promise<Database> {
     )
   `)
 
+  // 创建屏幕关闭时间历史表，用于记录每次屏幕关闭的时间，以及持续时间，这个表是用来给用户查看的，以及配置
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS screen_block_times_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      start_time INTEGER,
+      duration INTEGER,
+      interval_time INTEGER
+    )
+  `)
+
+  // 创建屏幕关闭时间配置表，用于存储用户设置的屏幕关闭时间配置
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS screen_block_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      interval_time INTEGER,
+      block_duration INTEGER
+    )
+  `)
+
   return db
 }
 
@@ -774,6 +793,66 @@ ipcMain.handle('create-screen-blocker', (event, duration) => {
         window.close()
       })
     }
-  }, duration * 1000)
+  }, duration)
   return '屏幕遮挡器已创建'
+})
+
+// 添加新的 IPC 处理程序
+ipcMain.handle('save-screen-block-time', async (event, duration) => {
+  try {
+    const db = await getDatabase()
+    const startTime = Date.now()
+    await db.run(
+      'INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)',
+      [startTime, duration]
+    )
+    console.log('屏幕关闭时间已保存到数据库')
+    return { success: true, message: '屏幕关闭时间已成功保存' }
+  } catch (error) {
+    console.error('保存屏幕关闭时间时出错:', error)
+    return { success: false, message: '保存屏幕关闭时间时出错' }
+  }
+})
+
+// 如果需要,可以添加一个获取屏幕关闭时间历史的处理程序
+ipcMain.handle('get-screen-block-history', async () => {
+  try {
+    const db = await getDatabase()
+    const history = await db.all('SELECT * FROM screen_block_times ORDER BY start_time DESC')
+    return history
+  } catch (error) {
+    console.error('获取屏幕关闭时间历史时出错:', error)
+    return []
+  }
+})
+
+// 创建屏幕关闭时间配置表
+ipcMain.handle('save-screen-block-settings', async (event, settings) => {
+  try {
+    console.log('save-screen-block-settings', settings)
+    const db = await getDatabase()
+    await db.run('DELETE FROM screen_block_settings')
+    const res = await db.run(
+      'INSERT INTO screen_block_settings (interval_time, block_duration) VALUES (?, ?)',
+      settings.intervalTime,
+      settings.blockDuration
+    )
+    console.log('屏幕关闭时间配置已保存到数据库', res)
+    return { success: true, message: '屏幕关闭时间配置已成功保存' }
+  } catch (error) {
+    console.error('保存屏幕关闭时间配置时出错:', error)
+    return { success: false, message: '保存屏幕关闭时间配置时出错' }
+  }
+})
+
+// 获取屏幕关闭时间配置
+ipcMain.handle('get-screen-block-settings', async () => {
+  try {
+    const db = await getDatabase()
+    const settings = await db.get('SELECT * FROM screen_block_settings')
+    return settings
+  } catch (error) {
+    console.error('获取屏幕关闭时间配置时出错:', error)
+    return null
+  }
 })

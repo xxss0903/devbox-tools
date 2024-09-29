@@ -3,6 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    // 保存屏幕关闭时间配置
+    saveScreenBlockSettings: (settings) => electron_1.ipcRenderer.invoke('save-screen-block-settings', settings),
+    // 获取屏幕关闭时间配置
+    getScreenBlockSettings: () => electron_1.ipcRenderer.invoke('get-screen-block-settings'),
+    // 保存屏幕关闭时间
+    saveScreenBlockTime: (duration) => electron_1.ipcRenderer.invoke('save-screen-block-time', duration),
+    // 获取屏幕关闭时间历史
+    getScreenBlockHistory: () => electron_1.ipcRenderer.invoke('get-screen-block-history'),
+    // 创建屏幕关闭计时器
     createScreenBlocker: (duration) => electron_1.ipcRenderer.invoke('create-screen-blocker', duration),
     setDailyWorkDiaryAlarm: () => electron_1.ipcRenderer.send('set-daily-work-diary-alarm'),
     // 工作提醒

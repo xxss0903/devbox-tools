@@ -1,19 +1,72 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
 let timer: NodeJS.Timeout | null = null
 
+const intervalTime = ref(2) // 默认2分钟
+const blockDuration = ref(10) // 默认10分钟
+
 const startBlocker = (duration: number) => {
-  // 使用 Electron 的 IPC 来启动遮挡窗口并禁用按键
   window.electronAPI.createScreenBlocker(duration)
+  // 添加保存屏幕关闭时间的调用
+  window.electronAPI.saveScreenBlockTime(duration)
 }
 
 const goBack = () => {
   router.back()
 }
+
+const togglePeriodicBlocker = () => {
+  if (timer) {
+    clearInterval(timer)
+  } else {
+    startBlocker(blockDuration.value)
+  }
+}
+
+const startPeriodicBlocker = () => {
+  if (timer) {
+    clearInterval(timer)
+  }
+  timer = setInterval(() => {
+    startBlocker(blockDuration.value)
+  }, intervalTime.value * 60 * 1000)
+}
+
+const saveSettings = async () => {
+  try {
+    await window.electronAPI.saveScreenBlockSettings({
+      intervalTime: intervalTime.value,
+      blockDuration: blockDuration.value
+    })
+  } catch (error) {
+    console.error('保存设置失败:', error)
+  }
+}
+
+const getSettings = async () => {
+  try {
+    const settings = await window.electronAPI.getScreenBlockSettings()
+    console.log('settings', settings)
+    if (settings) {
+      intervalTime.value = settings.interval_time
+      blockDuration.value = settings.block_duration
+    }
+  } catch (error) {
+    console.error('获取设置失败:', error)
+  }
+}
+
+onMounted(async () => {
+  try {
+    await getSettings()
+  } catch (error) {
+    console.error('获取设置失败:', error)
+  }
+})
 
 onUnmounted(() => {
   if (timer) {
@@ -24,11 +77,26 @@ onUnmounted(() => {
 
 <template>
   <div class="screen-blocker">
-    <NavigationBar title="痔疮来了" @goBack="goBack" />
-    <h2>痔疮来了，快跑！</h2>
+    <NavigationBar title="定时休息" @goBack="goBack" />
+    <h2>定时休息设置</h2>
     <div>
-      <button @click="startBlocker(5)">开始5分钟休息</button>
-      <button @click="startBlocker(10)">开始10分钟休息</button>
+      <label>
+        间隔时间（分钟）：
+        <input v-model.number="intervalTime" type="number" min="1" />
+      </label>
+    </div>
+    <div>
+      <label>
+        休息时间（分钟）：
+        <input v-model.number="blockDuration" type="number" min="1" />
+      </label>
+    </div>
+    <button @click="saveSettings">保存设置</button>
+    <button @click="getSettings">获取设置</button>
+    <button @click="togglePeriodicBlocker">开始定时休息</button>
+    <div>
+      <button @click="startBlocker(5)">立即开始5分钟休息</button>
+      <button @click="startBlocker(10)">立即开始10分钟休息</button>
     </div>
   </div>
 </template>
