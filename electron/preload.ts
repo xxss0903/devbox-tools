@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取屏幕关闭时间历史
   getScreenBlockHistory: () => ipcRenderer.invoke('get-screen-block-history'),
   // 创建屏幕关闭计时器
-  createScreenBlocker: (duration: number) => ipcRenderer.invoke('create-screen-blocker', duration),
+  createScreenBlocker: (duration: number, screenType: string) => ipcRenderer.invoke('create-screen-blocker', duration, screenType),
   setDailyWorkDiaryAlarm: () => ipcRenderer.send('set-daily-work-diary-alarm'),
   // 工作提醒
   setReminder: (time: string) => ipcRenderer.send('set-reminder', time),

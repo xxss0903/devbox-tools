@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Windows 锁屏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #0078d7;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        overflow: hidden;
+        user-select: none;
+      }
+      .lock-screen {
+        text-align: center;
+      }
+      .time {
+        font-size: 6em;
+        font-weight: lighter;
+      }
+      .date {
+        font-size: 2em;
+        margin-top: 10px;
+      }
+      .message {
+        font-size: 1.5em;
+        margin-top: 20px;
+      }
+      #time {
+        font-family: monospace; /* 使用等宽字体 */
+        font-size: 48px; /* 调整字体大小 */
+      }
+      #colon {
+        animation: blink 2s infinite;
+      }
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="lock-screen">
+      <div class="time" id="time"></div>
+      <div class="date" id="date"></div>
+      <div class="message">痔疮来了，快跑啊</div>
+    </div>
+
+    <script>
+      function updateTime() {
+        const now = new Date();
+        const timeElement = document.getElementById('time');
+        const dateElement = document.getElementById('date');
+
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+
+        timeElement.innerHTML = `${hours}<span id="colon">:</span>${minutes}`;
+
+        dateElement.textContent = now.toLocaleDateString('zh-CN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long'
+        });
+      }
+
+      // 初始化时间显示
+      const timeElement = document.getElementById('time');
+      timeElement.innerHTML = '00<span id="colon">:</span>00';
+
+      updateTime();
+      setInterval(updateTime, 1000); // 每秒更新一次
+
+      // 禁用右键菜单
+      document.addEventListener('contextmenu', (event) => event.preventDefault());
+    </script>
+  </body>
+</html>

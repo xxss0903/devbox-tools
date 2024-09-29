@@ -10,7 +10,9 @@ const intervalTime = ref(2) // 默认2分钟
 const blockDuration = ref(10) // 默认10分钟
 
 const startBlocker = (duration: number) => {
-  window.electronAPI.createScreenBlocker(duration)
+  // windows-3d-blocker
+  // windows-origin-blocker
+  window.electronAPI.createScreenBlocker(duration, 'windows-3d-blocker')
 }
 
 const goBack = () => {

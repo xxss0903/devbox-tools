@@ -637,7 +637,8 @@ electron_1.ipcMain.handle('get-file-path', async (event, options) => {
 let blockerWindowList = [];
 // 屏幕关闭
 // 创建遮挡整个屏幕的窗口
-function createScreenBlocker() {
+function createScreenBlocker(screenType) {
+    console.log('createScreenBlocker', screenType);
     const displays = electron_1.screen.getAllDisplays();
     blockerWindowList = displays.map(function (display, index, displays) {
         const tempWindow = new electron_1.BrowserWindow({
@@ -653,13 +654,21 @@ function createScreenBlocker() {
                 nodeIntegration: false
             }
         });
-        tempWindow.loadFile(path_1.default.join(__dirname, '../public/blocker.html'));
+        if (screenType === 'windows-origin-blocker') {
+            tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html'));
+        }
+        else if (screenType === 'windows-3d-blocker') {
+            tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-3d-blocker.html'));
+        }
+        else {
+            tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html'));
+        }
         return tempWindow;
     });
 }
 // 注册 IPC 处理程序来创建屏幕遮挡器
-electron_1.ipcMain.handle('create-screen-blocker', (event, duration) => {
-    createScreenBlocker();
+electron_1.ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
+    createScreenBlocker(screenType);
     setTimeout(() => {
         if (blockerWindowList && blockerWindowList.length > 0) {
             blockerWindowList.forEach(window => {

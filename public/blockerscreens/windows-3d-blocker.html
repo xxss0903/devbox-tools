@@ -39,19 +39,26 @@
         font-size: 48px; /* 调整字体大小 */
       }
       #colon {
-        animation: blink 1s infinite;
+        animation: blink 2s infinite;
       }
       @keyframes blink {
         0%, 100% { opacity: 1; }
         50% { opacity: 0; }
       }
+      canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   </head>
   <body>
     <div class="lock-screen">
       <div class="time" id="time"></div>
       <div class="date" id="date"></div>
-      <div class="message">快休息吧</div>
+      <div class="message">痔疮来了，快跑啊</div>
     </div>
 
     <script>
@@ -82,6 +89,34 @@
 
       // 禁用右键菜单
       document.addEventListener('contextmenu', (event) => event.preventDefault());
+
+      // 添加Three.js 3D动画
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+      const torusKnot = new THREE.Mesh(geometry, material);
+      scene.add(torusKnot);
+
+      camera.position.z = 30;
+
+      function animate() {
+        requestAnimationFrame(animate);
+        torusKnot.rotation.x += 0.01;
+        torusKnot.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
     </script>
   </body>
 </html>
