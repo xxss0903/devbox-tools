@@ -175,9 +175,9 @@ const routes = [
     name: 'ScreenBlocker',
     component: ScreenBlocker,
     meta: {
-      title: '休息提醒',
+      title: '痔疮来了',
       searchable: true,
-      keywords: ['屏幕关闭', 'tools', 'ScreenBolocker', '休息']
+      keywords: ['屏幕关闭', '痔疮来了', '锁屏', 'tools', 'ScreenBolocker', '休息']
     }
   }
 ]

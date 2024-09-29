@@ -4,11 +4,9 @@ import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 
 const router = useRouter()
-const isBlocking = ref(false)
 let timer: NodeJS.Timeout | null = null
 
 const startBlocker = (duration: number) => {
-  isBlocking.value = true
   // 使用 Electron 的 IPC 来启动遮挡窗口并禁用按键
   window.electronAPI.createScreenBlocker(duration)
 }
@@ -26,9 +24,9 @@ onUnmounted(() => {
 
 <template>
   <div class="screen-blocker">
-    <NavigationBar title="息屏休息" @goBack="goBack" />
-    <h2>休息提醒</h2>
-    <div v-if="!isBlocking">
+    <NavigationBar title="痔疮来了" @goBack="goBack" />
+    <h2>痔疮来了，快跑！</h2>
+    <div>
       <button @click="startBlocker(5)">开始5分钟休息</button>
       <button @click="startBlocker(10)">开始10分钟休息</button>
     </div>

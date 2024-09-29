@@ -621,14 +621,10 @@ let blockerWindow = null;
 // 屏幕关闭
 // 创建遮挡整个屏幕的窗口
 function createScreenBlocker() {
-    const primaryDisplay = electron_1.screen.getPrimaryDisplay();
-    const { width, height } = primaryDisplay.workAreaSize;
     blockerWindow = new electron_1.BrowserWindow({
-        width: width,
-        height: height,
-        x: 0,
-        y: 0,
+        fullscreen: true,
         frame: false,
+        kiosk: true,
         alwaysOnTop: true,
         focusable: false,
         webPreferences: {
@@ -638,28 +634,29 @@ function createScreenBlocker() {
         }
     });
     blockerWindow.loadFile(path_1.default.join(__dirname, '../public/blocker.html'));
+    blockerWindow.maximize();
     // 禁用所有按键，包括 Win+Tab
     blockerWindow.webContents.on('before-input-event', (event, input) => {
         event.preventDefault();
     });
-    // 禁用鼠标事件
+    // // 禁用鼠标事件
     blockerWindow.setIgnoreMouseEvents(true);
-    // 设置窗口属性
+    // // 设置窗口属性
     blockerWindow.setSkipTaskbar(true);
     blockerWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     blockerWindow.setAlwaysOnTop(true, 'screen-saver');
-    // 监听失去焦点事件，立即重新获取焦点
+    // // 监听失去焦点事件，立即重新获取焦点
     blockerWindow.on('blur', () => {
         blockerWindow?.focus();
     });
-    // 监听窗口切换事件，防止切换到其他窗口
+    // // 监听窗口切换事件，防止切换到其他窗口
     electron_1.app.on('browser-window-focus', (event, window) => {
         if (window !== blockerWindow) {
             blockerWindow?.focus();
         }
     });
-    // 禁用窗口切换快捷键
-    electron_1.globalShortcut.register('CommandOrControl+Tab', () => {
+    // // 禁用窗口切换快捷键
+    electron_1.globalShortcut.register('Alt+Tab', () => {
         return false;
     });
     electron_1.globalShortcut.register('CommandOrControl+Shift+Tab', () => {
@@ -678,8 +675,6 @@ electron_1.ipcMain.handle('create-screen-blocker', (event, duration) => {
     setTimeout(() => {
         if (blockerWindow) {
             blockerWindow.close();
-            blockerWindow.setIgnoreMouseEvents(false);
-            blockerWindow.webContents.removeAllListeners('before-input-event');
         }
     }, duration * 1000);
     return '屏幕遮挡器已创建';

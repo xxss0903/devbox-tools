@@ -743,15 +743,10 @@ let blockerWindow: BrowserWindow | null = null
 // 屏幕关闭
 // 创建遮挡整个屏幕的窗口
 function createScreenBlocker() {
-  const primaryDisplay = screen.getPrimaryDisplay()
-  const { width, height } = primaryDisplay.workAreaSize
-
   blockerWindow = new BrowserWindow({
-    width: width,
-    height: height,
-    x: 0,
-    y: 0,
+    fullscreen: true,
     frame: false,
+    kiosk: true,
     alwaysOnTop: true,
     focusable: false,
     webPreferences: {
@@ -760,47 +755,8 @@ function createScreenBlocker() {
       nodeIntegration: false
     }
   })
-
   blockerWindow.loadFile(path.join(__dirname, '../public/blocker.html'))
-
-  // 禁用所有按键，包括 Win+Tab
-  blockerWindow.webContents.on('before-input-event', (event, input) => {
-    event.preventDefault()
-  })
-
-  // 禁用鼠标事件
-  blockerWindow.setIgnoreMouseEvents(true)
-
-  // 设置窗口属性
-  blockerWindow.setSkipTaskbar(true)
-  blockerWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-  blockerWindow.setAlwaysOnTop(true, 'screen-saver')
-
-  // 监听失去焦点事件，立即重新获取焦点
-  blockerWindow.on('blur', () => {
-    blockerWindow?.focus()
-  })
-
-  // 监听窗口切换事件，防止切换到其他窗口
-  app.on('browser-window-focus', (event, window) => {
-    if (window !== blockerWindow) {
-      blockerWindow?.focus()
-    }
-  })
-
-  // 禁用窗口切换快捷键
-  globalShortcut.register('CommandOrControl+Tab', () => {
-    return false
-  })
-  globalShortcut.register('CommandOrControl+Shift+Tab', () => {
-    return false
-  })
-  globalShortcut.register('Alt+Tab', () => {
-    return false
-  })
-  globalShortcut.register('Alt+Shift+Tab', () => {
-    return false
-  })
+  blockerWindow.maximize()
 }
 
 // 注册 IPC 处理程序来创建屏幕遮挡器
@@ -809,8 +765,6 @@ ipcMain.handle('create-screen-blocker', (event, duration) => {
   setTimeout(() => {
     if (blockerWindow) {
       blockerWindow.close()
-      blockerWindow.setIgnoreMouseEvents(false)
-      blockerWindow.webContents.removeAllListeners('before-input-event')
     }
   }, duration * 1000)
   return '屏幕遮挡器已创建'
