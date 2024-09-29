@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    // 关闭屏幕遮挡器
+    closeScreenBlocker: () => electron_1.ipcRenderer.invoke('close-screen-blocker'),
     // 保存屏幕关闭时间配置
     saveScreenBlockSettings: (settings) => electron_1.ipcRenderer.invoke('save-screen-block-settings', settings),
     // 获取屏幕关闭时间配置

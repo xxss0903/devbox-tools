@@ -759,8 +759,8 @@ ipcMain.handle('get-file-path', async (event, options) => {
 })
 
 let blockerWindowList: BrowserWindow[] = []
-// 屏幕关闭
-// 创建遮挡整个屏幕的窗口
+
+// 修改现有的 createScreenBlocker 函数
 function createScreenBlocker(screenType: string) {
   console.log('createScreenBlocker', screenType)
   const displays = screen.getAllDisplays()
@@ -770,7 +770,6 @@ function createScreenBlocker(screenType: string) {
       skipTaskbar: true,
       fullscreen: true,
       frame: false,
-      kiosk: true,
       alwaysOnTop: true,
       focusable: false,
       x: display.bounds.x,
@@ -802,17 +801,33 @@ function createScreenBlocker(screenType: string) {
   console.log('blockerWindowList', blockerWindowList)
 }
 
-// 注册 IPC 处理程序来创建屏幕遮挡器
+// 修改现有的 IPC 处理程序
 ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
   createScreenBlocker(screenType)
+  console.log('createScreenBlocker duration:', duration)
   setTimeout(() => {
-    if (blockerWindowList && blockerWindowList.length > 0) {
-      blockerWindowList.forEach((window) => {
-        window.close()
-      })
-    }
+    closeScreenBlocker()
   }, duration)
   return '屏幕遮挡器已创建'
+})
+
+// 添加新的函数来关闭遮挡窗口
+function closeScreenBlocker() {
+  console.log('Closing screen blocker')
+  if (blockerWindowList && blockerWindowList.length > 0) {
+    blockerWindowList.forEach((window) => {
+      if (!window.isDestroyed()) {
+        window.close()
+      }
+    })
+  }
+  blockerWindowList = [] // 清空列表
+}
+
+// 添加新的 IPC 处理程序来关闭遮挡窗口
+ipcMain.handle('close-screen-blocker', () => {
+  closeScreenBlocker()
+  return '屏幕遮挡器已关闭'
 })
 
 // 添加新的 IPC 处理程序
