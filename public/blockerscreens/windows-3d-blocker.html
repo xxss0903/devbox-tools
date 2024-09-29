@@ -42,8 +42,13 @@
         animation: blink 2s infinite;
       }
       @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
       }
       canvas {
         position: fixed;
@@ -58,65 +63,44 @@
     <div class="lock-screen">
       <div class="time" id="time"></div>
       <div class="date" id="date"></div>
-      <div class="message">痔疮来了，快跑啊</div>
     </div>
 
     <script>
-      function updateTime() {
-        const now = new Date();
-        const timeElement = document.getElementById('time');
-        const dateElement = document.getElementById('date');
-
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-
-        timeElement.innerHTML = `${hours}<span id="colon">:</span>${minutes}`;
-
-        dateElement.textContent = now.toLocaleDateString('zh-CN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          weekday: 'long'
-        });
-      }
-
-      // 初始化时间显示
-      const timeElement = document.getElementById('time');
-      timeElement.innerHTML = '00<span id="colon">:</span>00';
-
-      updateTime();
-      setInterval(updateTime, 1000); // 每秒更新一次
-
       // 禁用右键菜单
-      document.addEventListener('contextmenu', (event) => event.preventDefault());
+      document.addEventListener('contextmenu', (event) => event.preventDefault())
 
       // 添加Three.js 3D动画
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene()
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      )
+      const renderer = new THREE.WebGLRenderer()
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      document.body.appendChild(renderer.domElement)
 
-      const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-      const torusKnot = new THREE.Mesh(geometry, material);
-      scene.add(torusKnot);
+      const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16)
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true })
+      const torusKnot = new THREE.Mesh(geometry, material)
+      scene.add(torusKnot)
 
-      camera.position.z = 30;
+      camera.position.z = 30
 
       function animate() {
-        requestAnimationFrame(animate);
-        torusKnot.rotation.x += 0.01;
-        torusKnot.rotation.y += 0.01;
-        renderer.render(scene, camera);
+        requestAnimationFrame(animate)
+        torusKnot.rotation.x += 0.01
+        torusKnot.rotation.y += 0.01
+        renderer.render(scene, camera)
       }
-      animate();
+      animate()
 
       window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+      })
     </script>
   </body>
 </html>
