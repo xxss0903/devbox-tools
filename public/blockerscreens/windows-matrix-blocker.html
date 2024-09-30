@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Windows 锁屏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #0F0;
+        background-color: black;
+        font-family: 'Courier New', monospace;
+        overflow: hidden;
+        user-select: none;
+      }
+      .lock-screen {
+        text-align: center;
+        z-index: 1;
+      }
+      .time {
+        font-size: 6em;
+        font-weight: lighter;
+      }
+      .date {
+        font-size: 2em;
+        margin-top: 10px;
+      }
+      .message {
+        font-size: 1.5em;
+        margin-top: 20px;
+      }
+      #matrix-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="matrix-canvas"></canvas>
+    <div class="lock-screen">
+      <div class="time" id="time"></div>
+      <div class="date" id="date"></div>
+      <div class="message">痔疮来了，快跑啊</div>
+    </div>
+
+    <script>
+      // 时间和日期更新函数
+      function updateTime() {
+        const now = new Date();
+        const timeElement = document.getElementById('time');
+        const dateElement = document.getElementById('date');
+
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+
+        timeElement.textContent = `${hours}:${minutes}`;
+
+        dateElement.textContent = now.toLocaleDateString('zh-CN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long'
+        });
+      }
+
+      updateTime();
+      setInterval(updateTime, 1000);
+
+      // 禁用右键菜单
+      document.addEventListener('contextmenu', (event) => event.preventDefault());
+
+      // 矩阵雨效果
+      const canvas = document.getElementById('matrix-canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const katakana = '';
+      const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const nums = '0123456789';
+      const customText = '痔疮来了快跑啊';
+
+      const alphabet = katakana + latin + nums + customText;
+
+      const fontSize = 20;
+      const columns = canvas.width / fontSize;
+
+      const rainDrops = [];
+
+      for (let x = 0; x < columns; x++) {
+        rainDrops[x] = 1;
+      }
+
+      const draw = () => {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#0F0';
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < rainDrops.length; i++) {
+          const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+          ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+          if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.9) {
+            rainDrops[i] = 0;
+          }
+          rainDrops[i]++;
+        }
+      };
+
+      setInterval(draw, 50);
+
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+    </script>
+  </body>
+</html>
