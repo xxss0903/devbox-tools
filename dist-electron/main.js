@@ -177,8 +177,22 @@ async function createWindow() {
             symbolColor: '#74b1be',
             height: 22
         },
-        title: '铁牛工具箱'
+        title: '铁牛工具箱',
+        skipTaskbar: true
     });
+    // 添加这个事件监听器来处理窗口关闭
+    win.on('close', (event) => {
+        event.preventDefault(); // 阻止窗口关闭
+        win?.minimize(); // 最小化窗口
+    });
+    // 添加托盘图标
+    const tray = new electron_1.Tray(path_1.default.join(__dirname, '../public/icon.png'));
+    const contextMenu = electron_1.Menu.buildFromTemplate([
+        { label: '显示', click: () => win?.show() },
+        { label: '退出', click: () => electron_1.app.quit() }
+    ]);
+    tray.setToolTip('铁牛工具箱');
+    tray.setContextMenu(contextMenu);
     // 更新 Content-Security-Policy
     const devCSP = "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com blob:; connect-src 'self' ws: wss: https://icons8.com blob:; img-src 'self' data: https: http: blob: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com blob:;";
     const prodCSP = "default-src 'self' blob:; script-src 'self' https://icons8.com blob:; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: http: blob: https://icons8.com; connect-src 'self' https: https://icons8.com blob:; frame-src 'self' https://icons8.com blob:;";
@@ -417,6 +431,9 @@ electron_1.app.on('window-all-closed', () => {
 electron_1.app.on('activate', () => {
     if (electron_1.BrowserWindow.getAllWindows().length === 0) {
         createWindow();
+    }
+    else {
+        win?.show();
     }
 });
 // 添加生成周报的方法

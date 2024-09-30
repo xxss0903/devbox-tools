@@ -8,7 +8,8 @@ import {
   clipboard,
   Menu,
   shell,
-  screen
+  screen,
+  Tray
 } from 'electron'
 import path from 'path'
 import { execFile, exec } from 'child_process'
@@ -209,7 +210,34 @@ async function createWindow() {
       symbolColor: '#74b1be',
       height: 22
     },
-    title: '铁牛工具箱'
+    title: '铁牛工具箱',
+    skipTaskbar: true
+  })
+
+  // 添加这个事件监听器来处理窗口关闭
+  win.on('close', (event) => {
+    event.preventDefault() // 阻止窗口关闭
+    win?.minimize() // 最小化窗口
+  })
+
+  // 添加托盘图标
+  const tray = new Tray(path.join(__dirname, '../public/icon.png'))
+  const contextMenu = Menu.buildFromTemplate([
+    { label: '显示', click: () => win?.show() },
+    { label: '退出', click: () => app.quit() }
+  ])
+  tray.setToolTip('铁牛工具箱')
+  tray.setContextMenu(contextMenu)
+
+  // 添加双击事件处理
+  tray.on('double-click', () => {
+    if (win) {
+      if (win.isVisible()) {
+        win.focus()
+      } else {
+        win.show()
+      }
+    }
   })
 
   // 更新 Content-Security-Policy
@@ -498,6 +526,8 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
+  } else {
+    win?.show()
   }
 })
 
