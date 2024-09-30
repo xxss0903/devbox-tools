@@ -67,28 +67,39 @@
       const alphabet = katakana + latin + nums + customText;
 
       const fontSize = 20;
-      const columns = canvas.width / fontSize;
+      const columnGap = 10;
+      const columns = canvas.width / (fontSize + columnGap);
 
       const rainDrops = [];
 
+      // 初始化每一列的雨滴位置
       for (let x = 0; x < columns; x++) {
         rainDrops[x] = 1;
       }
 
+      // draw 函数负责绘制矩阵雨效果
       const draw = () => {
+        // 创建半透明的黑色背景，产生渐变效果
         ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // 设置字符颜色为亮绿色
         ctx.fillStyle = '#0F0';
+        // 设置字体大小和字体类型
         ctx.font = fontSize + 'px monospace';
 
+        // 遍历每一列
         for (let i = 0; i < rainDrops.length; i++) {
+          // 随机选择一个字符
           const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-          ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+          // 在当前位置绘制字符
+          ctx.fillText(text, i * (fontSize + columnGap), rainDrops[i] * fontSize);
 
+          // 如果字符超出画布底部且随机数大于0.9，重置该列
           if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.9) {
             rainDrops[i] = 0;
           }
+          // 移动字符到下一行
           rainDrops[i]++;
         }
       };
