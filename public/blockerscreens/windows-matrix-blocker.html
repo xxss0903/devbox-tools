@@ -46,34 +46,9 @@
   <body>
     <canvas id="matrix-canvas"></canvas>
     <div class="lock-screen">
-      <div class="time" id="time"></div>
-      <div class="date" id="date"></div>
-      <div class="message">痔疮来了，快跑啊</div>
     </div>
 
     <script>
-      // 时间和日期更新函数
-      function updateTime() {
-        const now = new Date();
-        const timeElement = document.getElementById('time');
-        const dateElement = document.getElementById('date');
-
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-
-        timeElement.textContent = `${hours}:${minutes}`;
-
-        dateElement.textContent = now.toLocaleDateString('zh-CN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          weekday: 'long'
-        });
-      }
-
-      updateTime();
-      setInterval(updateTime, 1000);
-
       // 禁用右键菜单
       document.addEventListener('contextmenu', (event) => event.preventDefault());
 
