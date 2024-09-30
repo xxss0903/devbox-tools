@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Windows 蓝屏错误</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        background-color: #0078d7;
+        margin: 0;
+        padding: 20px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        color: white;
+        overflow: hidden;
+        user-select: none;
+      }
+      .blue-screen {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .sad-face {
+        font-size: 80px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: normal;
+        margin-bottom: 20px;
+      }
+      p {
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+      }
+      .progress {
+        margin-top: 30px;
+        font-size: 14px;
+      }
+      #percentage {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="blue-screen">
+      <div class="sad-face">:(</div>
+      <h1>您的电脑遇到问题，需要重新启动。</h1>
+      <p>我们只收集某些错误信息，然后为您重新启动。</p>
+      <p>有关此问题的详细信息和可能的解决方法，请访问 <span style="color: #9cdcfe;">https://www.windows.com/stopcode</span></p>
+      <p>如果致电支持人员，请向他们提供以下信息：</p>
+      <p>终止代码：CRITICAL_PROCESS_DIED</p>
+      <div class="progress">正在收集信息 <span id="percentage">0</span>% 完成</div>
+    </div>
+
+    <script>
+      let percentage = 0;
+      const percentageElement = document.getElementById('percentage');
+
+      function updatePercentage() {
+        percentage += Math.floor(Math.random() * 10) + 1;
+        if (percentage > 100) {
+          percentage = 0;
+        }
+        percentageElement.textContent = percentage;
+        setTimeout(updatePercentage, Math.random() * 1000 + 500);
+      }
+
+      updatePercentage();
+
+      // 禁用右键菜单
+      document.addEventListener('contextmenu', (event) => event.preventDefault());
+    </script>
+  </body>
+</html>
