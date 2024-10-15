@@ -266,12 +266,22 @@ async function createWindow() {
       }
     })
   })
+  // if (process.env.NODE_ENV !== 'production') {
+  //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
+  //   win.loadURL('http://localhost:5173')
+  //   win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
+  // } else {
+  //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'production')
+  //   // 使用 loadFile 加载本地文件可能导致白屏问题，改用 loadURL 加载文件协议的 URL
+  //   // win.loadURL(`file://${path.join(__dirname, '../dist/index.html')}`)
+  //   win.loadFile(path.join(__dirname, '../dist/index.html'))
+  //   win.webContents.executeJavaScript(`alert('当前环境: 生产环境:${process.env.NODE_ENV}');`)
+  // }
 
-  if (process.env.NODE_ENV !== 'production') {
-    win.loadURL('http://localhost:5173')
-  } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'))
-  }
+  win.loadFile(path.join(__dirname, '/index.html'))
+  win.webContents.executeJavaScript(
+    `alert('当前环境: 生产环境: ${path.join(__dirname, '/index.html')} | ${__dirname}');`
+  )
 
   // 设置数据库连接
   const dbPath = path.join(app.getPath('userData'), 'database.sqlite')

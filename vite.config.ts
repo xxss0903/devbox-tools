@@ -7,19 +7,19 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-          isCustomElement: tag => tag === 'webview'
+          isCustomElement: (tag) => tag === 'webview'
         }
       }
     })
   ],
-  base: process.env.ELECTRON == 'true' ? './' : '/',
+  base: './',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
     }
   },
   build: {
-    outDir: 'dist',
+    outDir: 'dist-electron',
     assetsDir: '.',
     rollupOptions: {
       external: ['electron']
@@ -29,4 +29,3 @@ export default defineConfig({
     include: ['v-calendar']
   }
 })
-

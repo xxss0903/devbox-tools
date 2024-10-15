@@ -193,6 +193,17 @@ async function createWindow() {
     ]);
     tray.setToolTip('铁牛工具箱');
     tray.setContextMenu(contextMenu);
+    // 添加双击事件处理
+    tray.on('double-click', () => {
+        if (win) {
+            if (win.isVisible()) {
+                win.focus();
+            }
+            else {
+                win.show();
+            }
+        }
+    });
     // 更新 Content-Security-Policy
     const devCSP = "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com blob:; connect-src 'self' ws: wss: https://icons8.com blob:; img-src 'self' data: https: http: blob: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com blob:;";
     const prodCSP = "default-src 'self' blob:; script-src 'self' https://icons8.com blob:; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: http: blob: https://icons8.com; connect-src 'self' https: https://icons8.com blob:; frame-src 'self' https://icons8.com blob:;";
@@ -215,12 +226,19 @@ async function createWindow() {
             }
         });
     });
-    if (process.env.NODE_ENV !== 'production') {
-        win.loadURL('http://localhost:5173');
-    }
-    else {
-        win.loadFile(path_1.default.join(__dirname, '../dist/index.html'));
-    }
+    // if (process.env.NODE_ENV !== 'production') {
+    //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
+    //   win.loadURL('http://localhost:5173')
+    //   win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
+    // } else {
+    //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'production')
+    //   // 使用 loadFile 加载本地文件可能导致白屏问题，改用 loadURL 加载文件协议的 URL
+    //   // win.loadURL(`file://${path.join(__dirname, '../dist/index.html')}`)
+    //   win.loadFile(path.join(__dirname, '../dist/index.html'))
+    //   win.webContents.executeJavaScript(`alert('当前环境: 生产环境:${process.env.NODE_ENV}');`)
+    // }
+    win.loadFile(path_1.default.join(__dirname, '/index.html'));
+    win.webContents.executeJavaScript(`alert('当前环境: 生产环境: ${path_1.default.join(__dirname, '/index.html')} | ${__dirname}');`);
     // 设置数据库连接
     const dbPath = path_1.default.join(electron_1.app.getPath('userData'), 'database.sqlite');
     sequelize = new sequelize_1.Sequelize({

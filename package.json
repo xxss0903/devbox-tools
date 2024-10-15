@@ -9,12 +9,13 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "electron:serve": "npm run compile:electron && concurrently \"vite dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "vue-tsc && vite build && npm run compile:electron && electron-builder",
+    "electron:build": "vite build && npm run compile:electron && electron-builder",
     "compile:electron": "tsc -p electron",
-    "postinstall": "electron-rebuild -f -w sqlite3"
+    "postinstall": "electron-rebuild -f -w sqlite3",
+    "electron-builder": "electron-builder"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
