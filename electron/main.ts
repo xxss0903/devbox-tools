@@ -214,6 +214,7 @@ async function createWindow() {
     skipTaskbar: true
   })
 
+  Menu.setApplicationMenu(null)
   // 添加这个事件监听器来处理窗口关闭
   win.on('close', (event) => {
     event.preventDefault() // 阻止窗口关闭
@@ -224,7 +225,7 @@ async function createWindow() {
   const tray = new Tray(path.join(__dirname, '../public/icon.png'))
   const contextMenu = Menu.buildFromTemplate([
     { label: '显示', click: () => win?.show() },
-    { label: '退出', click: () => app.quit() }
+    { label: '退出', click: () => app.exit() }
   ])
   tray.setToolTip('铁牛工具箱')
   tray.setContextMenu(contextMenu)
@@ -266,22 +267,17 @@ async function createWindow() {
       }
     })
   })
-  // if (process.env.NODE_ENV !== 'production') {
-  //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
-  //   win.loadURL('http://localhost:5173')
-  //   win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
-  // } else {
-  //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'production')
-  //   // 使用 loadFile 加载本地文件可能导致白屏问题，改用 loadURL 加载文件协议的 URL
-  //   // win.loadURL(`file://${path.join(__dirname, '../dist/index.html')}`)
-  //   win.loadFile(path.join(__dirname, '../dist/index.html'))
-  //   win.webContents.executeJavaScript(`alert('当前环境: 生产环境:${process.env.NODE_ENV}');`)
-  // }
+  if (process.env.NODE_ENV !== 'development') {
+    console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
+    win.loadURL('http://localhost:5173')
+    // win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
+  } else {
+    win.loadFile(path.join(__dirname, '/index.html'))
+    // win.webContents.executeJavaScript(
+      // `alert('当前环境: 生产环境: ${path.join(__dirname, '/index.html')} | ${__dirname}');`
+    // )
+  }
 
-  win.loadFile(path.join(__dirname, '/index.html'))
-  win.webContents.executeJavaScript(
-    `alert('当前环境: 生产环境: ${path.join(__dirname, '/index.html')} | ${__dirname}');`
-  )
 
   // 设置数据库连接
   const dbPath = path.join(app.getPath('userData'), 'database.sqlite')
@@ -717,10 +713,10 @@ ipcMain.on('set-reminder', (event, time) => {
 })
 
 // 设置每天6点钟的闹钟
-ipcMain.on('set-daily-work-diary-alarm', async (event) => {
-  console.log('set-daily-work-diary-alarm to 21:55')
+ipcMain.on('set-daily-work-diary-alarm', async (event, time) => {
+  console.log('set-daily-work-diary-alarm to ' + time)
   const db = await getDatabase()
-  await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', '23:00')
+  await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', time)
   scheduleDailyAlarm(event.sender)
 })
 

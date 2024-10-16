@@ -180,6 +180,7 @@ async function createWindow() {
         title: '铁牛工具箱',
         skipTaskbar: true
     });
+    electron_1.Menu.setApplicationMenu(null);
     // 添加这个事件监听器来处理窗口关闭
     win.on('close', (event) => {
         event.preventDefault(); // 阻止窗口关闭
@@ -189,7 +190,7 @@ async function createWindow() {
     const tray = new electron_1.Tray(path_1.default.join(__dirname, '../public/icon.png'));
     const contextMenu = electron_1.Menu.buildFromTemplate([
         { label: '显示', click: () => win?.show() },
-        { label: '退出', click: () => electron_1.app.quit() }
+        { label: '退出', click: () => electron_1.app.exit() }
     ]);
     tray.setToolTip('铁牛工具箱');
     tray.setContextMenu(contextMenu);
@@ -226,19 +227,17 @@ async function createWindow() {
             }
         });
     });
-    // if (process.env.NODE_ENV !== 'production') {
-    //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
-    //   win.loadURL('http://localhost:5173')
-    //   win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
-    // } else {
-    //   console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'production')
-    //   // 使用 loadFile 加载本地文件可能导致白屏问题，改用 loadURL 加载文件协议的 URL
-    //   // win.loadURL(`file://${path.join(__dirname, '../dist/index.html')}`)
-    //   win.loadFile(path.join(__dirname, '../dist/index.html'))
-    //   win.webContents.executeJavaScript(`alert('当前环境: 生产环境:${process.env.NODE_ENV}');`)
-    // }
-    win.loadFile(path_1.default.join(__dirname, '/index.html'));
-    win.webContents.executeJavaScript(`alert('当前环境: 生产环境: ${path_1.default.join(__dirname, '/index.html')} | ${__dirname}');`);
+    if (process.env.NODE_ENV !== 'development') {
+        console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development');
+        win.loadURL('http://localhost:5173');
+        // win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
+    }
+    else {
+        win.loadFile(path_1.default.join(__dirname, '/index.html'));
+        // win.webContents.executeJavaScript(
+        // `alert('当前环境: 生产环境: ${path.join(__dirname, '/index.html')} | ${__dirname}');`
+        // )
+    }
     // 设置数据库连接
     const dbPath = path_1.default.join(electron_1.app.getPath('userData'), 'database.sqlite');
     sequelize = new sequelize_1.Sequelize({
@@ -597,10 +596,10 @@ electron_1.ipcMain.on('set-reminder', (event, time) => {
     }, delay);
 });
 // 设置每天6点钟的闹钟
-electron_1.ipcMain.on('set-daily-work-diary-alarm', async (event) => {
-    console.log('set-daily-work-diary-alarm to 21:55');
+electron_1.ipcMain.on('set-daily-work-diary-alarm', async (event, time) => {
+    console.log('set-daily-work-diary-alarm to ' + time);
     const db = await getDatabase();
-    await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', '23:00');
+    await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', time);
     scheduleDailyAlarm(event.sender);
 });
 electron_1.ipcMain.on('close-reminder', () => {

@@ -61,6 +61,20 @@
         </div>
       </div>
     </Transition>
+
+    <!-- 时间选择弹窗 -->
+    <div v-if="showTimePickerModal" class="modal-wrapper">
+      <div class="modal">
+        <div class="modal-content">
+          <h2>选择提醒时间</h2>
+          <input type="time" v-model="selectedTime" />
+          <div class="modal-buttons">
+            <button @click="confirmTimeSelection" class="confirm-button">确认</button>
+            <button @click="closeTimePickerModal" class="close-button">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -94,6 +108,8 @@ const newTodo = ref('')
 const quillEditorRef = ref()
 const showSummaryModal = ref(false)
 const summaryContent = ref('')
+const showTimePickerModal = ref(false)
+const selectedTime = ref('18:00') // 默认设置为18:00
 
 const editorOptions = {
   modules: {
@@ -194,7 +210,7 @@ const attributes = computed(() => {
 })
 
 const clearDatabase = async () => {
-  if (confirm('确定要清空数据库吗？此操作不可逆！')) {
+  if (confirm('确定要清空数据库吗？此��作不可逆！')) {
     try {
       await window.electronAPI.clearDatabase()
       await loadDiaryEntries()
@@ -292,26 +308,21 @@ const deleteDiaryEntry = async () => {
   }
 }
 
-// 设置每天6点钟的闹钟
-function setDailyWorkDiaryAlarm() {
-  window.electronAPI.setDailyWorkDiaryAlarm()
+const openTimePickerModal = () => {
+  showTimePickerModal.value = true
+}
+
+const closeTimePickerModal = () => {
+  showTimePickerModal.value = false
+}
+
+const confirmTimeSelection = () => {
+  window.electronAPI.setDailyWorkDiaryAlarm(selectedTime.value)
+  closeTimePickerModal()
 }
 
 const setReminder = () => {
-  let debug = false
-  if (debug) {
-    const reminderTime = new Date(Date.now() + 2 * 1000) // 2秒后
-    window.electronAPI.setReminder(reminderTime.toISOString())
-  } else {
-    // const now = new Date()
-    // const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0) // 今天的18:00
-    // if (reminderTime < now) {
-    //   reminderTime.setDate(reminderTime.getDate() + 1) // 如果当前时间已经超过18:00，则设置为明天的18:00
-    // }
-    // window.electronAPI.setReminder(reminderTime.toISOString())
-
-    setDailyWorkDiaryAlarm()
-  }
+  openTimePickerModal()
 }
 </script>
 
@@ -552,417 +563,6 @@ const setReminder = () => {
 .close-button:hover {
   background-color: #2980b9;
 }
-.work-diary-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.navigation-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.back-button,
-.save-button {
-  padding: 8px 16px;
-  background-color: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.back-button:hover,
-.save-button:hover {
-  background-color: #2980b9;
-}
-
-.save-button {
-  background-color: #4caf50;
-}
-
-.save-button:hover {
-  background-color: #45a049;
-}
-
-.detail-title {
-  font-size: 1.2em;
-  color: #2c3e50;
-}
-
-.work-diary-content {
-  display: flex;
-  height: 600px; /* 假设导航栏高度为60px */
-  overflow: hidden;
-}
-
-.left-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow-y: auto;
-  border-right: 1px solid #e9ecef;
-}
-
-.right-panel {
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow-y: auto;
-  height: 500px;
-}
-
-.date-picker {
-  margin-bottom: 20px;
-}
-
-:deep(.vc-container) {
-  width: 100%;
-}
-
-:deep(.vc-day-content) {
-  position: relative;
-}
-
-:deep(.has-entry) {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.todo-list {
-  margin-bottom: 20px;
-}
-
-.todo-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.todo-list li {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.todo-list input[type='checkbox'] {
-  margin-right: 10px;
-}
-
-.todo-list span {
-  flex-grow: 1;
-  margin-right: 10px;
-}
-
-.todo-list .completed {
-  text-decoration: line-through;
-  color: #888;
-}
-
-.todo-list button {
-  padding: 5px 10px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.todo-list button:hover {
-  background-color: #d32f2f;
-}
-
-.todo-list input[type='text'] {
-  flex-grow: 1;
-  margin-right: 10px;
-  padding: 5px;
-}
-
-.quill-editor-container {
-  height: 500px; /* 将高度固定为 500px */
-}
-
-:deep(.quill-editor) {
-  height: 300px;
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.ql-container) {
-  flex: 1;
-  overflow-y: auto;
-  height: 300px;
-}
-
-.content-input {
-  height: 300px;
-}
-
-.clear-button {
-  padding: 8px 16px;
-  background-color: #e74c3c;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.clear-button:hover {
-  background-color: #c0392b;
-}
-
-.summary-button {
-  padding: 8px 16px;
-  background-color: #9b59b6;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.summary-button:hover {
-  background-color: #8e44ad;
-}
-
-.modal {
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background-color: #fefefe;
-  padding: 20px;
-  border-radius: 5px;
-  width: 80%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.summary-content {
-  white-space: pre-wrap;
-  margin-bottom: 20px;
-}
-
-.close-button {
-  padding: 8px 16px;
-  background-color: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.close-button:hover {
-  background-color: #2980b9;
-}
-
-.work-diary-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.navigation-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.back-button,
-.save-button {
-  padding: 8px 16px;
-  background-color: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.back-button:hover,
-.save-button:hover {
-  background-color: #2980b9;
-}
-
-.save-button {
-  background-color: #4caf50;
-}
-
-.save-button:hover {
-  background-color: #45a049;
-}
-
-.detail-title {
-  font-size: 1.2em;
-  color: #2c3e50;
-}
-
-.work-diary-content {
-  display: flex;
-  height: 600px; /* 假设导航栏高度为60px */
-  overflow: hidden;
-}
-
-.left-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow-y: auto;
-  border-right: 1px solid #e9ecef;
-}
-
-.right-panel {
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow-y: auto;
-  height: 500px;
-}
-
-.date-picker {
-  margin-bottom: 20px;
-}
-
-:deep(.vc-container) {
-  width: 100%;
-}
-
-:deep(.vc-day-content) {
-  position: relative;
-}
-
-:deep(.has-entry) {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.todo-list {
-  margin-bottom: 20px;
-}
-
-.todo-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.todo-list li {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.todo-list input[type='checkbox'] {
-  margin-right: 10px;
-}
-
-.todo-list span {
-  flex-grow: 1;
-  margin-right: 10px;
-}
-
-.todo-list .completed {
-  text-decoration: line-through;
-  color: #888;
-}
-
-.todo-list button {
-  padding: 5px 10px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.todo-list button:hover {
-  background-color: #d32f2f;
-}
-
-.todo-list input[type='text'] {
-  flex-grow: 1;
-  margin-right: 10px;
-  padding: 5px;
-}
-
-.quill-editor-container {
-  height: 500px; /* 将高度固定为 500px */
-}
-
-:deep(.quill-editor) {
-  height: 300px;
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.ql-container) {
-  flex: 1;
-  overflow-y: auto;
-  height: 300px;
-}
-
-.content-input {
-  height: 300px;
-}
-
-.clear-button {
-  padding: 8px 16px;
-  background-color: #e74c3c;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.clear-button:hover {
-  background-color: #c0392b;
-}
-
-.summary-button {
-  padding: 8px 16px;
-  background-color: #9b59b6;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.summary-button:hover {
-  background-color: #8e44ad;
-}
 
 .modal-buttons {
   display: flex;
@@ -1010,5 +610,74 @@ const setReminder = () => {
 
 .delete-button:hover {
   background-color: #c0392b;
+}
+
+.modal-wrapper {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background-color: #fefefe;
+  padding: 20px;
+  border-radius: 5px;
+  width: 300px;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-content h2 {
+  margin-bottom: 20px;
+}
+
+.modal-content input[type="time"] {
+  margin-bottom: 20px;
+  padding: 5px;
+  font-size: 16px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.confirm-button,
+.close-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.confirm-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.confirm-button:hover {
+  background-color: #45a049;
+}
+
+.close-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.close-button:hover {
+  background-color: #d32f2f;
 }
 </style>

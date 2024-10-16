@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 创建屏幕关闭计时器
   createScreenBlocker: (duration: number, screenType: string) =>
     ipcRenderer.invoke('create-screen-blocker', duration, screenType),
-  setDailyWorkDiaryAlarm: () => ipcRenderer.send('set-daily-work-diary-alarm'),
+  setDailyWorkDiaryAlarm: (time: string) => ipcRenderer.send('set-daily-work-diary-alarm', time),
   // 工作提醒
   setReminder: (time: string) => ipcRenderer.send('set-reminder', time),
   closeReminder: () => ipcRenderer.send('close-reminder'),
