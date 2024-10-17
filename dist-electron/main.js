@@ -80,7 +80,9 @@ async function getDatabase() {
     CREATE TABLE IF NOT EXISTS screen_block_settings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       interval_time INTEGER,
-      block_duration INTEGER
+      block_duration INTEGER,
+      is_active BOOLEAN NOT NULL,
+      start_time INTEGER
     )
   `);
     return db;
@@ -388,13 +390,6 @@ async function updateClipboardHistory(win, type, content) {
             await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', type, content, Date.now());
             console.log('剪贴板内容已添加到历史记录');
         }
-        // await db.run(
-        //   'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-        //   type,
-        //   content,
-        //   Date.now()
-        // )
-        // console.log('剪贴板内容已添加到历史记录')
         // 获取最新的剪贴板历史记录
         const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50');
         // 通知渲染进程更新剪贴板历史，并发送最新的历史记录
@@ -670,8 +665,8 @@ electron_1.ipcMain.handle('get-file-path', async (event, options) => {
 });
 let blockerWindowList = [];
 // 修改现有的 createScreenBlocker 函数
-function createScreenBlocker(screenType) {
-    console.log('createScreenBlocker', screenType);
+function createScreenBlocker(screenType, duration) {
+    console.log('createScreenBlocker', screenType, duration);
     const displays = electron_1.screen.getAllDisplays();
     console.log('displays', displays);
     blockerWindowList = displays.map(function (display) {
@@ -704,17 +699,21 @@ function createScreenBlocker(screenType) {
         return tempWindow;
     });
     console.log('blockerWindowList', blockerWindowList);
+    // 更新 screen_block_settings 表
+    getDatabase().then(db => {
+        db.run('INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration) VALUES (1, ?, ?, ?)', [1, Date.now(), duration]);
+    });
 }
 // 修改现有的 IPC 处理程序
 electron_1.ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
-    createScreenBlocker(screenType);
+    createScreenBlocker(screenType, duration);
     console.log('createScreenBlocker duration:', duration);
     setTimeout(() => {
         closeScreenBlocker();
     }, duration);
     return '屏幕遮挡器已创建';
 });
-// 添加新的函数来关闭遮挡窗口
+// 修改现有的函数来关闭遮挡窗口
 function closeScreenBlocker() {
     console.log('Closing screen blocker');
     if (blockerWindowList && blockerWindowList.length > 0) {
@@ -725,8 +724,12 @@ function closeScreenBlocker() {
         });
     }
     blockerWindowList = []; // 清空列表
+    // 更新 screen_block_settings 表
+    getDatabase().then(db => {
+        db.run('UPDATE screen_block_settings SET is_active = 0, start_time = NULL WHERE id = 1');
+    });
 }
-// 添加新的 IPC 处理程序来关闭遮挡窗口
+// 修改现有的 IPC 处理程序来关闭遮挡窗口
 electron_1.ipcMain.handle('close-screen-blocker', () => {
     closeScreenBlocker();
     return '屏幕遮挡器已关闭';
@@ -802,4 +805,16 @@ electron_1.ipcMain.handle('get-saved-reminder-time', async () => {
         console.error('获取保存的提醒时间时出错:', error);
         return null;
     }
+});
+// 修改现有的 IPC 处理程序
+electron_1.ipcMain.handle('set-screen-blocker-status', async (event, isActive, duration) => {
+    const db = await getDatabase();
+    const startTime = isActive ? Date.now() : null;
+    await db.run('INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration) VALUES (1, ?, ?, ?)', [isActive ? 1 : 0, startTime, duration]);
+    return { success: true };
+});
+electron_1.ipcMain.handle('get-screen-blocker-status', async () => {
+    const db = await getDatabase();
+    const status = await db.get('SELECT * FROM screen_block_settings WHERE id = 1');
+    return status || { is_active: 0, start_time: null, block_duration: null };
 });

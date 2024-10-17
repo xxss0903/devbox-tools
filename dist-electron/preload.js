@@ -3,6 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 console.log('Preload script is running');
 electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    // 设置屏幕保护时间
+    setScreenBlockerStatus: (isActive, duration) => electron_1.ipcRenderer.invoke('set-screen-blocker-status', isActive, duration),
+    // 获取屏幕保护时间
+    getScreenBlockerStatus: () => electron_1.ipcRenderer.invoke('get-screen-blocker-status'),
     // 关闭屏幕遮挡器
     closeScreenBlocker: () => electron_1.ipcRenderer.invoke('close-screen-blocker'),
     // 保存屏幕关闭时间配置
@@ -15,11 +19,14 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getScreenBlockHistory: () => electron_1.ipcRenderer.invoke('get-screen-block-history'),
     // 创建屏幕关闭计时器
     createScreenBlocker: (duration, screenType) => electron_1.ipcRenderer.invoke('create-screen-blocker', duration, screenType),
+    // 开启/关闭屏幕的保护时间，开启就会根据时间倒计时开启屏幕保护
+    toggleScreenBlock: () => electron_1.ipcRenderer.send('toggle-screen-block'),
+    // 获取日志提醒时间
     getSavedReminderTime: () => electron_1.ipcRenderer.invoke('get-saved-reminder-time'),
+    // 设置日志提醒时间
     setDailyWorkDiaryAlarm: (time) => electron_1.ipcRenderer.send('set-daily-work-diary-alarm', time),
-    // 工作提醒
-    setReminder: (time) => electron_1.ipcRenderer.send('set-reminder', time),
-    closeReminder: () => electron_1.ipcRenderer.send('close-reminder'),
+    // 开启/关闭日志提醒
+    toggleDailyWorkDiaryAlarm: () => electron_1.ipcRenderer.send('toggle-daily-work-diary-alarm'),
     // 预览粘贴板的图片
     previewClipboardImage: (text) => electron_1.ipcRenderer.invoke('preview-clipboard-image', text),
     openClipboardUrl: (text) => electron_1.ipcRenderer.invoke('open-url', text),
