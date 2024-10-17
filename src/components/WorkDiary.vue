@@ -140,10 +140,6 @@ function getDayTimestamp(date: Date): number {
   return d.getTime()
 }
 
-function timestampToDateString(timestamp: number): string {
-  return new Date(timestamp).toISOString().split('T')[0]
-}
-
 const saveDiary = async () => {
   try {
     const serializedTodos = JSON.stringify(todos.value)
@@ -210,7 +206,7 @@ const attributes = computed(() => {
 })
 
 const clearDatabase = async () => {
-  if (confirm('确定要清空数据库吗？此��作不可逆！')) {
+  if (confirm('确定要清空数据库吗？此作不可逆！')) {
     try {
       await window.electronAPI.clearDatabase()
       await loadDiaryEntries()
@@ -223,10 +219,25 @@ const clearDatabase = async () => {
   }
 }
 
+// 添加一个新的函数来获取保存的提醒时间
+const getSavedReminderTime = async () => {
+  try {
+    const savedTime = await window.electronAPI.getSavedReminderTime()
+    console.log("get time", savedTime)
+    if (savedTime) {
+      selectedTime.value = savedTime
+    }
+  } catch (error) {
+    console.error('获取保存的提醒时间时出错:', error)
+  }
+}
+
+// 修改 onMounted 函数
 onMounted(async () => {
   await loadDiaryEntries()
   let dateStr = moment().format('YYYY-MM-DD')
   await loadDiary(dateStr)
+  await getSavedReminderTime() // 获取保存的提醒时间
 })
 
 // 创建一个防抖的 loadDiary 函数
@@ -321,7 +332,9 @@ const confirmTimeSelection = () => {
   closeTimePickerModal()
 }
 
-const setReminder = () => {
+// 修改 setReminder 函数
+const setReminder = async () => {
+  await getSavedReminderTime() // 获取保存的提醒时间
   openTimePickerModal()
 }
 </script>

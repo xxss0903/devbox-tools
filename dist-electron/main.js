@@ -12,6 +12,7 @@ const sqlite_1 = require("sqlite");
 const main_1 = require("electron/main");
 const electron_screenshots_1 = __importDefault(require("electron-screenshots"));
 const common_1 = require("electron/common");
+const moment_1 = __importDefault(require("moment"));
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -333,11 +334,12 @@ async function createWindow() {
     screenshots.on('cancel', () => {
         console.log('Screenshot cancelled');
     });
-    // 检查并设置闹钟
+    // 初始化检查并设置闹钟
     const db = await getDatabase();
     const alarm = await db.get('SELECT * FROM alarms WHERE id = 1');
-    if (alarm) {
-        scheduleDailyAlarm(win?.webContents);
+    if (alarm && alarm.time) {
+        console.log("set alarm", alarm);
+        scheduleDailyAlarm(win?.webContents, alarm.time);
     }
 }
 async function checkAndUpdateClipboard() {
@@ -600,23 +602,21 @@ electron_1.ipcMain.on('set-daily-work-diary-alarm', async (event, time) => {
     console.log('set-daily-work-diary-alarm to ' + time);
     const db = await getDatabase();
     await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', time);
-    scheduleDailyAlarm(event.sender);
+    scheduleDailyAlarm(event.sender, time);
 });
 electron_1.ipcMain.on('close-reminder', () => {
     reminderWindow?.close();
     reminderWindow = null;
     console.log('close-reminder');
 });
-// 调度每天21:50的闹钟
-const moment_1 = __importDefault(require("moment"));
-function scheduleDailyAlarm(sender) {
+function scheduleDailyAlarm(sender, time) {
     const now = (0, moment_1.default)();
-    const nextAlarm = (0, moment_1.default)((0, moment_1.default)().format('YYYY-MM-DD') + ' 23:06');
+    const nextAlarm = (0, moment_1.default)((0, moment_1.default)().format('YYYY-MM-DD') + ' ' + time);
     if (now.isAfter(nextAlarm)) {
         nextAlarm.add(1, 'day');
     }
     const delay = nextAlarm.diff(now);
-    console.log('scheduleDailyAlarm', delay);
+    console.log('set alarm 2', time, delay);
     setTimeout(() => {
         triggerAlarm(sender);
         setInterval(() => triggerAlarm(sender), 24 * 60 * 60 * 1000); // 每24小时触发一次
@@ -784,6 +784,22 @@ electron_1.ipcMain.handle('get-screen-block-settings', async () => {
     }
     catch (error) {
         console.error('获取屏幕关闭时间配置时出错:', error);
+        return null;
+    }
+});
+// 添加这个新的 IPC 处理程序
+electron_1.ipcMain.handle('get-saved-reminder-time', async () => {
+    try {
+        const db = await getDatabase();
+        const alarm = await db.get('SELECT * FROM alarms WHERE id = 1');
+        if (alarm && alarm.time) {
+            console.log('set alarm 1', alarm);
+            return alarm.time;
+        }
+        return null;
+    }
+    catch (error) {
+        console.error('获取保存的提醒时间时出错:', error);
         return null;
     }
 });
