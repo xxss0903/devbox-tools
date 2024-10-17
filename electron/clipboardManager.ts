@@ -3,6 +3,7 @@ import { getDatabase } from './database'
 
 let lastClipboardContent: string = ''
 
+// 检查并更新剪贴板
 export async function checkAndUpdateClipboard(win: BrowserWindow) {
   const db = await getDatabase()
   const latestItem = await db.get('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 1')
@@ -16,10 +17,11 @@ export async function checkAndUpdateClipboard(win: BrowserWindow) {
   }
 }
 
+// 监听剪贴板
 export function watchClipboard(win: BrowserWindow) {
   setInterval(async () => {
     const currentContent = clipboard.readText()
-    if (currentContent && currentContent !== lastClipboardContent) {
+    if (currentContent && currentContent !== lastClipboardContent && currentContent.trim().length > 0) {
       lastClipboardContent = currentContent
       await updateClipboardHistory(win, 'text', currentContent)
     }
@@ -36,6 +38,7 @@ export function watchClipboard(win: BrowserWindow) {
   }, 1000)
 }
 
+// 更新剪贴板历史记录
 async function updateClipboardHistory(win: BrowserWindow, type: string, content: string) {
   try {
     const db = await getDatabase()
