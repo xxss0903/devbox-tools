@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import router from './router'
 import type { CustomModule, TitleModule } from './types/modules'
+import WidgetComponent from './components/WidgetComponent.vue'
 
 const route = useRoute()
 
@@ -165,6 +166,7 @@ const navigateToChild = (child: CustomModule) => {
 
 <template>
   <div class="outer-container">
+    <WidgetComponent />
     <div class="container">
       <div class="title-list">
         <div class="search-bar">
@@ -226,7 +228,8 @@ const navigateToChild = (child: CustomModule) => {
 <style scoped>
 .outer-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
   height: 97vh;
   background-color: #f5f7fa;
@@ -237,10 +240,11 @@ const navigateToChild = (child: CustomModule) => {
   display: flex;
   max-width: 1400px;
   width: 100%;
-  height: 90vh;
+  height: calc(90vh - 60px); /* 减去小组件容器的高度 */
   background-color: #ffffff;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
+  margin-top: 10px;
 }
 
 .title-list {
