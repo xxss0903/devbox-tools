@@ -32,6 +32,8 @@ import {
   saveAlarm,
   getAlarm
 } from './database'
+import { setupIPC } from './ipc'
+import { createScreenBlocker, closeScreenBlocker } from './screenBlocker'
 
 const fs = require('fs').promises
 console.log('__dirname:', __dirname)
@@ -45,65 +47,8 @@ const adbPath = path.join(
   process.platform === 'win32' ? 'adb.exe' : 'adb'
 )
 
-// 添加执行 ADB 命令的方法
-ipcMain.handle('execute-adb', async (event: any, command: string) => {
-  return new Promise<string>((resolve, reject) => {
-    execFile(adbPath, command.split(' '), (error: Error | null, stdout: string, stderr: string) => {
-      if (error) {
-        reject(error.message)
-      } else {
-        resolve(stdout)
-      }
-    })
-  })
-})
-
 let sequelize: Sequelize
 let lastClipboardContent: string = '' // 最新的剪切板内容
-
-// 添加选择文件夹的方法
-ipcMain.handle('select-folder', async () => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openDirectory']
-  })
-  if (result.canceled) {
-    return null
-  }
-  const files = await fs.readdir(result.filePaths[0])
-  const imageFiles = await Promise.all(
-    files
-      .filter((file: string) => /\.(jpg|jpeg|png)$/i.test(file))
-      .map(async (file: string) => {
-        const filePath = path.join(result.filePaths[0], file)
-        const stats = await fs.stat(filePath)
-        const fileContent = await fs.readFile(filePath, { encoding: 'base64' })
-        return {
-          name: file,
-          size: stats.size,
-          data: `data:image/${path.extname(file).slice(1)};base64,${fileContent}`
-        }
-      })
-  )
-  return imageFiles
-})
-
-// 添加这个新的IPC处理程序
-ipcMain.handle('process-dropped-files', async (event, filePaths) => {
-  const imageFiles = await Promise.all(
-    filePaths
-      .filter((filePath: string) => /\.(jpg|jpeg|png)$/i.test(filePath))
-      .map(async (filePath: string) => {
-        const stats = await fs.stat(filePath)
-        const fileContent = await fs.readFile(filePath, { encoding: 'base64' })
-        return {
-          name: path.basename(filePath),
-          size: stats.size,
-          data: `data:image/${path.extname(filePath).slice(1)};base64,${fileContent}`
-        }
-      })
-  )
-  return imageFiles
-})
 
 let screenshots: Screenshots | null = null // 截图工具
 let win: BrowserWindow | null = null // 主窗口
@@ -244,17 +189,7 @@ async function createWindow() {
   process.env.SQLITE_DB_PATH = path.join(app.getPath('userData'), 'workdiary.sqlite')
 
   // 设置IPC处理程序
-  ipcMain.handle('save-diary-entry', async (event, { date, content, todos }) => {
-    await saveDiaryEntry(date, content, todos)
-  })
-
-  ipcMain.handle('get-diary-entries', async () => {
-    return await getDiaryEntries()
-  })
-
-  ipcMain.handle('get-diary-entry-by-date', async (event, date) => {
-    return await getDiaryEntryByDate(date)
-  })
+  setupIPC(win)
 
   // 添加IPC监听器
   ipcMain.handle('TAKE_SCREENSHOT', async () => {
@@ -576,12 +511,6 @@ ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
   clipboard.writeImage(img)
 })
 
-// 添加删除日记条目的方法
-ipcMain.handle('delete-diary-entry', async (event, date) => {
-  await deleteDiaryEntry(date)
-  return { success: true, message: '日记条目已成功删除' }
-})
-
 ipcMain.handle('refresh-work-diary', async () => {
   console.log('refresh-work-diary')
 })
@@ -620,14 +549,8 @@ ipcMain.on('set-reminder', (event, time) => {
   const delay = new Date(time).getTime() - Date.now()
   console.log('set-reminder', delay)
   setTimeout(() => {
-    createReminderWindow('您设置的提醒时间到了')
+    createReminderWindow('您��置的提醒时��到了')
   }, delay)
-})
-
-// 设置每天6点钟的闹钟
-ipcMain.on('set-daily-work-diary-alarm', async (event, time) => {
-  await saveAlarm(time)
-  scheduleDailyAlarm(event.sender, time)
 })
 
 ipcMain.on('close-reminder', () => {
@@ -701,79 +624,15 @@ ipcMain.handle('get-file-path', async (event, options) => {
   }
 })
 
-let blockerWindowList: BrowserWindow[] = []
-
 // 修改现有的 createScreenBlocker 函数
-function createScreenBlocker(screenType: string, duration: number) {
-  console.log('createScreenBlocker', screenType, duration)
-  const displays = screen.getAllDisplays()
-  console.log('displays', displays)
-  blockerWindowList = displays.map(function (display) {
-    const tempWindow = new BrowserWindow({
-      skipTaskbar: true,
-      fullscreen: true,
-      frame: false,
-      alwaysOnTop: true,
-      focusable: false,
-      x: display.bounds.x,
-      y: display.bounds.y,
-      width: display.bounds.width,
-      height: display.bounds.height,
-      webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
-        contextIsolation: true,
-        nodeIntegration: false
-      }
-    })
-
-    // 根据screenType加载不同的HTML文件
-    if (screenType === 'windows-origin-blocker') {
-      tempWindow.loadFile(
-        path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html')
-      )
-    } else if (screenType === 'windows-3d-blocker') {
-      tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-3d-blocker.html'))
-    } else {
-      tempWindow.loadFile(
-        path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html')
-      )
-    }
-
-    return tempWindow
-  })
-  console.log('blockerWindowList', blockerWindowList)
-
-  // 更新 screen_block_settings 表
-  saveScreenBlockerStatus(true, Date.now(), duration)
-}
-
-// 修改现有的 IPC 处理程序
 ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
   createScreenBlocker(screenType, duration)
-  console.log('createScreenBlocker duration:', duration)
   setTimeout(() => {
     closeScreenBlocker()
   }, duration)
   return '屏幕遮挡器已创建'
 })
 
-// 修改现有的函数来关闭遮挡窗口
-function closeScreenBlocker() {
-  console.log('Closing screen blocker')
-  if (blockerWindowList && blockerWindowList.length > 0) {
-    blockerWindowList.forEach((window) => {
-      if (!window.isDestroyed()) {
-        window.close()
-      }
-    })
-  }
-  blockerWindowList = [] // 清空列表
-
-  // 更新 screen_block_settings 表
-  saveScreenBlockerStatus(false, null, null)
-}
-
-// 修改现有的 IPC 处理程序来关闭遮挡窗口
 ipcMain.handle('close-screen-blocker', () => {
   closeScreenBlocker()
   return '屏幕遮挡器已关闭'
@@ -837,35 +696,4 @@ ipcMain.handle('get-screen-block-settings', async () => {
     console.error('获取屏幕关闭时间配置时出错:', error)
     return null
   }
-})
-
-// 添加这个新的 IPC 处理程序
-ipcMain.handle('get-saved-reminder-time', async () => {
-  try {
-    const db = await getDatabase()
-    const alarm = await db.get('SELECT * FROM alarms WHERE id = 1')
-    if (alarm && alarm.time) {
-      console.log('set alarm 1', alarm)
-      return alarm.time
-    }
-    return null
-  } catch (error) {
-    console.error('获取保存的提醒时间时出错:', error)
-    return null
-  }
-})
-
-// 修改现有的 IPC 处理程序
-ipcMain.handle('set-screen-blocker-status', async (event, isActive: boolean, duration?: number) => {
-  const startTime = isActive ? Date.now() : null
-  if (startTime && duration) {
-    await saveScreenBlockerStatus(isActive, startTime, duration)
-  } else {
-    await saveScreenBlockerStatus(isActive, 0, 0)
-  }
-  return { success: true }
-})
-
-ipcMain.handle('get-screen-blocker-status', async () => {
-  return await getScreenBlockerStatus()
 })
