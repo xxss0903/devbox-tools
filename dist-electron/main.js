@@ -7,12 +7,11 @@ const electron_1 = require("electron");
 const path_1 = __importDefault(require("path"));
 const child_process_1 = require("child_process");
 const sequelize_1 = require("sequelize");
-const sqlite3_1 = __importDefault(require("sqlite3"));
-const sqlite_1 = require("sqlite");
 const main_1 = require("electron/main");
 const electron_screenshots_1 = __importDefault(require("electron-screenshots"));
 const common_1 = require("electron/common");
 const moment_1 = __importDefault(require("moment"));
+const database_1 = require("./database");
 const fs = require('fs').promises;
 console.log('__dirname:', __dirname);
 console.log('Preload path:', path_1.default.join(__dirname, 'preload.js'));
@@ -32,61 +31,7 @@ electron_1.ipcMain.handle('execute-adb', async (event, command) => {
     });
 });
 let sequelize;
-let db = null;
 let lastClipboardContent = ''; // 最新的剪切板内容
-async function getDatabase() {
-    if (db)
-        return db;
-    db = await (0, sqlite_1.open)({
-        filename: path_1.default.join(electron_1.app.getPath('userData'), 'workdiary.sqlite'),
-        driver: sqlite3_1.default.Database
-    });
-    // 创建 alarms 表
-    await db.exec(`
-    CREATE TABLE IF NOT EXISTS alarms (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      time TEXT
-    )
-  `);
-    // 创建现有的diary_entries表
-    await db.exec(`
-    CREATE TABLE IF NOT EXISTS diary_entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date TEXT UNIQUE,
-      content TEXT,
-      todos TEXT
-    )
-  `);
-    // 创建clipboard_history表
-    await db.exec(`
-    CREATE TABLE IF NOT EXISTS clipboard_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT,
-      content TEXT,
-      timestamp INTEGER
-    )
-  `);
-    // 创建屏幕关闭时间历史表，用于记录每次屏幕关闭的时间，以及持续时间，这个表是用来给用户查看的，以及配置
-    await db.exec(`
-    CREATE TABLE IF NOT EXISTS screen_block_times_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      start_time INTEGER,
-      duration INTEGER,
-      interval_time INTEGER
-    )
-  `);
-    // 创建屏幕关闭时间配置表，用于存储用户设置的屏幕关闭时间配置
-    await db.exec(`
-    CREATE TABLE IF NOT EXISTS screen_block_settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      interval_time INTEGER,
-      block_duration INTEGER,
-      is_active BOOLEAN NOT NULL,
-      start_time INTEGER
-    )
-  `);
-    return db;
-}
 // 添加选择文件夹的方法
 electron_1.ipcMain.handle('select-folder', async () => {
     const result = await electron_1.dialog.showOpenDialog({
@@ -124,12 +69,6 @@ electron_1.ipcMain.handle('process-dropped-files', async (event, filePaths) => {
         };
     }));
     return imageFiles;
-});
-// 添加清空数据库的方法
-electron_1.ipcMain.handle('clear-database', async () => {
-    const db = await getDatabase();
-    await db.run('DELETE FROM diary_entries');
-    console.log('数据库已清空');
 });
 let screenshots = null; // 截图工具
 let win = null; // 主窗口
@@ -256,25 +195,13 @@ async function createWindow() {
     process.env.SQLITE_DB_PATH = path_1.default.join(electron_1.app.getPath('userData'), 'workdiary.sqlite');
     // 设置IPC处理程序
     electron_1.ipcMain.handle('save-diary-entry', async (event, { date, content, todos }) => {
-        console.log('save diary ', date, todos, content);
-        const db = await getDatabase();
-        const res = await db.run('INSERT OR REPLACE INTO diary_entries (date, content, todos) VALUES (?, ?, ?)', [date, content, todos]);
-        console.log('insert db res', res);
+        await (0, database_1.saveDiaryEntry)(date, content, todos);
     });
     electron_1.ipcMain.handle('get-diary-entries', async () => {
-        const db = await getDatabase();
-        return await db.all('SELECT * FROM diary_entries ORDER BY date DESC');
+        return await (0, database_1.getDiaryEntries)();
     });
     electron_1.ipcMain.handle('get-diary-entry-by-date', async (event, date) => {
-        const db = await getDatabase();
-        const entry = await db.get('SELECT * FROM diary_entries WHERE date = ?', [date]);
-        if (entry) {
-            return {
-                ...entry,
-                todos: entry.todos || '[]'
-            };
-        }
-        return null;
+        return await (0, database_1.getDiaryEntryByDate)(date);
     });
     // 添加IPC监听器
     electron_1.ipcMain.handle('TAKE_SCREENSHOT', async () => {
@@ -337,8 +264,7 @@ async function createWindow() {
         console.log('Screenshot cancelled');
     });
     // 初始化检查并设置闹钟
-    const db = await getDatabase();
-    const alarm = await db.get('SELECT * FROM alarms WHERE id = 1');
+    const alarm = await (0, database_1.getAlarm)();
     if (alarm && alarm.time) {
         console.log("set alarm", alarm);
         scheduleDailyAlarm(win?.webContents, alarm.time);
@@ -347,7 +273,7 @@ async function createWindow() {
 async function checkAndUpdateClipboard() {
     if (!win)
         return;
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     const latestItem = await db.get('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 1');
     console.log('get latestcontent 1:', latestItem);
     if (latestItem) {
@@ -360,7 +286,7 @@ async function checkAndUpdateClipboard() {
     }
 }
 async function watchClipboard(win) {
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     setInterval(async () => {
         const currentContent = electron_1.clipboard.readText();
         if (currentContent && currentContent !== lastClipboardContent) {
@@ -380,7 +306,7 @@ async function watchClipboard(win) {
 }
 async function updateClipboardHistory(win, type, content) {
     try {
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         const existingItem = await db.get('SELECT * FROM clipboard_history WHERE content = ?', content);
         if (existingItem) {
             await db.run('UPDATE clipboard_history SET timestamp = ? WHERE id = ?', Date.now(), existingItem.id);
@@ -452,7 +378,7 @@ electron_1.app.on('activate', () => {
 });
 // 添加生成周报的方法
 electron_1.ipcMain.handle('generate-weekly-summary', async (event, startDate, endDate) => {
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     const entries = await db.all('SELECT * FROM diary_entries WHERE date BETWEEN ? AND ? ORDER BY date ASC', [startDate, endDate]);
     let summary = `周报 (${startDate} 至 ${endDate}):\n\n`;
     for (const entry of entries) {
@@ -480,21 +406,21 @@ electron_1.ipcMain.on('take-screenshot', () => {
 });
 // IPC 处理器
 electron_1.ipcMain.handle('add-clipboard-item', async (event, item) => {
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     await db.run('INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)', item.type, item.content, item.timestamp);
 });
 electron_1.ipcMain.handle('get-clipboard-history', async (event, limit) => {
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     return await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT ?', limit);
 });
 electron_1.ipcMain.handle('clear-clipboard-history', async () => {
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     await db.run('DELETE FROM clipboard_history');
 });
 // IPC 处理器
 electron_1.ipcMain.on('request-clipboard-history', async (event) => {
     console.log('request-clipboard-history');
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50');
     event.reply('clipboard-history-update', history);
     return history;
@@ -502,7 +428,7 @@ electron_1.ipcMain.on('request-clipboard-history', async (event) => {
 electron_1.ipcMain.on('clear-clipboard-history', async () => {
     try {
         console.log('clear-clipboard-history');
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         await db.run('DELETE FROM clipboard_history');
         console.log('剪贴板历史记录已清空');
     }
@@ -514,7 +440,7 @@ electron_1.ipcMain.on('clear-clipboard-history', async () => {
 electron_1.ipcMain.on('clipboard-history-update', async (event) => {
     try {
         console.log('clipboard-history-update');
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50');
         event.reply('clipboard-history-update', history);
         console.log('剪贴板历史记录已更新并发送');
@@ -524,7 +450,7 @@ electron_1.ipcMain.on('clipboard-history-update', async (event) => {
     }
 });
 electron_1.ipcMain.handle('delete-clipboard-item', async (event, id) => {
-    const db = await getDatabase();
+    const db = await (0, database_1.getDatabase)();
     await db.run('DELETE FROM clipboard_history WHERE id = ?', id);
     const updatedHistory = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC');
     return updatedHistory;
@@ -546,16 +472,8 @@ electron_1.ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => 
 });
 // 添加删除日记条目的方法
 electron_1.ipcMain.handle('delete-diary-entry', async (event, date) => {
-    try {
-        const db = await getDatabase();
-        await db.run('DELETE FROM diary_entries WHERE date = ?', [date]);
-        console.log(`日记条目已删除: ${date}`);
-        return { success: true, message: '日记条目已成功删除' };
-    }
-    catch (error) {
-        console.error('删除日记条目时出错:', error);
-        return { success: false, message: '删除日记条目时出错' };
-    }
+    await (0, database_1.deleteDiaryEntry)(date);
+    return { success: true, message: '日记条目已成功删除' };
 });
 electron_1.ipcMain.handle('refresh-work-diary', async () => {
     console.log('refresh-work-diary');
@@ -594,9 +512,7 @@ electron_1.ipcMain.on('set-reminder', (event, time) => {
 });
 // 设置每天6点钟的闹钟
 electron_1.ipcMain.on('set-daily-work-diary-alarm', async (event, time) => {
-    console.log('set-daily-work-diary-alarm to ' + time);
-    const db = await getDatabase();
-    await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', time);
+    await (0, database_1.saveAlarm)(time);
     scheduleDailyAlarm(event.sender, time);
 });
 electron_1.ipcMain.on('close-reminder', () => {
@@ -700,9 +616,7 @@ function createScreenBlocker(screenType, duration) {
     });
     console.log('blockerWindowList', blockerWindowList);
     // 更新 screen_block_settings 表
-    getDatabase().then(db => {
-        db.run('INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration) VALUES (1, ?, ?, ?)', [1, Date.now(), duration]);
-    });
+    (0, database_1.saveScreenBlockerStatus)(true, Date.now(), duration);
 }
 // 修改现有的 IPC 处理程序
 electron_1.ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
@@ -725,9 +639,7 @@ function closeScreenBlocker() {
     }
     blockerWindowList = []; // 清空列表
     // 更新 screen_block_settings 表
-    getDatabase().then(db => {
-        db.run('UPDATE screen_block_settings SET is_active = 0, start_time = NULL WHERE id = 1');
-    });
+    (0, database_1.saveScreenBlockerStatus)(false, null, null);
 }
 // 修改现有的 IPC 处理程序来关闭遮挡窗口
 electron_1.ipcMain.handle('close-screen-blocker', () => {
@@ -737,7 +649,7 @@ electron_1.ipcMain.handle('close-screen-blocker', () => {
 // 添加新的 IPC 处理程序
 electron_1.ipcMain.handle('save-screen-block-time', async (event, duration) => {
     try {
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         const startTime = Date.now();
         await db.run('INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)', [
             startTime,
@@ -754,7 +666,7 @@ electron_1.ipcMain.handle('save-screen-block-time', async (event, duration) => {
 // 如果需要,可以添加一个获取屏幕关闭时间历史的处理程序
 electron_1.ipcMain.handle('get-screen-block-history', async () => {
     try {
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         const history = await db.all('SELECT * FROM screen_block_times ORDER BY start_time DESC');
         return history;
     }
@@ -767,7 +679,7 @@ electron_1.ipcMain.handle('get-screen-block-history', async () => {
 electron_1.ipcMain.handle('save-screen-block-settings', async (event, settings) => {
     try {
         console.log('save-screen-block-settings', settings);
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         await db.run('DELETE FROM screen_block_settings');
         const res = await db.run('INSERT INTO screen_block_settings (interval_time, block_duration) VALUES (?, ?)', settings.intervalTime, settings.blockDuration);
         console.log('屏幕关闭时间配置已保存到数据库', res);
@@ -781,7 +693,7 @@ electron_1.ipcMain.handle('save-screen-block-settings', async (event, settings) 
 // 获取屏幕关闭时间配置
 electron_1.ipcMain.handle('get-screen-block-settings', async () => {
     try {
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         const settings = await db.get('SELECT * FROM screen_block_settings');
         return settings;
     }
@@ -793,7 +705,7 @@ electron_1.ipcMain.handle('get-screen-block-settings', async () => {
 // 添加这个新的 IPC 处理程序
 electron_1.ipcMain.handle('get-saved-reminder-time', async () => {
     try {
-        const db = await getDatabase();
+        const db = await (0, database_1.getDatabase)();
         const alarm = await db.get('SELECT * FROM alarms WHERE id = 1');
         if (alarm && alarm.time) {
             console.log('set alarm 1', alarm);
@@ -808,13 +720,15 @@ electron_1.ipcMain.handle('get-saved-reminder-time', async () => {
 });
 // 修改现有的 IPC 处理程序
 electron_1.ipcMain.handle('set-screen-blocker-status', async (event, isActive, duration) => {
-    const db = await getDatabase();
     const startTime = isActive ? Date.now() : null;
-    await db.run('INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration) VALUES (1, ?, ?, ?)', [isActive ? 1 : 0, startTime, duration]);
+    if (startTime && duration) {
+        await (0, database_1.saveScreenBlockerStatus)(isActive, startTime, duration);
+    }
+    else {
+        await (0, database_1.saveScreenBlockerStatus)(isActive, 0, 0);
+    }
     return { success: true };
 });
 electron_1.ipcMain.handle('get-screen-blocker-status', async () => {
-    const db = await getDatabase();
-    const status = await db.get('SELECT * FROM screen_block_settings WHERE id = 1');
-    return status || { is_active: 0, start_time: null, block_duration: null };
+    return await (0, database_1.getScreenBlockerStatus)();
 });
