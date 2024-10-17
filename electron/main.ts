@@ -1,56 +1,30 @@
 import {
   app,
   BrowserWindow,
-  ipcMain,
   globalShortcut,
-  dialog,
   session,
   clipboard,
   Menu,
-  shell,
-  screen,
   Tray
 } from 'electron'
 import path from 'path'
-import { execFile, exec } from 'child_process'
 import { Sequelize } from 'sequelize'
-import sqlite3 from 'sqlite3'
-import { open, Database } from 'sqlite'
-import { desktopCapturer } from 'electron/main'
-import Screenshots from 'electron-screenshots'
-import { nativeImage } from 'electron/common'
-import moment from 'moment'
 import {
   getDatabase,
-  saveDiaryEntry,
-  getDiaryEntries,
-  getDiaryEntryByDate,
-  deleteDiaryEntry,
-  clearDatabase,
-  saveScreenBlockerStatus,
-  getScreenBlockerStatus,
-  saveAlarm,
   getAlarm
 } from './database'
-import { setupIPC } from './ipc'
-import { createScreenBlocker, closeScreenBlocker } from './screenBlocker'
+import { scheduleDailyAlarm } from './reminderHandler'
+import { setupIPCHandle } from './ipcHandle'
+import { setupIPCOn, startCapture } from './ipcOn'
 
 const fs = require('fs').promises
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
 
-// ADB 可执行文件的路径
-const adbPath = path.join(
-  app.getAppPath(),
-  'resources',
-  'adb',
-  process.platform === 'win32' ? 'adb.exe' : 'adb'
-)
-
 let sequelize: Sequelize
 let lastClipboardContent: string = '' // 最新的剪切板内容
 
-let screenshots: Screenshots | null = null // 截图工具
+
 let win: BrowserWindow | null = null // 主窗口
 
 // 设置mac应用图标
@@ -107,6 +81,7 @@ async function createWindow() {
     skipTaskbar: true
   })
 
+  // 关闭窗口的mennu
   Menu.setApplicationMenu(null)
   // 添加这个事件监听器来处理窗口关闭
   win.on('close', (event) => {
@@ -136,9 +111,9 @@ async function createWindow() {
 
   // 更新 Content-Security-Policy
   const devCSP =
-    "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com blob:; connect-src 'self' ws: wss: https://icons8.com blob:; img-src 'self' data: https: http: blob: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com blob:;"
+    'default-src \'self\' \'unsafe-inline\' \'unsafe-eval\' blob:; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://icons8.com blob:; connect-src \'self\' ws: wss: https://icons8.com blob:; img-src \'self\' data: https: http: blob: https://icons8.com; style-src \'self\' \'unsafe-inline\' https://icons8.com; frame-src \'self\' https://icons8.com blob:;'
   const prodCSP =
-    "default-src 'self' blob:; script-src 'self' https://icons8.com blob:; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: http: blob: https://icons8.com; connect-src 'self' https: https://icons8.com blob:; frame-src 'self' https://icons8.com blob:;"
+    'default-src \'self\' blob:; script-src \'self\' https://icons8.com blob:; style-src \'self\' \'unsafe-inline\' https://icons8.com; img-src \'self\' data: https: http: blob: https://icons8.com; connect-src \'self\' https: https://icons8.com blob:; frame-src \'self\' https://icons8.com blob:;'
 
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -155,7 +130,7 @@ async function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: blob:; connect-src 'self' https: http: ws: wss: blob:; img-src 'self' data: https: http: blob:; style-src 'self' 'unsafe-inline' https: http:; frame-src 'self' https: http: blob:;"
+          'default-src \'self\' \'unsafe-inline\' \'unsafe-eval\' data: https: http: blob:; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https: http: blob:; connect-src \'self\' https: http: ws: wss: blob:; img-src \'self\' data: https: http: blob:; style-src \'self\' \'unsafe-inline\' https: http:; frame-src \'self\' https: http: blob:;'
         ]
       }
     })
@@ -167,7 +142,7 @@ async function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '/index.html'))
     // win.webContents.executeJavaScript(
-      // `alert('当前环境: 生产环境: ${path.join(__dirname, '/index.html')} | ${__dirname}');`
+    // `alert('当前环境: 生产环境: ${path.join(__dirname, '/index.html')} | ${__dirname}');`
     // )
   }
 
@@ -189,21 +164,13 @@ async function createWindow() {
   process.env.SQLITE_DB_PATH = path.join(app.getPath('userData'), 'workdiary.sqlite')
 
   // 设置IPC处理程序
-  setupIPC(win)
-
-  // 添加IPC监听器
-  ipcMain.handle('TAKE_SCREENSHOT', async () => {
-    const sources = await desktopCapturer.getSources({
-      types: ['screen'],
-      thumbnailSize: { width: 1920, height: 1080 }
-    })
-    return sources[0].thumbnail.toDataURL()
-  })
+  setupIPCHandle(win)
+  setupIPCOn(win)
 
   // 注册全局快捷键
   globalShortcut.register(process.platform === 'darwin' ? 'Command+Option+C' : 'Ctrl+Alt+C', () => {
     console.log('快速截图')
-    screenshots?.startCapture()
+    startCapture()
   })
 
   win?.webContents.on('did-finish-load', async () => {
@@ -232,39 +199,11 @@ async function createWindow() {
   // 默认打开开发者工具
   win.webContents.openDevTools()
 
-  // 初始化截图工具
-  screenshots = new Screenshots({
-    singleWindow: true, // 使用单窗口模式
-    lang: {
-      operation_ok_title: '确定',
-      operation_cancel_title: '取消',
-      operation_save_title: '保存'
-      // ... 其他语言设置
-    }
-  })
-  // 监听截图完成事件
-  screenshots.on('ok', (e, buffer, data: any) => {
-    console.log('data', data)
-    const image = nativeImage.createFromBuffer(buffer)
-    const base64 = image.toDataURL()
-    console.log('截图已捕获')
-
-    // 将截图保存到系统粘贴板
-    clipboard.writeImage(image)
-    console.log('截图已保存到系统粘贴板')
-
-    win?.webContents.send('screenshot-captured', base64)
-  })
-
-  // 监听截图取消事件
-  screenshots.on('cancel', () => {
-    console.log('Screenshot cancelled')
-  })
 
   // 初始化检查并设置闹钟
   const alarm = await getAlarm()
   if (alarm && alarm.time) {
-    console.log("set alarm", alarm)
+    console.log('set alarm', alarm)
     scheduleDailyAlarm(win?.webContents, alarm.time)
   }
 }
@@ -340,37 +279,6 @@ async function updateClipboardHistory(win: BrowserWindow, type: string, content:
   }
 }
 
-ipcMain.handle('handle-file-drop', async (event, filePaths) => {
-  console.log('Received file paths:', filePaths)
-  const processedFiles = []
-  for (const filePath of filePaths) {
-    if (!filePath) {
-      console.error('Received undefined or empty file path')
-      continue
-    }
-    try {
-      console.log('Processing file:', filePath)
-      const stats = await fs.promises.stat(filePath)
-      if (stats.isFile()) {
-        const fileBuffer = await fs.promises.readFile(filePath)
-        const base64 = fileBuffer.toString('base64')
-        const extname = path.extname(filePath).slice(1)
-        processedFiles.push({
-          name: path.basename(filePath),
-          size: stats.size,
-          data: `data:image/${extname};base64,${base64}`
-        })
-      } else {
-        console.log('Not a file:', filePath)
-      }
-    } catch (error) {
-      console.error('Error processing file:', filePath, error)
-    }
-  }
-  console.log('Processed files:', processedFiles.length)
-  return processedFiles
-})
-
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
@@ -391,309 +299,7 @@ app.on('activate', () => {
   }
 })
 
-// 添加生成周报的方法
-ipcMain.handle('generate-weekly-summary', async (event, startDate, endDate) => {
-  const db = await getDatabase()
-  const entries = await db.all(
-    'SELECT * FROM diary_entries WHERE date BETWEEN ? AND ? ORDER BY date ASC',
-    [startDate, endDate]
-  )
-
-  let summary = `周报 (${startDate} 至 ${endDate}):\n\n`
-
-  for (const entry of entries) {
-    summary += `日期: ${entry.date}\n`
-    summary += `内容: ${entry.content}\n`
-
-    const todos = JSON.parse(entry.todos || '[]')
-    if (todos.length > 0) {
-      summary += '待办事项:\n'
-      for (const todo of todos) {
-        summary += `- [${todo.done ? 'x' : ' '}] ${todo.text}\n`
-      }
-    }
-
-    summary += '\n---\n\n'
-  }
-
-  // 这里可以添加更复杂的摘要生成逻辑,例如使用 AI 生成摘要
-
-  return summary
-})
-
 app.on('will-quit', () => {
   // 注销所有快捷键
   globalShortcut.unregisterAll()
-})
-
-// 处理从渲染进程发来的截图请求
-ipcMain.on('take-screenshot', () => {
-  screenshots?.startCapture()
-})
-
-// IPC 处理器
-ipcMain.handle('add-clipboard-item', async (event, item) => {
-  const db = await getDatabase()
-  await db.run(
-    'INSERT INTO clipboard_history (type, content, timestamp) VALUES (?, ?, ?)',
-    item.type,
-    item.content,
-    item.timestamp
-  )
-})
-
-ipcMain.handle('get-clipboard-history', async (event, limit) => {
-  const db = await getDatabase()
-  return await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT ?', limit)
-})
-
-ipcMain.handle('clear-clipboard-history', async () => {
-  const db = await getDatabase()
-  await db.run('DELETE FROM clipboard_history')
-})
-
-// IPC 处理器
-ipcMain.on('request-clipboard-history', async (event: any) => {
-  console.log('request-clipboard-history')
-  const db = await getDatabase()
-  const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50')
-  event.reply('clipboard-history-update', history)
-  return history
-})
-
-ipcMain.on('clear-clipboard-history', async () => {
-  try {
-    console.log('clear-clipboard-history')
-    const db = await getDatabase()
-    await db.run('DELETE FROM clipboard_history')
-    console.log('剪贴板历史记录已清空')
-  } catch (error) {
-    console.error('清空剪贴板历史记录时出错:', error)
-  }
-})
-
-// 添加 clipboard-history-update 事件处理
-ipcMain.on('clipboard-history-update', async (event) => {
-  try {
-    console.log('clipboard-history-update')
-    const db = await getDatabase()
-    const history = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC LIMIT 50')
-    event.reply('clipboard-history-update', history)
-    console.log('剪贴板历史记录已更新并发送')
-  } catch (error) {
-    console.error('获取剪贴板历史记录时出错:', error)
-  }
-})
-
-ipcMain.handle('delete-clipboard-item', async (event, id) => {
-  const db = await getDatabase()
-  await db.run('DELETE FROM clipboard_history WHERE id = ?', id)
-  const updatedHistory = await db.all('SELECT * FROM clipboard_history ORDER BY timestamp DESC')
-  return updatedHistory
-})
-
-ipcMain.handle('write-text-to-clipboard', async (event, text) => {
-  clipboard.writeText(text)
-})
-
-ipcMain.handle('open-url', async (event, text) => {
-  // 打开url
-  shell.openExternal(text)
-})
-
-ipcMain.handle('preview-clipboard-image', async (event, text) => {
-  // 打开图片
-  shell.openPath(text)
-})
-
-ipcMain.handle('write-image-to-clipboard', async (event, dataURL) => {
-  const img = nativeImage.createFromDataURL(dataURL)
-  clipboard.writeImage(img)
-})
-
-ipcMain.handle('refresh-work-diary', async () => {
-  console.log('refresh-work-diary')
-})
-
-// 工作提醒
-let reminderWindow: BrowserWindow | null = null
-
-function createReminderWindow(message: string) {
-  console.log('createReminderWindow', message)
-  reminderWindow = new BrowserWindow({
-    width: 340,
-    height: 380,
-    show: false,
-    frame: false,
-    alwaysOnTop: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    },
-    icon: path.join(__dirname, '../public/icon.png')
-  })
-
-  // 加载 workdiary.html 文件
-  reminderWindow.loadFile(path.join(__dirname, '../public/workdiary_reminder.html'))
-
-  // 传递提醒消息到渲染进程
-  reminderWindow.webContents.once('did-finish-load', () => {
-    reminderWindow?.webContents.send('set-reminder-message', message)
-  })
-
-  reminderWindow.once('ready-to-show', () => {
-    reminderWindow?.show()
-  })
-}
-
-ipcMain.on('set-reminder', (event, time) => {
-  const delay = new Date(time).getTime() - Date.now()
-  console.log('set-reminder', delay)
-  setTimeout(() => {
-    createReminderWindow('您��置的提醒时��到了')
-  }, delay)
-})
-
-ipcMain.on('close-reminder', () => {
-  reminderWindow?.close()
-  reminderWindow = null
-  console.log('close-reminder')
-})
-
-
-
-function scheduleDailyAlarm(sender: Electron.WebContents, time: string) {
-  const now = moment()
-  const nextAlarm = moment(moment().format('YYYY-MM-DD') + ' ' + time)
-  if (now.isAfter(nextAlarm)) {
-    nextAlarm.add(1, 'day')
-  }
-
-  const delay = nextAlarm.diff(now)
-  console.log('set alarm 2', time, delay)
-  setTimeout(() => {
-    triggerAlarm(sender)
-    setInterval(() => triggerAlarm(sender), 24 * 60 * 60 * 1000) // 每24小时触发一次
-  }, delay)
-}
-
-// 触发闹钟事件
-function triggerAlarm(sender: Electron.WebContents) {
-  createReminderWindow('您设置的提醒时间到了')
-}
-
-ipcMain.handle('execute-command', async (_, command) => {
-  return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(stdout)
-      }
-    })
-  })
-})
-
-// 打开pdf的接口工具
-ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
-  const javaPath = path.join(app.getAppPath(), 'public', 'jdk-17.0.12', 'bin', 'java')
-  const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
-  const command = `${javaPath} -jar "${pdfBoxPath}" debug "${filePath}"`
-  // const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
-
-  return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(stdout)
-      }
-    })
-  })
-})
-
-// 选择文件
-ipcMain.handle('get-file-path', async (event, options) => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openFile'],
-    filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-  })
-  if (result.canceled) {
-    return null
-  } else {
-    return result.filePaths[0]
-  }
-})
-
-// 修改现有的 createScreenBlocker 函数
-ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
-  createScreenBlocker(screenType, duration)
-  setTimeout(() => {
-    closeScreenBlocker()
-  }, duration)
-  return '屏幕遮挡器已创建'
-})
-
-ipcMain.handle('close-screen-blocker', () => {
-  closeScreenBlocker()
-  return '屏幕遮挡器已关闭'
-})
-
-// 添加新的 IPC 处理程序
-ipcMain.handle('save-screen-block-time', async (event, duration) => {
-  try {
-    const db = await getDatabase()
-    const startTime = Date.now()
-    await db.run('INSERT INTO screen_block_times (start_time, duration) VALUES (?, ?)', [
-      startTime,
-      duration
-    ])
-    console.log('屏幕关闭时间已保存到数据库')
-    return { success: true, message: '屏幕关闭时间已成功保存' }
-  } catch (error) {
-    console.error('保存屏幕关闭时间时出错:', error)
-    return { success: false, message: '保存屏幕关闭时间时出错' }
-  }
-})
-
-// 如果需要,可以添加一个获取屏幕关闭时间历史的处理程序
-ipcMain.handle('get-screen-block-history', async () => {
-  try {
-    const db = await getDatabase()
-    const history = await db.all('SELECT * FROM screen_block_times ORDER BY start_time DESC')
-    return history
-  } catch (error) {
-    console.error('获取屏幕关闭时间历史时出错:', error)
-    return []
-  }
-})
-
-// 创建屏幕关闭时间配置表
-ipcMain.handle('save-screen-block-settings', async (event, settings) => {
-  try {
-    console.log('save-screen-block-settings', settings)
-    const db = await getDatabase()
-    await db.run('DELETE FROM screen_block_settings')
-    const res = await db.run(
-      'INSERT INTO screen_block_settings (interval_time, block_duration) VALUES (?, ?)',
-      settings.intervalTime,
-      settings.blockDuration
-    )
-    console.log('屏幕关闭时间配置已保存到数据库', res)
-    return { success: true, message: '屏幕关闭时间配置已成功保存' }
-  } catch (error) {
-    console.error('保存屏幕关闭时间配置时出错:', error)
-    return { success: false, message: '保存屏幕关闭时间配置时出错' }
-  }
-})
-
-// 获取屏幕关闭时间配置
-ipcMain.handle('get-screen-block-settings', async () => {
-  try {
-    const db = await getDatabase()
-    const settings = await db.get('SELECT * FROM screen_block_settings')
-    return settings
-  } catch (error) {
-    console.error('获取屏幕关闭时间配置时出错:', error)
-    return null
-  }
 })
