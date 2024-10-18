@@ -5,14 +5,17 @@ const electron_1 = require("electron");
 const database_1 = require("./database");
 const screenBlocker_1 = require("./screenBlocker");
 function setupScreenBlockerHandle(win) {
+    // 设置屏幕阻挡器状态
     electron_1.ipcMain.handle('set-screen-blocker-status', async (event, isActive, duration) => {
         const startTime = isActive ? Date.now() : null;
-        await (0, database_1.saveScreenBlockerStatus)(isActive, startTime, duration ? duration : null);
+        await (0, database_1.saveScreenBlockerStatus)(isActive, startTime, duration ? duration : null, null);
         return { success: true };
     });
+    // 获取屏幕阻挡器状态
     electron_1.ipcMain.handle('get-screen-blocker-status', async () => {
         return await (0, database_1.getScreenBlockerStatus)();
     });
+    // 保存屏幕阻止时间
     electron_1.ipcMain.handle('save-screen-block-time', async (event, duration) => {
         // 保存屏幕阻止时间逻辑
         try {
@@ -30,6 +33,7 @@ function setupScreenBlockerHandle(win) {
             return { success: false, message: '保存屏幕关闭时间时出错' };
         }
     });
+    // 获取屏幕阻止历史
     electron_1.ipcMain.handle('get-screen-block-history', async () => {
         // 获取屏幕阻止历史逻辑
         try {
@@ -65,8 +69,7 @@ function setupScreenBlockerHandle(win) {
     electron_1.ipcMain.handle('get-screen-block-settings', async () => {
         try {
             const db = await (0, database_1.getDatabase)();
-            const settings = await db.get('SELECT * FROM screen_block_settings');
-            return settings;
+            return await db.get('SELECT * FROM screen_block_settings');
         }
         catch (error) {
             console.error('获取屏幕关闭时间配置时出错:', error);

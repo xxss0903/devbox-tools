@@ -7,6 +7,7 @@ exports.closeScreenBlocker = exports.createScreenBlocker = void 0;
 const electron_1 = require("electron");
 const path_1 = __importDefault(require("path"));
 const database_1 = require("./database");
+const moment_1 = __importDefault(require("moment"));
 let blockerWindowList = [];
 function createScreenBlocker(screenType, duration) {
     console.log('createScreenBlocker', screenType, duration);
@@ -48,8 +49,11 @@ function createScreenBlocker(screenType, duration) {
         return tempWindow;
     });
     console.log('blockerWindowList', blockerWindowList);
-    // 更新 screen_block_settings 表
-    (0, database_1.saveScreenBlockerStatus)(true, Date.now(), duration);
+    const now = (0, moment_1.default)().valueOf();
+    // 计算下次屏保时间
+    const nextBlockerTime = (0, moment_1.default)().add(duration, 'minutes').valueOf();
+    // 更新 screen_block_settings 表，包含下次屏保时间
+    (0, database_1.saveScreenBlockerStatus)(true, now, duration, nextBlockerTime);
 }
 exports.createScreenBlocker = createScreenBlocker;
 function closeScreenBlocker() {
@@ -63,6 +67,6 @@ function closeScreenBlocker() {
     }
     blockerWindowList = []; // 清空列表 
     // 更新 screen_block_settings 表
-    (0, database_1.saveScreenBlockerStatus)(false, null, null);
+    (0, database_1.saveScreenBlockerStatus)(false, null, null, null);
 }
 exports.closeScreenBlocker = closeScreenBlocker;
