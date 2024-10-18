@@ -57,7 +57,7 @@ let win: BrowserWindow | null = null
 
 async function createWindow() {
   // 关闭窗口的mennu
-  Menu.setApplicationMenu(null)
+  // Menu.setApplicationMenu(null)
   // 创建主窗口
   win = new BrowserWindow({
     width: 1600,
@@ -187,7 +187,7 @@ function initMainWinListener(win: BrowserWindow) {
       event.preventDefault()
     }
   })
-  
+
   // 添加这个事件监听器来处理窗口关闭
   win.on('close', (event) => {
     event.preventDefault() // 阻止窗口关闭

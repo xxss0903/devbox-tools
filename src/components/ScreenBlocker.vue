@@ -16,7 +16,9 @@ const screenType = ref('windows-3d-blocker') // 默认屏保类型
 
 const screenTypes = [
   { value: 'windows-3d-blocker', label: '3D屏保' },
-  { value: 'windows-origin-blocker', label: '原始屏保' }
+  { value: 'windows-origin-blocker', label: '原始屏保' },
+  { value: 'windows-matrix-blocker', label: '矩阵屏保' },
+  { value: 'windows-error-blocker', label: '错误屏保' }
 ]
 
 const currentTime = ref(Date.now())
@@ -122,6 +124,11 @@ const getSettings = async () => {
   }
 }
 
+const previewScreenBlocker = () => {
+  console.log('previewScreenBlocker', screenType.value)
+  window.electronAPI.createScreenBlocker(3000, screenType.value) // 预览10秒
+}
+
 onMounted(async () => {
   try {
     await getSettings()
@@ -165,13 +172,16 @@ onUnmounted(() => {
             step="0.1"
           />
         </div>
-        <div class="form-group">
+        <div class="form-group screen-type-group">
           <label for="screenType">屏保类型：</label>
-          <select id="screenType" v-model="screenType">
-            <option v-for="type in screenTypes" :key="type.value" :value="type.value">
-              {{ type.label }}
-            </option>
-          </select>
+          <div class="screen-type-controls">
+            <select id="screenType" v-model="screenType">
+              <option v-for="type in screenTypes" :key="type.value" :value="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+            <button @click="previewScreenBlocker" class="preview-button">预览</button>
+          </div>
         </div>
         <div class="countdown-display">
           <h3>下次锁屏倒计时:</h3>
@@ -293,5 +303,33 @@ button.active:hover {
   font-weight: bold;
   color: #4caf50;
   margin-top: 10px;
+}
+
+.screen-type-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-type-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.screen-type-controls select {
+  flex-grow: 1;
+}
+
+.preview-button {
+  padding: 8px 15px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.preview-button:hover {
+  background-color: #1976D2;
 }
 </style>

@@ -36,6 +36,12 @@ function createScreenBlocker(screenType, duration) {
         else if (screenType === 'windows-3d-blocker') {
             tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-3d-blocker.html'));
         }
+        else if (screenType === 'windows-matrix-blocker') {
+            tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-matrix-blocker.html'));
+        }
+        else if (screenType === 'windows-error-blocker') {
+            tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-error-blocker.html'));
+        }
         else {
             tempWindow.loadFile(path_1.default.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html'));
         }

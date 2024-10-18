@@ -44,7 +44,7 @@ let sequelize;
 let win = null;
 async function createWindow() {
     // 关闭窗口的mennu
-    electron_1.Menu.setApplicationMenu(null);
+    // Menu.setApplicationMenu(null)
     // 创建主窗口
     win = new electron_1.BrowserWindow({
         width: 1600,
