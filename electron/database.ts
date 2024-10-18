@@ -58,10 +58,21 @@ async function initializeTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       interval_time INTEGER,
       block_duration INTEGER,
-      is_active BOOLEAN NOT NULL,
+      is_active INTEGER NOT NULL,
       start_time INTEGER
     )
   `)
+
+  // 检查 screen_block_settings 表是否为空
+  const count = await db?.get('SELECT COUNT(*) as count FROM screen_block_settings')
+  if (count && count.count === 0) {
+    // 如果表为空,插入默认值
+    await db?.run(`
+      INSERT INTO screen_block_settings (interval_time, block_duration, is_active, start_time)
+      VALUES (3600000, 300000, 0, NULL)
+    `)
+    console.log('Inserted default values into screen_block_settings')
+  }
 }
 
 // 添加数据库操作函数
