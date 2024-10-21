@@ -18,7 +18,13 @@ async function getDatabase(): Promise<Database> {
   return db
 }
 
+/**
+ * 初始化数据库表
+ * id为1，
+ * 时间存储在time字段
+ */
 async function initializeTables() {
+  // 创建闹钟表, 用于存储闹钟时间，id为1，时间存储在time字段
   await db?.exec(`
     CREATE TABLE IF NOT EXISTS alarms (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,6 +32,13 @@ async function initializeTables() {
     )
   `)
 
+  /*
+   * 创建日记表, 用于存储日记，
+   * id为1，
+   * 日期存储在date字段，
+   * 内容存储在content字段，
+   * todo存储在todos字段
+   */
   await db?.exec(`
     CREATE TABLE IF NOT EXISTS diary_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,6 +48,13 @@ async function initializeTables() {
     )
   `)
 
+  /*
+   * 创建剪切板历史表, 用于存储剪切板历史，
+   * id为1，
+   * 类型存储在type字段，
+   * 内容存储在content字段，
+   * 时间戳存储在timestamp字段
+   */
   await db?.exec(`
     CREATE TABLE IF NOT EXISTS clipboard_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,6 +64,13 @@ async function initializeTables() {
     )
   `)
 
+  /*
+   * 创建屏幕阻止历史表, 用于存储屏幕阻止历史，
+   * id为1，
+   * 开始时间存储在start_time字段，
+   * 持续时间存储在duration字段，
+   * 间隔时间存储在interval_time字段
+   */
   await db?.exec(`
     CREATE TABLE IF NOT EXISTS screen_block_times_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,23 +80,35 @@ async function initializeTables() {
     )
   `)
 
+  /*
+   * 创建屏幕阻止配置表, 用于存储屏幕阻止配置，
+   * id为1，
+   * 间隔时间存储在interval_time字段，
+   * 持续时间存储在block_duration字段，
+   * 是否激活存储在is_active字段，
+   * 开始时间存储在start_time字段，
+   * 下一次屏蔽时间存储在next_block_time字段
+   */
   await db?.exec(`
     CREATE TABLE IF NOT EXISTS screen_block_settings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       interval_time INTEGER,
       block_duration INTEGER,
       is_active INTEGER NOT NULL,
-      start_time INTEGER
+      start_time INTEGER,
+      next_block_time INTEGER
     )
   `)
 
-  // 检查 screen_block_settings 表是否为空
+  /**
+   * 检查 screen_block_settings 表是否为空
+   */
   const count = await db?.get('SELECT COUNT(*) as count FROM screen_block_settings')
   if (count && count.count === 0) {
     // 如果表为空,插入默认值
     await db?.run(`
-      INSERT INTO screen_block_settings (interval_time, block_duration, is_active, start_time)
-      VALUES (3600000, 300000, 0, NULL)
+      INSERT INTO screen_block_settings (interval_time, block_duration, is_active, start_time, next_block_time)
+      VALUES (3600000, 300000, 0, NULL, NULL)
     `)
     console.log('Inserted default values into screen_block_settings')
   }
@@ -104,11 +143,11 @@ async function clearDatabase() {
   await db.run('DELETE FROM diary_entries')
 }
 
-async function saveScreenBlockerStatus(isActive: boolean, startTime: number | null, duration: number | null) {
+async function saveScreenBlockerStatus(isActive: boolean, startTime: number | null, duration: number | null, nextBlockTime: number | null) {
   const db = await getDatabase()
   await db.run(
-    'INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration) VALUES (1, ?, ?, ?)',
-    [isActive ? 1 : 0, startTime, duration]
+    'INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration, next_block_time) VALUES (1, ?, ?, ?, ?)',
+    [isActive ? 1 : 0, startTime, duration, nextBlockTime]
   )
 }
 
