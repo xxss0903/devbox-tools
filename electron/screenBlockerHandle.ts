@@ -1,21 +1,23 @@
-import { BrowserWindow, ipcMain } from "electron"
-import { getDatabase, getScreenBlockerStatus, saveScreenBlockerStatus } from "./database"
-import { closeScreenBlocker, createScreenBlocker } from "./screenBlocker"
+import { BrowserWindow, ipcMain } from 'electron'
+import { getDatabase, getScreenBlockerStatus, saveScreenBlockerStatus } from './database'
+import { closeScreenBlocker, createScreenBlocker } from './screenBlocker'
 
 
 export function setupScreenBlockerHandle(win: BrowserWindow) {
 
-    ipcMain.handle('set-screen-blocker-status', async (event, isActive: boolean, duration?: number) => {
-        const startTime = isActive ? Date.now() : null
-        await saveScreenBlockerStatus(isActive, startTime, duration ? duration : null)
-        return { success: true }
-      })
-    
-      ipcMain.handle('get-screen-blocker-status', async () => {
-        return await getScreenBlockerStatus()
-      })
-    
-      
+  // 设置屏幕阻挡器状态
+  ipcMain.handle('set-screen-blocker-status', async (event, isActive: boolean, duration?: number) => {
+    const startTime = isActive ? Date.now() : null
+    await saveScreenBlockerStatus(isActive, startTime, duration ? duration : null)
+    return { success: true }
+  })
+
+  // 获取屏幕阻挡器状态
+  ipcMain.handle('get-screen-blocker-status', async () => {
+    return await getScreenBlockerStatus()
+  })
+
+  // 保存屏幕阻止时间
   ipcMain.handle('save-screen-block-time', async (event, duration) => {
     // 保存屏幕阻止时间逻辑
     try {
@@ -33,6 +35,7 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
     }
   })
 
+  // 获取屏幕阻止历史
   ipcMain.handle('get-screen-block-history', async () => {
     // 获取屏幕阻止历史逻辑
     try {
@@ -72,17 +75,16 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
   ipcMain.handle('get-screen-block-settings', async () => {
     try {
       const db = await getDatabase()
-      const settings = await db.get('SELECT * FROM screen_block_settings')
-      return settings
+      return await db.get('SELECT * FROM screen_block_settings')
     } catch (error) {
       console.error('获取屏幕关闭时间配置时出错:', error)
       return null
     }
   })
 
-  
+
 // 修改现有的 createScreenBlocker 函数
-ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
+  ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
     createScreenBlocker(screenType, duration)
     setTimeout(() => {
       closeScreenBlocker()
