@@ -1,5 +1,9 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { getDatabase, getScreenBlockerStatus, saveScreenBlockerStatus } from './database'
+import {
+  getDatabase,
+  saveScreenBlockerStatus,
+  getScreenBlockerStatus,
+} from './database'
 import { closeScreenBlocker, createScreenBlocker } from './screenBlocker'
 
 
@@ -8,7 +12,7 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
   // 设置屏幕阻挡器状态
   ipcMain.handle('set-screen-blocker-status', async (event, isActive: boolean, duration?: number) => {
     const startTime = isActive ? Date.now() : null
-    await saveScreenBlockerStatus(isActive, startTime, duration ? duration : null)
+    await saveScreenBlockerStatus(isActive, startTime, duration ? duration : null, null)
     return { success: true }
   })
 

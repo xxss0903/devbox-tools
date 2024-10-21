@@ -1,5 +1,5 @@
 import { BrowserWindow, clipboard, ipcMain, nativeImage, shell } from "electron"
-import { getDatabase, getScreenBlockerStatus, saveScreenBlockerStatus } from "./database"
+import { getDatabase } from "./database"
 
 // 剪切板管理
 export function setupClipboardManagerHandle(win: BrowserWindow) {

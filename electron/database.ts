@@ -49,7 +49,7 @@ async function initializeTables() {
   `)
 
   /*
-   * 创建剪切板历史表, 用于存储剪切板历史，
+   * 创建剪切板历史表, 用于��储剪切板历史，
    * id为1，
    * 类型存储在type字段，
    * 内容存储在content字段，
@@ -166,6 +166,20 @@ async function getAlarm() {
   return await db.get('SELECT * FROM alarms WHERE id = 1')
 }
 
+async function setNextBlockTime(nextBlockTime: number) {
+  const db = await getDatabase()
+  await db.run(
+    'UPDATE screen_block_settings SET next_block_time = ? WHERE id = 1',
+    [nextBlockTime]
+  )
+}
+
+async function getNextBlockTime() {
+  const db = await getDatabase()
+  const result = await db.get('SELECT next_block_time FROM screen_block_settings WHERE id = 1')
+  return result ? result.next_block_time : null
+}
+
 // 导出所有数据库操作函数
 export {
   getDatabase,
@@ -176,6 +190,8 @@ export {
   clearDatabase,
   saveScreenBlockerStatus,
   getScreenBlockerStatus,
+  setNextBlockTime,
+  getNextBlockTime,
   saveAlarm,
   getAlarm
 }

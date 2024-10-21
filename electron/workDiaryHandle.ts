@@ -1,6 +1,5 @@
-import { BrowserWindow, clipboard, ipcMain, nativeImage } from "electron"
-import { clearDatabase, deleteDiaryEntry, getAlarm, getDatabase, getDiaryEntries, getDiaryEntryByDate, getScreenBlockerStatus, saveDiaryEntry, saveScreenBlockerStatus } from "./database"
-import { closeScreenBlocker, createScreenBlocker } from "./screenBlocker"
+import { BrowserWindow, ipcMain } from "electron"
+import { clearDatabase, deleteDiaryEntry, getAlarm, getDatabase, getDiaryEntries, getDiaryEntryByDate, saveDiaryEntry } from "./database"
 
 
 export function setupWorkDiaryHandle(win: BrowserWindow) {
