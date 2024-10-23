@@ -32,7 +32,7 @@ const formattedRemainingTime = computed(() => {
 })
 
 const updateCurrentTime = () => {
-  currentTime.value = Date.now()
+  currentTime.value = moment().valueOf()
 }
 
 const startBlocker = (duration: number) => {
@@ -122,6 +122,11 @@ const getSettings = async () => {
       intervalTime.value = settings.interval_time
       blockDuration.value = settings.block_duration
       screenType.value = settings.screen_type || 'windows-3d-blocker'
+      isPeriodicBlockerActive.value = settings.is_active
+      nextBlockTime.value = settings.next_block_time
+      if (isPeriodicBlockerActive.value) {
+        startCountdown()
+      }
     }
   } catch (error) {
     console.error('获取设置失败:', error)
