@@ -2,6 +2,7 @@ import { app } from 'electron'
 import path from 'path'
 import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
+import moment from 'moment'
 
 let db: Database | null = null
 
@@ -96,7 +97,8 @@ async function initializeTables() {
       block_duration INTEGER,
       is_active INTEGER NOT NULL,
       start_time INTEGER,
-      next_block_time INTEGER
+      next_block_time INTEGER,
+      screen_type TEXT
     )
   `)
 
@@ -105,10 +107,11 @@ async function initializeTables() {
    */
   const count = await db?.get('SELECT COUNT(*) as count FROM screen_block_settings')
   if (count && count.count === 0) {
+    const nextBlockTime = moment().add(120 * 60 * 1000).valueOf()
     // 如果表为空,插入默认值
     await db?.run(`
-      INSERT INTO screen_block_settings (interval_time, block_duration, is_active, start_time, next_block_time)
-      VALUES (3600000, 300000, 0, NULL, NULL)
+      INSERT INTO screen_block_settings (interval_time, block_duration, is_active, start_time, next_block_time, screen_type)
+      VALUES (120, 5, 0, NULL, ${nextBlockTime}, "windows-3d-blocker")
     `)
     console.log('Inserted default values into screen_block_settings')
   }
@@ -143,11 +146,23 @@ async function clearDatabase() {
   await db.run('DELETE FROM diary_entries')
 }
 
-async function saveScreenBlockerStatus(isActive: boolean, startTime: number | null, duration: number | null, nextBlockTime: number | null) {
+async function saveScreenBlockerStatus(isActive: boolean, intervalTime: number | null, duration: number | null, nextBlockTime: number | null) {
   const db = await getDatabase()
   await db.run(
     'INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration, next_block_time) VALUES (1, ?, ?, ?, ?)',
-    [isActive ? 1 : 0, startTime, duration, nextBlockTime]
+    [isActive ? 1 : 0, intervalTime, duration, nextBlockTime]
+  )
+}
+
+async function updateNextBlockTime(duration: number) {
+  // const  milValue = (duration) * 60 * 1000
+  // const nextBlockerTime = moment().add(milValue, 'millisecond').valueOf()
+  const db = await getDatabase()
+  const intervalTime = await db.get('SELECT interval_time  FROM screen_block_settings  WHERE id = 1')
+  const nextBlockTime = (duration +  intervalTime) * 60 * 1000
+  await db.run(
+    'INSERT OR REPLACE INTO screen_block_settings (id, next_block_time) VALUES (1, ?)',
+    [nextBlockTime]
   )
 }
 
@@ -193,5 +208,6 @@ export {
   setNextBlockTime,
   getNextBlockTime,
   saveAlarm,
-  getAlarm
+  getAlarm,
+  updateNextBlockTime
 }

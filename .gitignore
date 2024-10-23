@@ -30,3 +30,5 @@ coverage
 *.tsbuildinfo
 
 /public/jdk-17.0.12
+
+dist-electron

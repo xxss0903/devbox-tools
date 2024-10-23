@@ -2,9 +2,10 @@ import { BrowserWindow, ipcMain } from 'electron'
 import {
   getDatabase,
   saveScreenBlockerStatus,
-  getScreenBlockerStatus,
+  getScreenBlockerStatus, updateNextBlockTime
 } from './database'
 import { closeScreenBlocker, createScreenBlocker } from './screenBlocker'
+import moment from 'moment'
 
 
 export function setupScreenBlockerHandle(win: BrowserWindow) {
@@ -56,13 +57,21 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
   ipcMain.handle('save-screen-block-settings', async (event, settings) => {
     try {
       console.log('save-screen-block-settings', settings)
+      // 根据intervalTime计算出下次关闭屏幕的事件
+      const intervalTimeValue = settings.intervalTime * 1000 * 60 // 秒换算为毫秒
+      const nextBlockTime =  moment().add(intervalTimeValue, 'millisecond').valueOf()
       const db = await getDatabase()
-      await db.run('DELETE FROM screen_block_settings')
       const res = await db.run(
-        'INSERT INTO screen_block_settings (interval_time, block_duration) VALUES (?, ?)',
-        settings.intervalTime,
-        settings.blockDuration
+        'UPDATE screen_block_settings SET interval_time=?, block_duration=?,screen_type=?,next_block_time=? WHERE id = 1',
+        [settings.intervalTime, settings.blockDuration, settings.screenType, nextBlockTime]
       )
+      // await db.run('DELETE FROM screen_block_settings')
+      // const res = await db.run(
+      //   'INSERT INTO screen_block_settings (interval_time, block_duration, screen_type) VALUES (?, ?, ?)',
+      //   settings.intervalTime,
+      //   settings.blockDuration,
+      //   settings.screenType
+      // )
       console.log('屏幕关闭时间配置已保存到数据库', res)
       return { success: true, message: '屏幕关闭时间配置已成功保存' }
     } catch (error) {
@@ -70,6 +79,8 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
       return { success: false, message: '保存屏幕关闭时间配置时出错' }
     }
   })
+
+  // 关闭屏幕遮挡
   ipcMain.handle('close-screen-blocker', () => {
     closeScreenBlocker()
     return '屏幕遮挡器已关闭'
@@ -86,13 +97,16 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
     }
   })
 
-
-// 修改现有的 createScreenBlocker 函数
+  // 修改现有的 createScreenBlocker 函数
   ipcMain.handle('create-screen-blocker', (event, duration, screenType) => {
     createScreenBlocker(screenType, duration)
     setTimeout(() => {
       closeScreenBlocker()
     }, duration)
+    // 计算下次屏保时间
+
+    // 更新 screen_block_settings 表，包含下次屏保时间
+    updateNextBlockTime(duration)
     return '屏幕遮挡器已创建'
   })
 }

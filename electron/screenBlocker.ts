@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron'
 import path from 'path'
-import { saveScreenBlockerStatus } from './database'
+import { saveScreenBlockerStatus, updateNextBlockTime } from './database'
 import moment from 'moment'
 
 let blockerWindowList: BrowserWindow[] = []
@@ -47,13 +47,6 @@ export function createScreenBlocker(screenType: string, duration: number) {
     return tempWindow
   })
   console.log('blockerWindowList', blockerWindowList)
-
-  const now = moment().valueOf()
-  // 计算下次屏保时间
-  const nextBlockerTime = moment().add(duration, 'minutes').valueOf()
-  
-  // 更新 screen_block_settings 表，包含下次屏保时间
-  saveScreenBlockerStatus(true, now, duration, nextBlockerTime)
 }
 
 export function closeScreenBlocker() {
@@ -65,8 +58,5 @@ export function closeScreenBlocker() {
       }
     })
   }
-  blockerWindowList = [] // 清空列表 
-
-  // 更新 screen_block_settings 表
-  saveScreenBlockerStatus(false, null, null, null)
+  blockerWindowList = [] // 清空列表
 }
