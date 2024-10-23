@@ -4,8 +4,8 @@ console.log('Preload script is running')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // 设置屏幕保护时间
-  setScreenBlockerStatus: (isActive: boolean, duration?: number) =>
-    ipcRenderer.invoke('set-screen-blocker-status', isActive, duration),
+  setScreenBlockerStatus: (isActive: boolean) =>
+    ipcRenderer.invoke('set-screen-blocker-status', isActive),
   // 获取屏幕保护时间
   getScreenBlockerStatus: () => ipcRenderer.invoke('get-screen-blocker-status'),
   // 关闭屏幕遮挡器

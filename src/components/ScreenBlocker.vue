@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
+import moment from 'moment'
 
 const router = useRouter()
 let timer: NodeJS.Timeout | null = null
@@ -39,7 +40,7 @@ const startBlocker = (duration: number) => {
   isBlocking.value = true
   setTimeout(() => {
     isBlocking.value = false
-    nextBlockTime.value = Date.now() + intervalTime.value * 60000
+    nextBlockTime.value = moment().add(intervalTime.value * 60000, "millisecond").valueOf()
   }, duration)
 }
 
@@ -65,7 +66,10 @@ const goBack = () => {
   router.back()
 }
 
-const togglePeriodicBlocker = () => {
+const togglePeriodicBlocker = async () => {
+  await window.electronAPI.setScreenBlockerStatus({
+    isActive: isPeriodicBlockerActive.value,
+  })
   if (isPeriodicBlockerActive.value) {
     if (timer) {
       clearInterval(timer)

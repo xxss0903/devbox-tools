@@ -166,6 +166,17 @@ async function updateNextBlockTime(duration: number) {
   )
 }
 
+async function updateScreenBlockerIsActive(isActive: boolean) {
+  // const  milValue = (duration) * 60 * 1000
+  // const nextBlockerTime = moment().add(milValue, 'millisecond').valueOf()
+  const activeValue = isActive ? 1 : 0
+  const db = await getDatabase()
+  await db.run(
+    'INSERT OR REPLACE INTO screen_block_settings (id, is_active) VALUES (1, ?)',
+    [activeValue]
+  )
+}
+
 async function getScreenBlockerStatus() {
   const db = await getDatabase()
   return await db.get('SELECT * FROM screen_block_settings WHERE id = 1')
@@ -209,5 +220,6 @@ export {
   getNextBlockTime,
   saveAlarm,
   getAlarm,
-  updateNextBlockTime
+  updateNextBlockTime,
+  updateScreenBlockerIsActive
 }
