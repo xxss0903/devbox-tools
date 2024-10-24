@@ -146,14 +146,10 @@ async function clearDatabase() {
   await db.run('DELETE FROM diary_entries')
 }
 
-async function saveScreenBlockerStatus(isActive: boolean, intervalTime: number | null, duration: number | null, nextBlockTime: number | null) {
-  const db = await getDatabase()
-  await db.run(
-    'INSERT OR REPLACE INTO screen_block_settings (id, is_active, start_time, block_duration, next_block_time) VALUES (1, ?, ?, ?, ?)',
-    [isActive ? 1 : 0, intervalTime, duration, nextBlockTime]
-  )
-}
-
+/**
+ * 更新下次屏保时间
+ * @param duration 间隔时间
+ */
 async function updateNextBlockTime(duration: number) {
   // const  milValue = (duration) * 60 * 1000
   // const nextBlockerTime = moment().add(milValue, 'millisecond').valueOf()
@@ -161,18 +157,20 @@ async function updateNextBlockTime(duration: number) {
   const intervalTime = await db.get('SELECT interval_time  FROM screen_block_settings  WHERE id = 1')
   const nextBlockTime = (duration +  intervalTime) * 60 * 1000
   await db.run(
-    'INSERT OR REPLACE INTO screen_block_settings (id, next_block_time) VALUES (1, ?)',
+    'UPDATE screen_block_settings SET next_block_time = ? WHERE id = 1',
     [nextBlockTime]
   )
 }
 
+/**
+ * 开关屏保
+ * @param isActive 
+ */
 async function updateScreenBlockerIsActive(isActive: boolean) {
-  // const  milValue = (duration) * 60 * 1000
-  // const nextBlockerTime = moment().add(milValue, 'millisecond').valueOf()
   const activeValue = isActive ? 1 : 0
   const db = await getDatabase()
   await db.run(
-    'INSERT OR REPLACE INTO screen_block_settings (id, is_active) VALUES (1, ?)',
+    'UPDATE screen_block_settings SET is_active = ? WHERE id = 1',
     [activeValue]
   )
 }
@@ -214,7 +212,6 @@ export {
   getDiaryEntryByDate,
   deleteDiaryEntry,
   clearDatabase,
-  saveScreenBlockerStatus,
   getScreenBlockerStatus,
   setNextBlockTime,
   getNextBlockTime,

@@ -4,12 +4,10 @@ import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 import moment from 'moment'
 
-const router = useRouter()
-let timer: NodeJS.Timeout | null = null
-let countdownTimer: NodeJS.Timeout | null = null
-const isPeriodicBlockerActive = ref(false)
-const nextBlockTime = ref(0)
-const isBlocking = ref(false)
+const router = useRouter() // 路由
+const isPeriodicBlockerActive = ref(false) // 是否开启定时屏保
+const nextBlockTime = ref(0) // 下次屏保时间
+const isBlocking = ref(false) // 是否正在屏保
 
 const intervalTime = ref(2) // 默认2分钟
 const blockDuration = ref(10) // 默认10分钟
@@ -22,44 +20,12 @@ const screenTypes = [
   { value: 'windows-error-blocker', label: '错误屏保' }
 ]
 
-const currentTime = ref(Date.now())
-
 const formattedRemainingTime = computed(() => {
-  const remaining = Math.max(0, nextBlockTime.value - currentTime.value)
-  const minutes = Math.floor(remaining / 60000)
-  const seconds = Math.floor((remaining % 60000) / 1000)
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  return moment(nextBlockTime.value).format('HH:mm:ss')
 })
-
-const updateCurrentTime = () => {
-  currentTime.value = moment().valueOf()
-}
 
 const startBlocker = (duration: number) => {
   window.electronAPI.createScreenBlocker(duration, screenType.value)
-  isBlocking.value = true
-  setTimeout(() => {
-    isBlocking.value = false
-    nextBlockTime.value = moment().add(intervalTime.value * 60000, "millisecond").valueOf()
-  }, duration)
-}
-
-const startCountdown = () => {
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-  }
-  countdownTimer = setInterval(() => {
-    updateCurrentTime()
-    if (currentTime.value >= nextBlockTime.value && !isBlocking.value) {
-      if (isPeriodicBlockerActive.value) {
-        startBlocker(blockDuration.value * 60 * 1000)
-      } else {
-        clearInterval(countdownTimer!)
-        countdownTimer = null
-        nextBlockTime.value = 0
-      }
-    }
-  }, 1000)
 }
 
 const goBack = () => {
@@ -71,35 +37,10 @@ const togglePeriodicBlocker = async () => {
     isActive: isPeriodicBlockerActive.value,
   })
   if (isPeriodicBlockerActive.value) {
-    if (timer) {
-      clearInterval(timer)
-      timer = null
-    }
-    if (countdownTimer) {
-      clearInterval(countdownTimer)
-      countdownTimer = null
-    }
     isPeriodicBlockerActive.value = false
-    nextBlockTime.value = 0
-    isBlocking.value = false
   } else {
-    startPeriodicBlocker()
     isPeriodicBlockerActive.value = true
-    nextBlockTime.value = Date.now() + intervalTime.value * 60000
-    startCountdown()
   }
-  console.log('togglePeriodicBlocker', isPeriodicBlockerActive.value)
-}
-
-const startPeriodicBlocker = () => {
-  timer = setInterval(
-    () => {
-      if (!isBlocking.value) {
-        startBlocker(blockDuration.value * 60 * 1000)
-      }
-    },
-    intervalTime.value * 60 * 1000
-  )
 }
 
 const saveSettings = async () => {
@@ -117,16 +58,13 @@ const saveSettings = async () => {
 const getSettings = async () => {
   try {
     const settings = await window.electronAPI.getScreenBlockSettings()
-    console.log('settings', settings)
     if (settings) {
       intervalTime.value = settings.interval_time
       blockDuration.value = settings.block_duration
       screenType.value = settings.screen_type || 'windows-3d-blocker'
-      isPeriodicBlockerActive.value = settings.is_active
+      isPeriodicBlockerActive.value = settings.is_active === 1
       nextBlockTime.value = settings.next_block_time
-      if (isPeriodicBlockerActive.value) {
-        startCountdown()
-      }
+      console.log('settings', settings, isPeriodicBlockerActive.value)
     }
   } catch (error) {
     console.error('获取设置失败:', error)
@@ -141,23 +79,9 @@ const previewScreenBlocker = () => {
 onMounted(async () => {
   try {
     await getSettings()
-    updateCurrentTime() // 初始化当前时间
-    setInterval(updateCurrentTime, 1000) // 每秒更新当前时间
   } catch (error) {
     console.error('获取设置失败:', error)
   }
-})
-
-onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-    countdownTimer = null
-  }
-  isPeriodicBlockerActive.value = false
 })
 </script>
 

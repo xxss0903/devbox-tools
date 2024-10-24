@@ -1,7 +1,5 @@
 import { BrowserWindow, screen } from 'electron'
 import path from 'path'
-import { saveScreenBlockerStatus, updateNextBlockTime } from './database'
-import moment from 'moment'
 
 let blockerWindowList: BrowserWindow[] = []
 
