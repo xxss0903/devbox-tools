@@ -151,8 +151,6 @@ async function clearDatabase() {
  * @param duration 间隔时间
  */
 async function updateNextBlockTime(duration: number) {
-  // const  milValue = (duration) * 60 * 1000
-  // const nextBlockerTime = moment().add(milValue, 'millisecond').valueOf()
   const db = await getDatabase()
   const intervalTime = await db.get('SELECT interval_time  FROM screen_block_settings  WHERE id = 1')
   const nextBlockTime = (duration +  intervalTime) * 60 * 1000

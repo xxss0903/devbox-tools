@@ -6,7 +6,7 @@ import {
 import { closeScreenBlocker, createScreenBlocker } from './screenBlocker'
 import moment from 'moment'
 
-
+// 屏幕阻挡器处理
 export function setupScreenBlockerHandle(win: BrowserWindow) {
   // 设置屏幕阻挡器状态
   ipcMain.handle('set-screen-blocker-status', async (event, isActive: boolean) => {

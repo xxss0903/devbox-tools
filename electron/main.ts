@@ -18,6 +18,7 @@ import {
   checkAndUpdateClipboard,
   watchClipboard
 } from './clipboardManager'
+import { startScreenBlockerLoopByMinute } from './screenBlocker'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -198,9 +199,14 @@ function initMainWinListener(win: BrowserWindow) {
   win.webContents.openDevTools()
 }
 
+// 初始化应用
 app.whenReady().then(() => {
+  // 创建窗口
   createWindow()
+  // 初始化托盘
   initTray()
+  // 开启屏保轮询
+  startScreenBlockerLoopByMinute()
 })
 
 app.on('window-all-closed', () => {

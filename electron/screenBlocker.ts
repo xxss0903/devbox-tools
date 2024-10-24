@@ -1,5 +1,7 @@
 import { BrowserWindow, screen } from 'electron'
 import path from 'path'
+import { getScreenBlockerStatus, updateNextBlockTime } from './database'
+import moment from 'moment'
 
 let blockerWindowList: BrowserWindow[] = []
 
@@ -58,3 +60,19 @@ export function closeScreenBlocker() {
   }
   blockerWindowList = [] // 清空列表
 }
+
+// 添加一个一分钟更新的计时器，用来获取是否需要进行屏保
+export function startScreenBlockerLoopByMinute() {
+  setInterval(async () => {
+    const screenBlockerStatus = await getScreenBlockerStatus()
+  if (screenBlockerStatus && screenBlockerStatus.is_active) {
+    const nextBlockTime = screenBlockerStatus.next_block_time
+    if (nextBlockTime && moment().valueOf() >= nextBlockTime) {
+      createScreenBlocker(screenBlockerStatus.screen_type, screenBlockerStatus.block_duration)
+      // 更新下次屏保时间
+        updateNextBlockTime(screenBlockerStatus.interval_time)
+      }
+    }
+  }, 60000)
+}
+
