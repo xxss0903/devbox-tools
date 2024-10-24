@@ -73,7 +73,7 @@ const getSettings = async () => {
 
 const previewScreenBlocker = () => {
   console.log('previewScreenBlocker', screenType.value)
-  window.electronAPI.createScreenBlocker(3000, screenType.value) // 预览10秒
+  window.electronAPI.createScreenBlocker(3000, screenType.value) // 预览3秒
 }
 
 onMounted(async () => {

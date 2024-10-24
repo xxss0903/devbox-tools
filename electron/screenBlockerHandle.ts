@@ -12,6 +12,12 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
   ipcMain.handle('set-screen-blocker-status', async (event, isActive: boolean) => {
     console.log('set-screen-blocker-status', isActive)
     await updateScreenBlockerIsActive(isActive)
+    // 在屏保状态改变的地方发送监听事件
+    win.webContents.send('screen-blocker-status-change', isActive)
+    if (isActive) {
+      // 更新下次屏保时间
+      updateNextBlockTime()
+    }
     return { success: true }
   })
 
@@ -56,8 +62,7 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
     try {
       console.log('save-screen-block-settings', settings)
       // 根据intervalTime计算出下次关闭屏幕的事件
-      const intervalTimeValue = settings.intervalTime * 1000 * 60 // 秒换算为毫秒
-      const nextBlockTime =  moment().add(intervalTimeValue, 'millisecond').valueOf()
+      const nextBlockTime =  moment().add(settings.intervalTime, 'minutes').valueOf()
       const db = await getDatabase()
       const res = await db.run(
         'UPDATE screen_block_settings SET interval_time=?, block_duration=?,screen_type=?,next_block_time=? WHERE id = 1',
@@ -104,7 +109,7 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
     // 计算下次屏保时间
 
     // 更新 screen_block_settings 表，包含下次屏保时间
-    updateNextBlockTime(duration)
+    updateNextBlockTime()
     return '屏幕遮挡器已创建'
   })
 }

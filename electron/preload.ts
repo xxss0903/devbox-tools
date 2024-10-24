@@ -97,7 +97,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date),
   executeCommand: (command: string) => ipcRenderer.invoke('execute-command', command),
   openPDFBoxApp: (filePath: string) => ipcRenderer.invoke('open-pdfbox-app', filePath),
-  getFilePath: () => ipcRenderer.invoke('get-file-path')
+  getFilePath: () => ipcRenderer.invoke('get-file-path'),
+  onScreenBlockerStatusChange: (callback: (event: any, status: boolean) => void) => 
+    ipcRenderer.on('screen-blocker-status-change', callback),
 })
 
 console.log('electronAPI exposed')

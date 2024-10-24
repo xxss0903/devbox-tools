@@ -67,10 +67,13 @@ export function startScreenBlockerLoopByMinute() {
     const screenBlockerStatus = await getScreenBlockerStatus()
   if (screenBlockerStatus && screenBlockerStatus.is_active) {
     const nextBlockTime = screenBlockerStatus.next_block_time
-    if (nextBlockTime && moment().valueOf() >= nextBlockTime) {
-      createScreenBlocker(screenBlockerStatus.screen_type, screenBlockerStatus.block_duration)
-      // 更新下次屏保时间
-        updateNextBlockTime(screenBlockerStatus.interval_time)
+      if (nextBlockTime && moment().valueOf() >= nextBlockTime) {
+        setTimeout(() => {
+          closeScreenBlocker()
+        }, screenBlockerStatus.block_duration * 60 * 1000)
+        createScreenBlocker(screenBlockerStatus.screen_type, screenBlockerStatus.block_duration)
+        // 更新下次屏保时间
+        updateNextBlockTime()
       }
     }
   }, 60000)

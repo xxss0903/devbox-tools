@@ -13,73 +13,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import moment from 'moment';
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const isActive = ref(false)
-const countdown = ref(0)
-const blockDuration = 5 * 60 // 5分钟,可以根据需要调整
-
-const formattedCountdown = computed(() => {
-  const minutes = Math.floor(countdown.value / 60)
-  const seconds = countdown.value % 60
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-})
+const formattedCountdown = ref("00:00")
 
 let countdownInterval: number | null = null
 
 const toggleScreenBlocker = async () => {
   if (isActive.value) {
-    // 关闭屏幕锁定
-    await window.electronAPI.closeScreenBlocker()
     await window.electronAPI.setScreenBlockerStatus(false)
     isActive.value = false
-    if (countdownInterval) {
-      clearInterval(countdownInterval)
-      countdownInterval = null
-    }
   } else {
     // 开启屏幕锁定
-    await window.electronAPI.createScreenBlocker(blockDuration * 1000, 'windows-origin-blocker')
-    await window.electronAPI.setScreenBlockerStatus(true, blockDuration)
+    await window.electronAPI.setScreenBlockerStatus(true)
     isActive.value = true
-    countdown.value = blockDuration
-    countdownInterval = setInterval(() => {
-      countdown.value--
-      if (countdown.value <= 0) {
-        isActive.value = false
-        window.electronAPI.setScreenBlockerStatus(false)
-        if (countdownInterval) {
-          clearInterval(countdownInterval)
-          countdownInterval = null
-        }
-      }
-    }, 1000)
   }
+}
+
+const handleScreenBlockerStatusChange = async (event: any, status: boolean) => {
+  isActive.value = status
+  if(status){
+    getScreenBlockerNextTime()
+  }
+}
+
+const getScreenBlockerNextTime = async () => {
+  const settings = await window.electronAPI.getScreenBlockerStatus()
+  const nextBlockTime = moment(settings.next_block_time).format('HH:mm:ss')
+  formattedCountdown.value = nextBlockTime
 }
 
 onMounted(async () => {
   const status = await window.electronAPI.getScreenBlockerStatus()
-  if (status.is_active) {
+  if (status.is_active === 1) {
     isActive.value = true
-    const remainingTime = Math.max(0, status.block_duration - (Date.now() - status.start_time) / 1000)
-    countdown.value = Math.floor(remainingTime)
-    if (countdown.value > 0) {
-      countdownInterval = setInterval(() => {
-        countdown.value--
-        if (countdown.value <= 0) {
-          isActive.value = false
-          window.electronAPI.setScreenBlockerStatus(false)
-          if (countdownInterval) {
-            clearInterval(countdownInterval)
-            countdownInterval = null
-          }
-        }
-      }, 1000)
-    } else {
-      isActive.value = false
-      window.electronAPI.setScreenBlockerStatus(false)
-    }
+    getScreenBlockerNextTime()
+  } else {
+    isActive.value = false
   }
+  // 使用新的方法名添加全局事件监听器
+  window.electronAPI.onScreenBlockerStatusChange(handleScreenBlockerStatusChange)
 })
 
 onUnmounted(() => {

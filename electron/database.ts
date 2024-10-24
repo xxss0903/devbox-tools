@@ -150,10 +150,10 @@ async function clearDatabase() {
  * 更新下次屏保时间
  * @param duration 间隔时间
  */
-async function updateNextBlockTime(duration: number) {
+async function updateNextBlockTime() {
   const db = await getDatabase()
-  const intervalTime = await db.get('SELECT interval_time  FROM screen_block_settings  WHERE id = 1')
-  const nextBlockTime = (duration +  intervalTime) * 60 * 1000
+  const settings = await db.get('SELECT *  FROM screen_block_settings  WHERE id = 1')
+  const nextBlockTime = moment().add(settings.interval_time + settings.block_duration, 'minutes').valueOf()
   await db.run(
     'UPDATE screen_block_settings SET next_block_time = ? WHERE id = 1',
     [nextBlockTime]
@@ -175,6 +175,10 @@ async function updateScreenBlockerIsActive(isActive: boolean) {
 
 async function getScreenBlockerStatus() {
   const db = await getDatabase()
+  const settings = await db.get('SELECT * FROM screen_block_settings WHERE id = 1')
+  if(settings && !settings.next_block_time){
+    await updateNextBlockTime()
+  }
   return await db.get('SELECT * FROM screen_block_settings WHERE id = 1')
 }
 
