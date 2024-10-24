@@ -1,7 +1,6 @@
 <template>
   <div class="widgets-container">
     <ClockWidget />
-    <WeatherWidget />
     <ScreenBlockerWidget />
     <!-- 可以根据需要添加更多小组件 -->
   </div>

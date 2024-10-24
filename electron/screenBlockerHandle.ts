@@ -13,6 +13,13 @@ export function setupScreenBlockerHandle(win: BrowserWindow) {
     console.log('set-screen-blocker-status', isActive)
     await updateScreenBlockerIsActive(isActive)
     // 在屏保状态改变的地方发送监听事件
+    if (isActive) {
+      // 更新下次屏保时间
+      const settings = await getScreenBlockerStatus()
+      if (settings.next_block_time < moment().valueOf()) {
+        await updateNextBlockTime()
+      }
+    }
     win.webContents.send('screen-blocker-status-change', isActive)
     return { success: true }
   })

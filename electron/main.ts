@@ -58,11 +58,11 @@ let win: BrowserWindow | null = null
 
 async function createWindow() {
   // 关闭窗口的mennu
-  // Menu.setApplicationMenu(null)
+  Menu.setApplicationMenu(null)
   // 创建主窗口
   win = new BrowserWindow({
     width: 1600,
-    height: 800,
+    height: 1000,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -196,7 +196,7 @@ function initMainWinListener(win: BrowserWindow) {
   })
 
   // 默认打开开发者工具
-  win.webContents.openDevTools()
+  // win.webContents.openDevTools()
 }
 
 // 初始化应用
