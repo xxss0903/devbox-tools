@@ -1,7 +1,8 @@
 import { BrowserWindow, screen } from 'electron'
 import path from 'path'
-import { getScreenBlockerStatus, updateNextBlockTime } from './database'
+import { getAlarm, getScreenBlockerStatus, saveAlarm, saveAlarmLatest, updateNextBlockTime } from './database'
 import moment from 'moment'
+import { createReminderWindow } from './reminderHandler'
 
 let blockerWindowList: BrowserWindow[] = []
 
@@ -64,18 +65,38 @@ export function closeScreenBlocker() {
 // 添加一个一分钟更新的计时器，用来获取是否需要进行屏保
 export function startScreenBlockerLoopByMinute() {
   setInterval(async () => {
+    // 获取锁屏状态
     const screenBlockerStatus = await getScreenBlockerStatus()
-  if (screenBlockerStatus && screenBlockerStatus.is_active) {
-    const nextBlockTime = screenBlockerStatus.next_block_time
-      if (nextBlockTime && moment().valueOf() >= nextBlockTime) {
-        setTimeout(() => {
-          closeScreenBlocker()
-        }, screenBlockerStatus.block_duration * 60 * 1000)
-        createScreenBlocker(screenBlockerStatus.screen_type, screenBlockerStatus.block_duration)
-        // 更新下次屏保时间
-        updateNextBlockTime()
+    if (screenBlockerStatus && screenBlockerStatus.is_active) {
+      const nextBlockTime = screenBlockerStatus.next_block_time
+        if (nextBlockTime && moment().valueOf() >= nextBlockTime) {
+          setTimeout(() => {
+            closeScreenBlocker()
+          }, screenBlockerStatus.block_duration * 60 * 1000)
+          createScreenBlocker(screenBlockerStatus.screen_type, screenBlockerStatus.block_duration)
+          // 更新下次屏保时间
+          updateNextBlockTime()
+        }
+      }
+    // 更新弹出日志
+    const nowValue = moment().valueOf()
+    const nowDate = moment().format("YYYY-MM-DD")
+    const alarm = await getAlarm()
+    if (alarm) {
+      const alarmDate =  nowDate + " " + alarm.time + ":00"
+      const alarmDateValue = moment(alarmDate).valueOf()
+      if(nowValue >= alarmDateValue) {
+        // 判断latest是否也大于
+        if (alarm.latest > alarmDateValue) {
+          // 已经提示过了不做处理
+        } else {
+          // 没有提示过，需要弹窗
+          createReminderWindow('您设置的提醒时间到了')
+          // 保存最近时间
+          saveAlarmLatest(nowValue)
+        }
       }
     }
-  }, 60000)
+    }, 60000)
 }
 

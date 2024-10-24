@@ -2,7 +2,7 @@ import { ipcMain, dialog, BrowserWindow, clipboard, nativeImage, shell, app } fr
 import {
   getDatabase
 } from './database'
-import { closeReminderWindow, createReminderWindow, scheduleDailyAlarm } from './reminderHandler'
+import { closeReminderWindow, createReminderWindow } from './reminderHandler'
 import Screenshots from 'electron-screenshots'
 
 
@@ -54,11 +54,6 @@ export function setupIPCOn(win: BrowserWindow) {
     setTimeout(() => {
       createReminderWindow('您置的提醒时到了')
     }, delay)
-  })
-
-  ipcMain.on('close-reminder', () => {
-    closeReminderWindow()
-    console.log('close-reminder')
   })
 
 }

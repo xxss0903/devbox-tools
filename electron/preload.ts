@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getScreenBlockerStatus: () => ipcRenderer.invoke('get-screen-blocker-status'),
   // 关闭屏幕遮挡器
   closeScreenBlocker: () => ipcRenderer.invoke('close-screen-blocker'),
+  closeReminder: () => ipcRenderer.invoke('close-reminder'),
   // 保存屏幕关闭时间配置
   saveScreenBlockSettings: (settings: any) =>
     ipcRenderer.invoke('save-screen-block-settings', settings),
@@ -27,7 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取日志提醒时间
   getSavedReminderTime: () => ipcRenderer.invoke('get-saved-reminder-time'),
   // 设置日志提醒时间
-  setDailyWorkDiaryAlarm: (time: string) => ipcRenderer.send('set-daily-work-diary-alarm', time),
+  setDailyWorkDiaryAlarm: (time: string) => ipcRenderer.invoke('set-daily-work-diary-alarm', time),
   // 开启/关闭日志提醒
   toggleDailyWorkDiaryAlarm: () => ipcRenderer.send('toggle-daily-work-diary-alarm'),
   // 预览粘贴板的图片

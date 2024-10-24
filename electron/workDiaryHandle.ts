@@ -1,5 +1,15 @@
 import { BrowserWindow, ipcMain } from "electron"
-import { clearDatabase, deleteDiaryEntry, getAlarm, getDatabase, getDiaryEntries, getDiaryEntryByDate, saveDiaryEntry } from "./database"
+import {
+  clearDatabase,
+  deleteDiaryEntry,
+  getAlarm,
+  getDatabase,
+  getDiaryEntries,
+  getDiaryEntryByDate,
+  saveAlarm,
+  saveDiaryEntry
+} from './database'
+import { closeReminderWindow } from './reminderHandler'
 
 
 export function setupWorkDiaryHandle(win: BrowserWindow) {
@@ -65,6 +75,16 @@ export function setupWorkDiaryHandle(win: BrowserWindow) {
   ipcMain.handle('get-saved-reminder-time', async () => {
     const alarm = await getAlarm()
     return alarm && alarm.time ? alarm.time : null
+  })
+
+  ipcMain.handle('close-reminder', async () => {
+    closeReminderWindow()
+  })
+
+  // 保存那你提醒日志时间
+  ipcMain.handle('set-daily-work-diary-alarm', async (event, time) => {
+    console.log("save reminder time", time)
+    await saveAlarm(time)
   })
 
 }

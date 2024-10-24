@@ -29,7 +29,8 @@ async function initializeTables() {
   await db?.exec(`
     CREATE TABLE IF NOT EXISTS alarms (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      time TEXT
+      time TEXT,
+      latest INTEGER
     )
   `)
 
@@ -184,12 +185,31 @@ async function getScreenBlockerStatus() {
 
 async function saveAlarm(time: string) {
   const db = await getDatabase()
-  await db.run('INSERT OR REPLACE INTO alarms (id, time) VALUES (1, ?)', time)
+  await db.run(
+    'UPDATE alarms SET time = ? WHERE id = 1',
+    [time]
+  )
+}
+
+async function saveAlarmLatest(latest: number) {
+  const db = await getDatabase()
+  await db.run(
+    'UPDATE alarms SET latest = ? WHERE id = 1',
+    [latest]
+  )
 }
 
 async function getAlarm() {
   const db = await getDatabase()
-  return await db.get('SELECT * FROM alarms WHERE id = 1')
+  let alarm = await db.get('SELECT * FROM alarms WHERE id = 1')
+  if (!alarm) {
+    await db?.run(`
+      INSERT INTO alarms (time, latest)
+      VALUES ("18:00", ${moment().valueOf()})
+    `)
+    alarm = await db.get('SELECT * FROM alarms WHERE id = 1')
+  }
+  return alarm
 }
 
 async function setNextBlockTime(nextBlockTime: number) {
@@ -220,5 +240,6 @@ export {
   saveAlarm,
   getAlarm,
   updateNextBlockTime,
-  updateScreenBlockerIsActive
+  updateScreenBlockerIsActive,
+  saveAlarmLatest
 }

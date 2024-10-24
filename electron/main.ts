@@ -9,10 +9,6 @@ import {
 } from 'electron'
 import path from 'path'
 import { Sequelize } from 'sequelize'
-import {
-  getAlarm
-} from './database'
-import { scheduleDailyAlarm } from './reminderHandler'
 import { setupIPCHandle } from './ipcHandle'
 import { setupIPCOn, startCapture } from './ipcOn'
 import {
@@ -99,9 +95,7 @@ async function createWindow() {
   setupWebviewPermissions()
   // 初始化数据库
   await initDatabase()
-  // 初始化数据库之后开始设置闹钟
-  await initSetDiaryReminder(win)
-  const isDebug = false
+  const isDebug = true
   if (isDebug) {
     console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
     win.loadURL('http://localhost:5173')
@@ -163,14 +157,6 @@ function initGlobalShortcut(win: BrowserWindow) {
   })
 }
 
-async function initSetDiaryReminder(win: BrowserWindow) {
-  // 初始化检查并设置闹钟
-  const alarm = await getAlarm()
-  if (alarm && alarm.time) {
-    console.log('set alarm', alarm)
-    scheduleDailyAlarm(win?.webContents, alarm.time)
-  }
-}
 
 async function initDatabase() {
   // 设置数据库连接
@@ -213,8 +199,11 @@ function initMainWinListener(win: BrowserWindow) {
   })
 
   // 默认打开开发者工具
-  // win.webContents.openDevTools()
+  win.webContents.openDevTools()
 }
+
+// 只使用中文
+app.commandLine.appendSwitch('lang', 'zh-CN');
 
 // 初始化应用
 app.whenReady().then(() => {
