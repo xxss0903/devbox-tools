@@ -7,7 +7,6 @@ import moment from 'moment'
 const router = useRouter() // 路由
 const isPeriodicBlockerActive = ref(false) // 是否开启定时屏保
 const nextBlockTime = ref(0) // 下次屏保时间
-const isBlocking = ref(false) // 是否正在屏保
 
 const intervalTime = ref(2) // 默认2分钟
 const blockDuration = ref(10) // 默认10分钟
@@ -76,9 +75,15 @@ const previewScreenBlocker = () => {
   window.electronAPI.createScreenBlocker(3000, screenType.value) // 预览3秒
 }
 
+const handleScreenBlockerStatusChange = async (event: any, status: boolean) => {
+  getSettings()
+}
+
 onMounted(async () => {
   try {
     await getSettings()
+    // 使用新的方法名添加全局事件监听器
+    window.electronAPI.onScreenBlockerStatusChange(handleScreenBlockerStatusChange)
   } catch (error) {
     console.error('获取设置失败:', error)
   }
