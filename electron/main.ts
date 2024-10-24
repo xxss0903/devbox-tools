@@ -4,7 +4,8 @@ import {
   globalShortcut,
   session,
   Menu,
-  Tray
+  Tray,
+  ipcMain
 } from 'electron'
 import path from 'path'
 import { Sequelize } from 'sequelize'
@@ -19,6 +20,7 @@ import {
   watchClipboard
 } from './clipboardManager'
 import { startScreenBlockerLoopByMinute } from './screenBlocker'
+import { autoLaunch } from './autoLaunch'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -106,6 +108,20 @@ async function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '/index.html'))
   }
+
+  // 添加IPC监听器
+  ipcMain.handle('get-auto-launch', async () => {
+    return await autoLaunch.isEnabled()
+  })
+
+  ipcMain.handle('set-auto-launch', async (_, enable: boolean) => {
+    if (enable) {
+      await autoLaunch.enable()
+    } else {
+      await autoLaunch.disable()
+    }
+    return await autoLaunch.isEnabled()
+  })
 }
 
 function setupContentSecurityPolicy(win: BrowserWindow) {
