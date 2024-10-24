@@ -17,11 +17,11 @@ const autoLaunch = ref(false)
 
 onMounted(async () => {
   // 获取当前的自启动状态
-  autoLaunch.value = await window.electron.ipcRenderer.invoke('get-auto-launch')
+  autoLaunch.value = await window.electronAPI.getAutoLaunch()
 })
 
 const toggleAutoLaunch = async () => {
-  autoLaunch.value = await window.electron.ipcRenderer.invoke('set-auto-launch', autoLaunch.value)
+  autoLaunch.value = await window.electronAPI.setAutoLaunch(autoLaunch.value)
 }
 </script>
 

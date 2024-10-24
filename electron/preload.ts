@@ -100,6 +100,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFilePath: () => ipcRenderer.invoke('get-file-path'),
   onScreenBlockerStatusChange: (callback: (event: any, status: boolean) => void) => 
     ipcRenderer.on('screen-blocker-status-change', callback),
+  getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
 })
 
 console.log('electronAPI exposed')

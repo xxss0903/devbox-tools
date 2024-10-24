@@ -101,7 +101,8 @@ async function createWindow() {
   await initDatabase()
   // 初始化数据库之后开始设置闹钟
   await initSetDiaryReminder(win)
-  if (process.env.NODE_ENV !== 'development') {
+  const isDebug = false
+  if (isDebug) {
     console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
     win.loadURL('http://localhost:5173')
     // win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
