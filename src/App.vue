@@ -162,6 +162,57 @@ const navigateToChild = (child: CustomModule) => {
   }
   activeSubIndex.value = currentChildren.value.findIndex((c) => c.value === child.value)
 }
+
+// 添加 tabs 相关的状态
+interface Tab {
+  path: string
+  title: string
+}
+
+const openTabs = ref<Tab[]>([])
+const currentTab = ref('')
+
+// 监听路由变化，更新 tabs
+watch(() => route.path, (newPath) => {
+  const routeRecord = router.getRoutes().find(r => r.path === newPath)
+  if (!routeRecord) return
+
+  const title = routeRecord.meta?.title as string || routeRecord.name as string
+  
+  // 检查是否已经存在该 tab
+  if (!openTabs.value.find(tab => tab.path === newPath)) {
+    openTabs.value.push({
+      path: newPath,
+      title: title
+    })
+  }
+  currentTab.value = newPath
+}, { immediate: true })
+
+// 切换 tab
+const switchTab = (path: string) => {
+  router.push(path)
+}
+
+// 关闭 tab
+const closeTab = (path: string) => {
+  const index = openTabs.value.findIndex(tab => tab.path === path)
+  if (index === -1) return
+
+  openTabs.value.splice(index, 1)
+  
+  // 如果关闭的是当前 tab，则切换到其他 tab
+  if (path === currentTab.value) {
+    if (openTabs.value.length > 0) {
+      // 切换到前一个或后一个 tab
+      const newTab = openTabs.value[index] || openTabs.value[index - 1]
+      router.push(newTab.path)
+    } else {
+      // 如果没有其他 tab，返回首页
+      router.push('/')
+    }
+  }
+}
 </script>
 
 <template>
@@ -189,13 +240,34 @@ const navigateToChild = (child: CustomModule) => {
         </ul>
       </div>
       <div class="content-area">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+        <!-- 添加 tabs 区域 -->
+        <div class="tabs-container">
+          <div class="tabs">
+            <div 
+              v-for="tab in openTabs" 
+              :key="tab.path"
+              class="tab"
+              :class="{ active: currentTab === tab.path }"
+              @click="switchTab(tab.path)"
+            >
+              <span class="tab-title">{{ tab.title }}</span>
+              <span class="close-tab" @click.stop="closeTab(tab.path)">×</span>
+            </div>
+          </div>
+        </div>
 
-        <!-- 添加子模块显示区域 -->
+        <!-- 修改路由视图区域 -->
+        <div class="tab-content">
+          <router-view v-slot="{ Component }">
+            <transition name="fade" mode="out-in">
+              <keep-alive>
+                <component :is="Component" />
+              </keep-alive>
+            </transition>
+          </router-view>
+        </div>
+
+        <!-- 子模块显示区域移到 tabs 中 -->
         <div v-if="currentChildren.length > 0" class="sub-modules">
           <h3>子模块</h3>
           <ul>
@@ -283,8 +355,93 @@ const navigateToChild = (child: CustomModule) => {
 
 .content-area {
   flex: 1;
-  position: relative;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+}
+
+.tabs-container {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 16px 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tab {
+  padding: 8px 32px 8px 16px;
+  background: #e9ecef;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.tab.active {
+  background: white;
+  color: #3498db;
+  border-bottom: 2px solid #3498db;
+}
+
+.tab:hover {
+  background: #f8f9fa;
+}
+
+.close-tab {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.close-tab:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: white;
+}
+
+/* 添加滚动条样式 */
+.tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabs::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.tabs::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.tabs::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 .fade-enter-active,
