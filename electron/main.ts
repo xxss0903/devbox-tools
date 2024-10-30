@@ -79,8 +79,7 @@ async function createWindow() {
       symbolColor: '#74b1be',
       height: 22
     },
-    title: '铁牛工具箱',
-    skipTaskbar: true
+    title: '铁牛工具箱'
   })
   // 初始化主窗口监听器
   initMainWinListener(win)
