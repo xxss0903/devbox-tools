@@ -9,6 +9,7 @@ export interface IElectronAPI {
   processDroppedFiles: (
     filePaths: string[]
   ) => Promise<{ name: string; size: number; data: string }[]>
+  writeImageToClipboard: (imageData: string) => Promise<void>
 }
 
 declare global {

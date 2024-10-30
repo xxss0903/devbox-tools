@@ -4,7 +4,18 @@
       <button class="back-button" @click="goBack">返回</button>
       <h2 class="detail-title">图像裁剪工具（点击图片下载）</h2>
     </div>
-    <div class="image-cropper-content">
+    <div 
+      class="image-cropper-content"
+      :class="{ dragging: isDragging }"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragEnter"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
+      <div v-if="isDragging" class="drag-overlay">
+        <p>释放鼠标以添加图片</p>
+      </div>
+
       <div class="controls">
         <label for="file-input" class="button">选择图片</label>
         <input
@@ -30,7 +41,6 @@
           class="cropped-preview"
           @click="downloadImage"
         />
-        <!-- 下载按钮已被移除 -->
       </div>
     </div>
   </div>
@@ -46,6 +56,8 @@ const router = useRouter()
 const imageUrl = ref('')
 const croppedImageUrl = ref('')
 const cropperRef = ref<InstanceType<typeof Cropper> | null>(null)
+const isDragging = ref(false)
+const dragCounter = ref(0)
 
 const onChange = (data: any) => {
   // 这里可以处理裁剪区域变化的逻辑,如果需要的话
@@ -54,6 +66,12 @@ const onChange = (data: any) => {
 const onFileChange = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (file) {
+    loadImageFile(file)
+  }
+}
+
+const loadImageFile = (file: File) => {
+  if (file.type.startsWith('image/')) {
     const reader = new FileReader()
     reader.onload = (e) => {
       imageUrl.value = e.target?.result as string
@@ -63,49 +81,57 @@ const onFileChange = (event: Event) => {
   }
 }
 
+const handleDragEnter = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value++
+  if (dragCounter.value === 1) {
+    requestAnimationFrame(() => {
+      isDragging.value = true
+    })
+  }
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value--
+  if (dragCounter.value === 0) {
+    requestAnimationFrame(() => {
+      isDragging.value = false
+    })
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value = 0
+  requestAnimationFrame(() => {
+    isDragging.value = false
+  })
+
+  if (event.dataTransfer?.files) {
+    const file = event.dataTransfer.files[0]
+    if (file) {
+      loadImageFile(file)
+    }
+  }
+}
+
 const crop = () => {
   if (cropperRef.value) {
     const { canvas } = cropperRef.value.getResult()
     if (canvas) {
       croppedImageUrl.value = canvas.toDataURL()
       // 将裁剪后的图片放入系统剪切板
-      window.electronAPI
-        .writeImageToClipboard(croppedImageUrl.value)
+      window.electronAPI?.writeImageToClipboard(croppedImageUrl.value)
         .then(() => {
           console.log('裁剪后的图片已复制到剪切板')
         })
-        .catch((error) => {
+        .catch((error: Error) => {
           console.error('复制到剪切板失败:', error)
         })
-      const img = new Image()
-      img.src = croppedImageUrl.value
-      img.onload = () => {
-        const container = document.createElement('div')
-        container.style.position = 'fixed'
-        container.style.top = '0'
-        container.style.left = '0'
-        container.style.width = '100%'
-        container.style.height = '100%'
-        container.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
-        container.style.display = 'flex'
-        container.style.justifyContent = 'center'
-        container.style.alignItems = 'center'
-        container.style.zIndex = '9999'
-
-        const croppedImage = document.createElement('img')
-        croppedImage.src = croppedImageUrl.value
-        croppedImage.style.maxWidth = '90%'
-        croppedImage.style.maxHeight = '90%'
-        croppedImage.style.objectFit = 'contain'
-
-        container.appendChild(croppedImage)
-        document.body.appendChild(container)
-
-        container.onclick = () => {
-          document.body.removeChild(container)
-        }
-      }
-      console.log('裁剪后的图片:', croppedImageUrl.value)
     }
   }
 }
@@ -162,17 +188,12 @@ defineExpose({ crop })
   color: #2c3e50;
 }
 
-.title {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
-}
-
 .image-cropper-content {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
   height: 80%;
+  position: relative;
 }
 
 .controls {
@@ -216,8 +237,32 @@ defineExpose({ crop })
 .cropped-preview {
   max-width: 100%;
   margin-bottom: 10px;
-  cursor: pointer; /* 添加指针样式,表明可点击 */
+  cursor: pointer;
 }
 
-/* 移除 .download-button 相关样式 */
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(52, 152, 219, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dragging .drag-overlay {
+  opacity: 1;
+}
+
+.dragging {
+  border: 2px dashed #3498db;
+  background-color: rgba(52, 152, 219, 0.1);
+}
 </style>
