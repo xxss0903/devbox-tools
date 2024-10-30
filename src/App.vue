@@ -43,11 +43,13 @@ const filteredRoutes = computed(() => {
 
 const navigateTo = (path: string) => {
   if (path.startsWith('http')) {
-    const width = 1024 // 设置宽度
-    const height = 768 // 设置高度
-    const left = (screen.width - width) / 2
-    const top = (screen.height - height) / 2
-    window.open(path, '_blank', `width=${width},height=${height},left=${left},top=${top}`)
+    router.push({
+      name: 'CustomModuleViewer',
+      query: {
+        url: path,
+        title: '自定义模块'
+      }
+    })
   } else {
     router.push(path)
   }
@@ -151,14 +153,16 @@ const currentChildren = computed(() => {
 
 // 添加一个新的函数来处理子模块的导航
 const navigateToChild = (child: CustomModule) => {
-  if (child.url.startsWith('http')) {
-    const width = 1024 // 设置宽度
-    const height = 768 // 设置高度
-    const left = (screen.width - width) / 2
-    const top = (screen.height - height) / 2
-    window.open(child.url, '_blank', `width=${width},height=${height},left=${left},top=${top}`)
+  if (child.url?.startsWith('http')) {
+    router.push({
+      name: 'CustomModuleViewer',
+      query: {
+        url: child.url,
+        title: child.title
+      }
+    })
   } else {
-    router.push(child.url)
+    router.push(child.url || '/')
   }
   activeSubIndex.value = currentChildren.value.findIndex((c) => c.value === child.value)
 }
@@ -265,21 +269,6 @@ const closeTab = (path: string) => {
               </keep-alive>
             </transition>
           </router-view>
-        </div>
-
-        <!-- 子模块显示区域移到 tabs 中 -->
-        <div v-if="currentChildren.length > 0" class="sub-modules">
-          <h3>子模块</h3>
-          <ul>
-            <li
-              v-for="(child, childIndex) in currentChildren"
-              :key="child.value"
-              @click="navigateToChild(child)"
-              :class="{ active: childIndex === activeSubIndex }"
-            >
-              {{ child.title }}
-            </li>
-          </ul>
         </div>
       </div>
     </div>

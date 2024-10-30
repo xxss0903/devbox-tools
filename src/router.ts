@@ -22,6 +22,7 @@ import PDFTools from './components/PDFTools.vue'
 import PDFBoxApp from './components/PDFBoxApp.vue'
 import ScreenBlocker from './components/ScreenBlocker.vue'
 import ImageResizer from './components/ImageResizer.vue'
+import CustomModuleViewer from './components/CustomModuleViewer.vue'
 
 const routes = [
   {
@@ -189,6 +190,12 @@ const routes = [
       searchable: true,
       keywords: ['image', 'resizer', '图片大小', '调整', '图片大小调整']
     }
+  },
+  {
+    path: '/custom-module',
+    name: 'CustomModuleViewer',
+    component: CustomModuleViewer,
+    meta: { title: '自定义模块', searchable: false }
   }
 ]
 
