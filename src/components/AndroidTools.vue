@@ -16,7 +16,20 @@ const androidTools = [
 ]
 
 const navigateTo = (routeName: string) => {
-  router.push({ name: routeName })
+  if (routeName.startsWith('custom-')) {
+    const customTool = customTools.value.find((tool) => tool.route === routeName)
+    if (customTool) {
+      router.push({
+        name: 'CustomModuleViewer',
+        query: {
+          url: customTool.url,
+          name: customTool.title
+        }
+      })
+    }
+  } else {
+    router.push({ name: routeName })
+  }
 }
 
 const goBack = () => {

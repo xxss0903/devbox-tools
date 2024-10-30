@@ -14,7 +14,7 @@ const titles = inject('titles') as Ref<TitleModule[]>
 // 计算当前路由对应的模块
 const currentModule = computed(() => {
   return (
-    titles.value.find((title: TitleModule) => title.value === '/image-tools') || titles.value[0]
+    titles.value.find((title: TitleModule) => title.value === '/pdf-tools') || titles.value[0]
   )
 })
 
