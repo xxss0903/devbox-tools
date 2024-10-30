@@ -133,6 +133,9 @@ const customHeight = ref(0)
 const isDragging = ref(false)
 const dragCounter = ref(0)
 
+// 添加一个状态来保存原始文件名
+const originalFileName = ref('')
+
 const hasSelectedSizes = computed(() => {
   return selectedSizes.value.length > 0 || (useCustomSize.value && customWidth.value && customHeight.value)
 })
@@ -140,6 +143,8 @@ const hasSelectedSizes = computed(() => {
 const onFileChange = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (file) {
+    // 保存原始文件名（去掉扩展名）
+    originalFileName.value = file.name.replace(/\.[^/.]+$/, '')
     const reader = new FileReader()
     reader.onload = (e) => {
       imageUrl.value = e.target?.result as string
@@ -206,40 +211,36 @@ const resizeImage = () => {
 const downloadImage = (img: ResizedImage) => {
   const link = document.createElement('a')
   link.href = img.url
-  link.download = `resized-image-${img.size.width}x${img.size.height}.png`
+  // 使用原始文件名
+  link.download = `${originalFileName.value}-${img.size.width}x${img.size.height}.png`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
 }
 
 const downloadAllImages = () => {
-  // 创建一个临时的 zip 文件夹名称
   const timestamp = new Date().getTime()
-  const folderName = `resized-images-${timestamp}`
+  // 使用原始文件名创建文件夹
+  const folderName = originalFileName.value || `resized-images-${timestamp}`
   
-  // 创建一个 JSZip 实例
   const zip = new JSZip()
   
-  // 将所有图片添加到 zip 中
-  resizedImages.value.forEach((img, index) => {
-    // 从 base64 中提取实际的图片数据
+  resizedImages.value.forEach((img) => {
     const imageData = img.url.split(',')[1]
-    // 创建文件名
-    const fileName = `${folderName}/image-${img.size.width}x${img.size.height}.png`
-    // 将图片添加到 zip
+    // 使用原始文件名创建压缩包中的文件名
+    const fileName = `${folderName}/${originalFileName.value}-${img.size.width}x${img.size.height}.png`
     zip.file(fileName, imageData, { base64: true })
   })
   
-  // 生成 zip 文件并下载
   zip.generateAsync({ type: 'blob' })
     .then((content) => {
       const link = document.createElement('a')
       link.href = URL.createObjectURL(content)
+      // 使用原始文件名命名zip文件
       link.download = `${folderName}.zip`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      // 清理创建的 URL
       URL.revokeObjectURL(link.href)
     })
     .catch((error: Error) => {
@@ -284,6 +285,8 @@ const handleDrop = async (event: DragEvent) => {
 
   const file = event.dataTransfer?.files[0]
   if (file && file.type.startsWith('image/')) {
+    // 保存原始文件名（去掉扩展名）
+    originalFileName.value = file.name.replace(/\.[^/.]+$/, '')
     const reader = new FileReader()
     reader.onload = (e) => {
       imageUrl.value = e.target?.result as string
