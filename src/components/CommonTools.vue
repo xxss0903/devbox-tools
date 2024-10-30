@@ -30,19 +30,29 @@ watch(() => currentModule.value, updateCustomTools, { immediate: true })
 // 默认工具列表
 const defaultTools = [
   {
+    name: '编码/解码转换',
+    route: 'CodeConverter',
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+  },
+  {
     name: '工作日记',
     route: 'WorkDiary',
-    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+    image: 'https://img.icons8.com/?size=100&id=64503&format=png&color=000000'
+  },
+  {
+    name: '粘贴板管理',
+    route: 'ClipboardManager',
+    image: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
   },
   {
     name: '计算器',
     route: 'Calculator',
-    image: 'https://img.icons8.com/?size=100&id=H6SA7amfKduZ&format=png&color=000000'
+    image: 'https://img.icons8.com/?size=100&id=41LOFTWPsRas&format=png&color=000000'
   },
   {
-    name: '剪贴板管理',
-    route: 'ClipboardManager',
-    image: 'https://img.icons8.com/?size=100&id=WPr0mrffLj6D&format=png&color=000000'
+    name: '休息提醒',
+    route: 'ScreenBlocker',
+    image: 'https://img.icons8.com/?size=100&id=13841&format=png&color=000000'
   }
 ]
 
@@ -214,4 +224,4 @@ onUnmounted(() => {
   font-size: 12px;
   text-align: center;
 }
-</style> 
+</style>
