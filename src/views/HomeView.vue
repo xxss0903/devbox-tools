@@ -165,6 +165,8 @@ const goBack = () => {
       <div v-if="contextMenu.tool?.route.startsWith('custom-')">
         <button @click="deleteCustomTool">删除</button>
       </div>
+      <div class="menu-divider"></div>
+      <button class="cancel-button" @click="hideContextMenu">取消</button>
     </div>
   </div>
 </template>
