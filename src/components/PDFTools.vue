@@ -115,7 +115,7 @@ const handleModulesUpdated = () => {
 
 const addCustomModule = () => {
   if (openAddModuleModal) {
-    openAddModuleModal('/image-tools') // 传入父模块的值
+    openAddModuleModal('/pdf-tools') // 传入父模块的值
   }
 }
 
