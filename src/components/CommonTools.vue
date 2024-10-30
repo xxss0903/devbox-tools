@@ -114,7 +114,7 @@ const handleModulesUpdated = () => {
 }
 
 const addCustomModule = () => {
-  openAddModuleModal('/common-tools')
+  openAddModuleModal('/')
 }
 
 onMounted(() => {

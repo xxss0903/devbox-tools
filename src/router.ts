@@ -28,10 +28,6 @@ import CommonTools from './components/CommonTools.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/common-tools'
-  },
-  {
-    path: '/common-tools',
     name: 'CommonTools',
     component: CommonTools,
     meta: { title: '常用工具', searchable: true, keywords: ['home', '主页', '首页', '常用工具'] }

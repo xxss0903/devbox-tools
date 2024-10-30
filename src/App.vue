@@ -10,7 +10,7 @@ const searchQuery = ref('')
 
 // 基础导航数据
 const titles = ref<TitleModule[]>([
-  { title: '常用工具', value: '/common-tools', children: [] },
+  { title: '常用工具', value: '/', children: [] },
   { title: '图片工具', value: '/image-tools', children: [] },
   { title: 'PDF工具', value: '/pdf-tools', children: [] },
   { title: '颜色工具', value: '/color-tools', children: [] },
@@ -67,11 +67,6 @@ const navigateTo = (path: string) => {
 }
 
 const isActiveTab = (path: string) => {
-  if (path === '/common-tools') {
-    return route.path === '/'
-  } else if (path === '/') {
-    return route.path === '/common-tools'
-  }
   return currentTab.value === path
 }
 
@@ -205,7 +200,7 @@ provide('openAddModuleModal', openAddModuleModal)
               v-for="tab in openTabs" 
               :key="tab.path"
               class="tab"
-              :class="{ active: currentTab === tab.path }"
+              :class="{ active: isActiveTab(tab.path) }"
               @click="switchTab(tab.path)"
             >
               <span class="tab-title">{{ tab.title }}</span>
