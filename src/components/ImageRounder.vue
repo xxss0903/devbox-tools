@@ -1,7 +1,18 @@
 <template>
   <div class="image-rounder">
     <NavigationBar title="图片圆角裁剪" @goBack="goBack" />
-    <div class="content-wrapper">
+    <div 
+      class="content-wrapper"
+      :class="{ dragging: isDragging }"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragEnter"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
+      <div v-if="isDragging" class="drag-overlay">
+        <p>释放鼠标以添加图片</p>
+      </div>
+
       <div class="content">
         <div class="input-section">
           <div class="button-group">
@@ -32,8 +43,8 @@
               </label>
               <label v-else>
                 圆角半径:
-                <input type="number" v-model="borderRadiusPixel" min="0" max="100" class="number-input" />px
-                <input type="range" v-model="borderRadiusPixel" min="0" max="100" class="slider" />
+                <input type="number" v-model="borderRadiusPixel" min="0" max="1000" class="number-input" />px
+                <input type="range" v-model="borderRadiusPixel" min="0" max="1000" class="slider" />
               </label>
             </div>
           </div>
@@ -84,6 +95,8 @@ const originalFileName = ref('');
 const folderSelected = ref(false);
 const imageFiles = ref<File[]>([]);
 const showOpenDownloadFolder = ref(false);
+const isDragging = ref(false)
+const dragCounter = ref(0)
 
 const resultImageStyle = computed(() => {
   if (radiusType.value === 'percent') {
@@ -209,6 +222,54 @@ const goBack = () => {
 const getImageUrl = (file: File) => {
   return URL.createObjectURL(file);
 };
+
+const handleDragEnter = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value++
+  if (dragCounter.value === 1) {
+    requestAnimationFrame(() => {
+      isDragging.value = true
+    })
+  }
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value--
+  if (dragCounter.value === 0) {
+    requestAnimationFrame(() => {
+      isDragging.value = false
+    })
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value = 0
+  requestAnimationFrame(() => {
+    isDragging.value = false
+  })
+
+  const files = Array.from(event.dataTransfer?.files || [])
+  const imageFiles = files.filter(file => file.type.startsWith('image/'))
+  
+  if (imageFiles.length === 1) {
+    // 单个文件处理
+    const file = imageFiles[0]
+    imageUrl.value = URL.createObjectURL(file)
+    originalFileName.value = file.name
+    folderSelected.value = false
+    imageFiles.value = []
+  } else if (imageFiles.length > 1) {
+    // 多个文件处理
+    imageFiles.value = imageFiles
+    folderSelected.value = true
+    imageUrl.value = ''
+  }
+}
 </script>
 
 <style scoped>
@@ -224,6 +285,33 @@ const getImageUrl = (file: File) => {
   overflow-y: auto;
   padding: 20px;
   height: 80%;
+  position: relative;
+}
+
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(52, 152, 219, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dragging .drag-overlay {
+  opacity: 1;
+}
+
+.dragging {
+  border: 2px dashed #3498db;
+  background-color: rgba(52, 152, 219, 0.1);
 }
 
 .content {
