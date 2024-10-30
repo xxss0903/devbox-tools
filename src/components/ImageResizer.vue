@@ -5,7 +5,19 @@
       <h2 class="detail-title">图像大小调整工具</h2>
     </div>
     
-    <div class="image-resizer-content">
+    <div 
+      class="image-resizer-content"
+      :class="{ dragging: isDragging }"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragEnter"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
+      <!-- 添加拖拽提示遮罩 -->
+      <div v-if="isDragging" class="drag-overlay">
+        <p>释放鼠标以添加图片</p>
+      </div>
+
       <div class="controls">
         <label for="file-input" class="button">选择图片</label>
         <input
@@ -116,6 +128,10 @@ const selectedSizes = ref<number[]>([])
 const useCustomSize = ref(false)
 const customWidth = ref(0)
 const customHeight = ref(0)
+
+// 添加拖拽相关的状态
+const isDragging = ref(false)
+const dragCounter = ref(0)
 
 const hasSelectedSizes = computed(() => {
   return selectedSizes.value.length > 0 || (useCustomSize.value && customWidth.value && customHeight.value)
@@ -234,6 +250,48 @@ const downloadAllImages = () => {
 const goBack = () => {
   router.push({ name: 'ImageTools' })
 }
+
+// 添加拖拽处理函数
+const handleDragEnter = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value++
+  if (dragCounter.value === 1) {
+    requestAnimationFrame(() => {
+      isDragging.value = true
+    })
+  }
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value--
+  if (dragCounter.value === 0) {
+    requestAnimationFrame(() => {
+      isDragging.value = false
+    })
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  dragCounter.value = 0
+  requestAnimationFrame(() => {
+    isDragging.value = false
+  })
+
+  const file = event.dataTransfer?.files[0]
+  if (file && file.type.startsWith('image/')) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imageUrl.value = e.target?.result as string
+      resizedImages.value = [] // 清除之前的结果
+    }
+    reader.readAsDataURL(file)
+  }
+}
 </script>
 
 <style scoped>
@@ -270,6 +328,7 @@ const goBack = () => {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+  position: relative;
 }
 
 .controls {
@@ -414,5 +473,32 @@ h3 {
 
 .download-all-button:hover {
   background-color: #2980b9;
+}
+
+/* 添加拖拽相关样式 */
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(52, 152, 219, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dragging .drag-overlay {
+  opacity: 1;
+}
+
+.dragging {
+  border: 2px dashed #3498db;
+  background-color: rgba(52, 152, 219, 0.1);
 }
 </style> 
