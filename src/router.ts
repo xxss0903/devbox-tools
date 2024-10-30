@@ -23,13 +23,18 @@ import PDFBoxApp from './components/PDFBoxApp.vue'
 import ScreenBlocker from './components/ScreenBlocker.vue'
 import ImageResizer from './components/ImageResizer.vue'
 import CustomModuleViewer from './components/CustomModuleViewer.vue'
+import CommonTools from './components/CommonTools.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: HomeView,
-    meta: { title: '首页', searchable: true, keywords: ['home', '主页', '首页'] }
+    redirect: '/common-tools'
+  },
+  {
+    path: '/common-tools',
+    name: 'CommonTools',
+    component: CommonTools,
+    meta: { title: '常用工具', searchable: true, keywords: ['home', '主页', '首页', '常用工具'] }
   },
   {
     path: '/work-diary',

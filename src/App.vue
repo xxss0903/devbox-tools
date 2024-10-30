@@ -6,24 +6,33 @@ import type { CustomModule, TitleModule } from './types/modules'
 import WidgetComponent from './components/WidgetComponent.vue'
 
 const route = useRoute()
-
 const searchQuery = ref('')
 
+// 基础导航数据
 const titles = ref<TitleModule[]>([
-  { title: '常用工具', value: '/', children: [] },
+  { title: '常用工具', value: '/common-tools', children: [] },
   { title: '图片工具', value: '/image-tools', children: [] },
   { title: 'PDF工具', value: '/pdf-tools', children: [] },
   { title: '颜色工具', value: '/color-tools', children: [] },
   { title: 'Android工具', value: '/android-tools', children: [] }
 ])
 
-const activeIndex = ref(0)
-const activeSubIndex = ref(-1)
+// 标签页管理
+interface Tab {
+  path: string
+  title: string
+}
+
+const openTabs = ref<Tab[]>([])
+const currentTab = ref('')
+
+// 模态框状态
 const showAddModuleModal = ref(false)
 const newModuleTitle = ref('')
 const newModuleUrl = ref('')
 const newModuleParent = ref('')
 
+// 路由相关计算属性
 const allRoutes = computed(() => {
   return router.getRoutes().filter((route) => route.meta?.searchable !== false)
 })
@@ -41,6 +50,7 @@ const filteredRoutes = computed(() => {
   })
 })
 
+// 导航函数
 const navigateTo = (path: string) => {
   if (path.startsWith('http')) {
     router.push({
@@ -56,24 +66,16 @@ const navigateTo = (path: string) => {
   searchQuery.value = ''
 }
 
-const updateActiveIndex = () => {
-  const currentPath = route.path
-  const index = titles.value.findIndex((title) => title.value === currentPath)
-  if (index !== -1) {
-    activeIndex.value = index
-    activeSubIndex.value = -1
-  } else {
-    for (let i = 0; i < titles.value.length; i++) {
-      const subIndex = titles.value[i].children.findIndex((child: any) => child.url === currentPath)
-      if (subIndex !== -1) {
-        activeIndex.value = i
-        activeSubIndex.value = subIndex
-        break
-      }
-    }
+const isActiveTab = (path: string) => {
+  if (path === '/common-tools') {
+    return route.path === '/'
+  } else if (path === '/') {
+    return route.path === '/common-tools'
   }
+  return currentTab.value === path
 }
 
+// 模块管理函数
 const openAddModuleModal = (parent: string) => {
   newModuleParent.value = parent
   showAddModuleModal.value = true
@@ -95,22 +97,20 @@ const addCustomModule = () => {
     newModuleParent.value = ''
     showAddModuleModal.value = false
     saveModules()
-    // 触发一个自定义事件，通知子组件更新
     window.dispatchEvent(new CustomEvent('modules-updated'))
   }
 }
 
 const deleteModule = (moduleToDelete: CustomModule) => {
-  console.log('appvue delete module', moduleToDelete.name)
   titles.value = titles.value.map((title) => ({
     ...title,
-    children: title.children.filter((child) => child.title !== moduleToDelete.name)
+    children: title.children.filter((child) => child.title !== moduleToDelete.title)
   }))
   saveModules()
-  // 触发一个自定义事件，通知子组件更新
   window.dispatchEvent(new CustomEvent('modules-updated'))
 }
 
+// 本地存储
 const saveModules = () => {
   localStorage.setItem('modules', JSON.stringify(titles.value))
 }
@@ -122,107 +122,60 @@ const loadModules = () => {
   }
 }
 
-// 监听 titles 的变化，当发生变化时保存到 localStorage
-watch(
-  titles,
-  () => {
-    saveModules()
-  },
-  { deep: true }
-)
-
-onMounted(() => {
-  loadModules()
-})
-
-router.afterEach(updateActiveIndex)
-updateActiveIndex()
-
-// 提供 titles 给子组件使用
-provide('titles', titles)
-provide('deleteModule', deleteModule)
-provide('openAddModuleModal', openAddModuleModal)
-
-// 添加一个新的计算属性来获取当前选中模块的子模块
-const currentChildren = computed(() => {
-  if (activeIndex.value >= 0 && activeIndex.value < titles.value.length) {
-    return titles.value[activeIndex.value].children
-  }
-  return []
-})
-
-// 添加一个新的函数来处理子模块的导航
-const navigateToChild = (child: CustomModule) => {
-  if (child.url?.startsWith('http')) {
-    router.push({
-      name: 'CustomModuleViewer',
-      query: {
-        url: child.url,
-        title: child.title
-      }
-    })
-  } else {
-    router.push(child.url || '/')
-  }
-  activeSubIndex.value = currentChildren.value.findIndex((c) => c.value === child.value)
-}
-
-// 添加 tabs 相关的状态
-interface Tab {
-  path: string
-  title: string
-}
-
-const openTabs = ref<Tab[]>([])
-const currentTab = ref('')
-
-// 监听路由变化，更新 tabs
+// 标签页管理
 watch(() => route.path, (newPath) => {
   const routeRecord = router.getRoutes().find(r => r.path === newPath)
   if (!routeRecord) return
 
   const title = routeRecord.meta?.title as string || routeRecord.name as string
   
-  // 检查是否已经存在该 tab
   if (!openTabs.value.find(tab => tab.path === newPath)) {
-    openTabs.value.push({
-      path: newPath,
-      title: title
-    })
+    openTabs.value.push({ path: newPath, title })
   }
   currentTab.value = newPath
 }, { immediate: true })
 
-// 切换 tab
 const switchTab = (path: string) => {
   router.push(path)
 }
 
-// 关闭 tab
 const closeTab = (path: string) => {
   const index = openTabs.value.findIndex(tab => tab.path === path)
   if (index === -1) return
 
   openTabs.value.splice(index, 1)
   
-  // 如果关闭的是当前 tab，则切换到其他 tab
   if (path === currentTab.value) {
     if (openTabs.value.length > 0) {
-      // 切换到前一个或后一个 tab
       const newTab = openTabs.value[index] || openTabs.value[index - 1]
       router.push(newTab.path)
     } else {
-      // 如果没有其他 tab，返回首页
       router.push('/')
     }
   }
 }
+
+// 生命周期
+onMounted(() => {
+  loadModules()
+})
+
+// 监听存储变化
+watch(titles, () => {
+  saveModules()
+}, { deep: true })
+
+// 提供依赖注入
+provide('titles', titles)
+provide('deleteModule', deleteModule)
+provide('openAddModuleModal', openAddModuleModal)
 </script>
 
 <template>
   <div class="outer-container">
     <WidgetComponent />
     <div class="container">
+      <!-- 侧边导航 -->
       <div class="title-list">
         <div class="search-bar">
           <input v-model="searchQuery" placeholder="搜索功能..." type="text" />
@@ -237,14 +190,15 @@ const closeTab = (path: string) => {
             v-for="(title, index) in titles"
             :key="index"
             @click="navigateTo(title.value)"
-            :class="{ active: index === activeIndex }"
+            :class="{ active: isActiveTab(title.value) }"
           >
             {{ title.title }}
           </li>
         </ul>
       </div>
+
+      <!-- 主内容区 -->
       <div class="content-area">
-        <!-- 添加 tabs 区域 -->
         <div class="tabs-container">
           <div class="tabs">
             <div 
@@ -260,7 +214,6 @@ const closeTab = (path: string) => {
           </div>
         </div>
 
-        <!-- 修改路由视图区域 -->
         <div class="tab-content">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
@@ -274,7 +227,7 @@ const closeTab = (path: string) => {
     </div>
   </div>
 
-  <!-- 添加自定义模块的模态框 -->
+  <!-- 模态框 -->
   <div v-if="showAddModuleModal" class="modal">
     <div class="modal-content">
       <h2>添加自定义模块</h2>
