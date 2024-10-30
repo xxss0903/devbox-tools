@@ -29,7 +29,7 @@ const updateCustomTools = () => {
     name: child.title,
     route: child.value,
     url: child.url,
-    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+    image: 'https://img.icons8.com/?size=100&id=htLYhWs-ns3f&format=png&color=000000'
   }))
 }
 
