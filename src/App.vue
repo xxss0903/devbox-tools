@@ -99,8 +99,9 @@ const addCustomModule = () => {
 const deleteModule = (moduleToDelete: CustomModule) => {
   titles.value = titles.value.map((title) => ({
     ...title,
-    children: title.children.filter((child) => child.title !== moduleToDelete.title)
+    children: title.children.filter((child) => (child.title !== moduleToDelete.name && child.title !== moduleToDelete.title))
   }))
+  console.log('delete module in app.vue', moduleToDelete)
   saveModules()
   window.dispatchEvent(new CustomEvent('modules-updated'))
 }
@@ -359,7 +360,6 @@ provide('openAddModuleModal', openAddModuleModal)
 .tab-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
   background: white;
 }
 
