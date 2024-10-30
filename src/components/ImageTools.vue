@@ -83,7 +83,7 @@ const defaultImageTools = [
   {
     name: '图片大小调整',
     route: 'ImageResizer',
-    image: 'https://img.icons8.com/?size=100&id=22964&format=png&color=000000'
+    image: 'https://img.icons8.com/?size=100&id=J2af-td1smV_&format=png&color=000000'
   }
 ]
 
@@ -191,10 +191,6 @@ onUnmounted(() => {
         <span>+</span>
         <span>添加自定义模块</span>
       </div>
-      <router-link to="/image-resizer" class="tool-item">
-        <div class="tool-icon">🔧</div>
-        <div class="tool-name">图片大小调整</div>
-      </router-link>
     </ToolsContainer>
 
     <!-- 右键菜单 -->
