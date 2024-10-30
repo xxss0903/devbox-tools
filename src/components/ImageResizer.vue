@@ -17,35 +17,47 @@
         />
         
         <div class="size-controls">
-          <select v-model="selectedSize" class="size-select">
-            <option value="32">32 x 32</option>
-            <option value="64">64 x 64</option>
-            <option value="128">128 x 128</option>
-            <option value="256">256 x 256</option>
-            <option value="512">512 x 512</option>
-            <option value="custom">自定义</option>
-          </select>
+          <div class="preset-sizes">
+            <label v-for="size in presetSizes" :key="size" class="size-checkbox">
+              <input
+                type="checkbox"
+                v-model="selectedSizes"
+                :value="size"
+              >
+              {{ size }} x {{ size }}
+            </label>
+          </div>
           
-          <div v-if="selectedSize === 'custom'" class="custom-size">
-            <input 
-              type="number" 
-              v-model="customWidth" 
-              placeholder="宽度"
-              class="size-input"
-            >
-            <span>x</span>
-            <input 
-              type="number" 
-              v-model="customHeight" 
-              placeholder="高度"
-              class="size-input"
-            >
+          <div class="custom-size-container">
+            <label class="size-checkbox">
+              <input
+                type="checkbox"
+                v-model="useCustomSize"
+              >
+              自定义尺寸
+            </label>
+            
+            <div v-if="useCustomSize" class="custom-size">
+              <input 
+                type="number" 
+                v-model="customWidth" 
+                placeholder="宽度"
+                class="size-input"
+              >
+              <span>x</span>
+              <input 
+                type="number" 
+                v-model="customHeight" 
+                placeholder="高度"
+                class="size-input"
+              >
+            </div>
           </div>
         </div>
         
         <button 
           @click="resizeImage" 
-          :disabled="!imageUrl" 
+          :disabled="!imageUrl || !hasSelectedSizes" 
           class="button"
         >调整大小</button>
       </div>
@@ -56,14 +68,27 @@
           <img :src="imageUrl" alt="原始图片" />
         </div>
         
-        <div v-if="resizedImageUrl" class="resized-image">
-          <h3>调整后的图片（点击下载）</h3>
-          <img 
-            :src="resizedImageUrl" 
-            alt="调整后的图片"
-            @click="downloadImage"
-            class="result-image"
-          />
+        <div v-if="resizedImages.length > 0" class="resized-images">
+          <div class="resized-header">
+            <h3>调整后的图片（点击单张下载）</h3>
+            <button 
+              @click="downloadAllImages" 
+              class="download-all-button"
+            >
+              下载所有图片
+            </button>
+          </div>
+          <div class="resized-grid">
+            <div v-for="(img, index) in resizedImages" :key="index" class="resized-item">
+              <p>{{ img.size.width }} x {{ img.size.height }}</p>
+              <img 
+                :src="img.url" 
+                alt="调整后的图片"
+                @click="downloadImage(img)"
+                class="result-image"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -73,26 +98,27 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import JSZip from 'jszip'
+
+interface ResizedImage {
+  url: string
+  size: {
+    width: number
+    height: number
+  }
+}
 
 const router = useRouter()
 const imageUrl = ref('')
-const resizedImageUrl = ref('')
-const selectedSize = ref('128')
+const resizedImages = ref<ResizedImage[]>([])
+const presetSizes = [32, 64, 128, 256, 512]
+const selectedSizes = ref<number[]>([])
+const useCustomSize = ref(false)
 const customWidth = ref(0)
 const customHeight = ref(0)
 
-const targetSize = computed(() => {
-  if (selectedSize.value === 'custom') {
-    return {
-      width: Number(customWidth.value),
-      height: Number(customHeight.value)
-    }
-  }
-  const size = Number(selectedSize.value)
-  return {
-    width: size,
-    height: size
-  }
+const hasSelectedSizes = computed(() => {
+  return selectedSizes.value.length > 0 || (useCustomSize.value && customWidth.value && customHeight.value)
 })
 
 const onFileChange = (event: Event) => {
@@ -101,34 +127,57 @@ const onFileChange = (event: Event) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       imageUrl.value = e.target?.result as string
-      resizedImageUrl.value = '' // 清除之前的结果
+      resizedImages.value = [] // 清除之前的结果
     }
     reader.readAsDataURL(file)
   }
 }
 
+const resizeToSize = (img: HTMLImageElement, width: number, height: number): string => {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  
+  canvas.width = width
+  canvas.height = height
+  
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(img, 0, 0, width, height)
+  }
+  
+  return canvas.toDataURL('image/png')
+}
+
 const resizeImage = () => {
   const img = new Image()
   img.onload = () => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
+    resizedImages.value = []
     
-    canvas.width = targetSize.value.width
-    canvas.height = targetSize.value.height
+    // 处理预设尺寸
+    for (const size of selectedSizes.value) {
+      const resizedUrl = resizeToSize(img, size, size)
+      resizedImages.value.push({
+        url: resizedUrl,
+        size: { width: size, height: size }
+      })
+    }
     
-    if (ctx) {
-      // 使用双线性插值算法进行缩放
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-      
-      ctx.drawImage(img, 0, 0, targetSize.value.width, targetSize.value.height)
-      
-      resizedImageUrl.value = canvas.toDataURL('image/png')
-      
-      // 复制到剪贴板
-      window.electronAPI?.writeImageToClipboard?.(resizedImageUrl.value)
+    // 处理自定义尺寸
+    if (useCustomSize.value && customWidth.value && customHeight.value) {
+      const resizedUrl = resizeToSize(img, customWidth.value, customHeight.value)
+      resizedImages.value.push({
+        url: resizedUrl,
+        size: { width: customWidth.value, height: customHeight.value }
+      })
+    }
+    
+    // 复制最后一个调整后的图片到剪贴板
+    if (resizedImages.value.length > 0) {
+      const lastImage = resizedImages.value[resizedImages.value.length - 1]
+      window.electronAPI?.writeImageToClipboard?.(lastImage.url)
         .then(() => {
-          console.log('调整后的图片已复制到剪切板')
+          console.log('最后一张调整后的图片已复制到剪切板')
         })
         .catch((error: Error) => {
           console.error('复制到剪切板失败:', error)
@@ -138,13 +187,48 @@ const resizeImage = () => {
   img.src = imageUrl.value
 }
 
-const downloadImage = () => {
+const downloadImage = (img: ResizedImage) => {
   const link = document.createElement('a')
-  link.href = resizedImageUrl.value
-  link.download = `resized-image-${targetSize.value.width}x${targetSize.value.height}.png`
+  link.href = img.url
+  link.download = `resized-image-${img.size.width}x${img.size.height}.png`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+const downloadAllImages = () => {
+  // 创建一个临时的 zip 文件夹名称
+  const timestamp = new Date().getTime()
+  const folderName = `resized-images-${timestamp}`
+  
+  // 创建一个 JSZip 实例
+  const zip = new JSZip()
+  
+  // 将所有图片添加到 zip 中
+  resizedImages.value.forEach((img, index) => {
+    // 从 base64 中提取实际的图片数据
+    const imageData = img.url.split(',')[1]
+    // 创建文件名
+    const fileName = `${folderName}/image-${img.size.width}x${img.size.height}.png`
+    // 将图片添加到 zip
+    zip.file(fileName, imageData, { base64: true })
+  })
+  
+  // 生成 zip 文件并下载
+  zip.generateAsync({ type: 'blob' })
+    .then((content) => {
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(content)
+      link.download = `${folderName}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      // 清理创建的 URL
+      URL.revokeObjectURL(link.href)
+    })
+    .catch((error: Error) => {
+      console.error('创建 zip 文件失败:', error)
+    })
 }
 
 const goBack = () => {
@@ -260,5 +344,75 @@ const goBack = () => {
 h3 {
   margin-bottom: 10px;
   color: #2c3e50;
+}
+
+.preset-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.size-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.custom-size-container {
+  margin-top: 10px;
+}
+
+.resized-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.resized-item {
+  text-align: center;
+}
+
+.resized-item p {
+  margin-bottom: 5px;
+  color: #666;
+}
+
+.result-image {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  transition: transform 0.2s;
+}
+
+.result-image:hover {
+  transform: scale(1.05);
+}
+
+.resized-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.download-all-button {
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.download-all-button:hover {
+  background-color: #2980b9;
 }
 </style> 
