@@ -17,11 +17,11 @@ import ClipboardManager from './components/ClipboardManager.vue'
 import ImageRounder from './components/ImageRounder.vue'
 import SvgEditor from './components/SvgEditor.vue'
 import Calculator from './components/Calculator.vue'
-import CanvasStampEditor from './components/CanvasStampEditor.vue'
 import StampEditor from './components/StampEditor.vue'
 import PDFTools from './components/PDFTools.vue'
 import PDFBoxApp from './components/PDFBoxApp.vue'
 import ScreenBlocker from './components/ScreenBlocker.vue'
+import ImageResizer from './components/ImageResizer.vue'
 
 const routes = [
   {
@@ -178,6 +178,16 @@ const routes = [
       title: '痔疮来了',
       searchable: true,
       keywords: ['屏幕关闭', '痔疮来了', '锁屏', 'tools', 'ScreenBolocker', '休息']
+    }
+  },
+  {
+    path: '/image-resizer',
+    name: 'ImageResizer',
+    component: ImageResizer,
+    meta: {
+      title: '图片大小调整',
+      searchable: true,
+      keywords: ['image', 'resizer', '图片大小', '调整', '图片大小调整']
     }
   }
 ]
