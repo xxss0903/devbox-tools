@@ -66,7 +66,7 @@ const defaultImageTools = [
     image: 'https://img.icons8.com/?size=100&id=0uYcfoG9OUaw&format=png&color=000000'
   },
   {
-    name: '屏幕截图',
+    name: '屏幕截图(CTR+ALT+C)',
     route: 'ScreenshotTool',
     image: 'https://img.icons8.com/?size=100&id=112798&format=png&color=000000'
   },
