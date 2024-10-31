@@ -63,7 +63,7 @@ export function closeScreenBlocker() {
 }
 
 // 添加一个一分钟更新的计时器，用来获取是否需要进行屏保
-export function startScreenBlockerLoopByMinute() {
+export function startScreenBlockerLoopByMinute(win: BrowserWindow) {
   setInterval(async () => {
     // 获取锁屏状态
     const screenBlockerStatus = await getScreenBlockerStatus()
@@ -76,6 +76,7 @@ export function startScreenBlockerLoopByMinute() {
           createScreenBlocker(screenBlockerStatus.screen_type, screenBlockerStatus.block_duration)
           // 更新下次屏保时间
           updateNextBlockTime()
+          win.webContents.send('screen-blocker-status-change', screenBlockerStatus.is_active)
         }
       }
     // 更新弹出日志

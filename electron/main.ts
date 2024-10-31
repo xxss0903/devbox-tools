@@ -211,7 +211,7 @@ app.whenReady().then(() => {
   // 初始化托盘
   initTray()
   // 开启屏保轮询
-  startScreenBlockerLoopByMinute()
+  startScreenBlockerLoopByMinute(win!!)
 })
 
 app.on('window-all-closed', () => {

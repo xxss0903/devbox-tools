@@ -32,14 +32,12 @@ const goBack = () => {
 }
 
 const togglePeriodicBlocker = async () => {
-  await window.electronAPI.setScreenBlockerStatus({
-    isActive: isPeriodicBlockerActive.value,
-  })
   if (isPeriodicBlockerActive.value) {
     isPeriodicBlockerActive.value = false
   } else {
     isPeriodicBlockerActive.value = true
   }
+  await window.electronAPI.setScreenBlockerStatus(isPeriodicBlockerActive.value)
 }
 
 const saveSettings = async () => {
