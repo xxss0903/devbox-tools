@@ -1,6 +1,6 @@
 <template>
   <div class="date-tools">
-    <NavigationBar title="日期工具" @goBack="goBack" />
+    <NavigationBar title="日期工具12" @goBack="goBack" />
     
     <div class="content">
       <!-- 当前时间和时间戳 -->
@@ -119,12 +119,12 @@
         </div>
       </div>
     </div>
+    <div v-if="showCopySuccess" class="copy-success-toast">复制成功！</div>
   </div>
-  <div v-if="showCopySuccess" class="copy-success-toast">复制成功！</div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import NavigationBar from './NavigationBar.vue'
 import moment from 'moment'
@@ -146,7 +146,7 @@ const calculatedTimestamp = ref('')
 const showCopySuccess = ref(false)
 const formattedTimestamp = ref('')
 
-let timer: NodeJS.Timer
+let timer: any
 
 // 更新当前时间
 const updateCurrentTime = () => {
@@ -224,9 +224,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer)
-  }
+  console.log('onBeforeUnmount 1', timer)
+  timer && clearInterval(timer)
 })
 </script>
 
