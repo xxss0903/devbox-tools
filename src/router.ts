@@ -24,6 +24,7 @@ import ScreenBlocker from './components/ScreenBlocker.vue'
 import ImageResizer from './components/ImageResizer.vue'
 import CustomModuleViewer from './components/CustomModuleViewer.vue'
 import CommonTools from './components/CommonTools.vue'
+import DateTools from './components/DateTools.vue'
 
 const routes = [
   {
@@ -197,6 +198,16 @@ const routes = [
     name: 'CustomModuleViewer',
     component: CustomModuleViewer,
     meta: { title: '自定义模块', searchable: false }
+  },
+  {
+    path: '/date-tools',
+    name: 'DateTools',
+    component: DateTools,
+    meta: {
+      title: '日期工具',
+      searchable: true,
+      keywords: ['date', 'time', 'tools', '日期', '时间', '工具']
+    }
   }
 ]
 

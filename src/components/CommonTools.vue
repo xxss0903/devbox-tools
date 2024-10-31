@@ -53,6 +53,11 @@ const defaultTools = [
     name: '休息提醒',
     route: 'ScreenBlocker',
     image: 'https://img.icons8.com/?size=100&id=13841&format=png&color=000000'
+  },
+  {
+    name: '日期工具',
+    route: 'DateTools',
+    image: 'https://img.icons8.com/?size=100&id=55216&format=png&color=000000'
   }
 ]
 
