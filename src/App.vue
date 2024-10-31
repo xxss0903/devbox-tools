@@ -275,7 +275,7 @@ provide('titles', titles)
 provide('deleteModule', deleteModule)
 provide('openAddModuleModal', openAddModuleModal)
 
-// 在script setup部分添加新的ref
+// ���script setup部分添加新的ref
 const expandedMenus = ref<string[]>([])
 
 // 添加切换展开/收缩的方法
@@ -375,7 +375,7 @@ const isExpanded = (value: string) => {
       <input v-model="newModuleTitle" placeholder="模块标题" />
       <input v-model="newModuleUrl" placeholder="工具网址" />
       <button @click="addCustomModule">添加</button>
-      <button @click="showAddModuleModal = false">��消</button>
+      <button @click="showAddModuleModal = false">消</button>
     </div>
   </div>
 </template>
@@ -404,7 +404,7 @@ const isExpanded = (value: string) => {
 
 .title-list {
   width: 240px;
-  padding: 20px;
+  padding: 16px;
   background-color: #f8f9fa;
   overflow-y: auto;
   border-right: 1px solid #e9ecef;
@@ -417,23 +417,7 @@ const isExpanded = (value: string) => {
 }
 
 .title-list li {
-  color: #34495e;
-  padding: 15px 20px;
-  cursor: pointer;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
-  border-radius: 8px;
-}
-
-.title-list li:hover {
-  background-color: #e9ecef;
-  color: #3498db;
-}
-
-.title-list li.active {
-  background-color: #3498db;
-  color: #ffffff;
+  margin-bottom: 2px;
 }
 
 .content-area {
@@ -637,14 +621,18 @@ const isExpanded = (value: string) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 12px 16px;
   cursor: pointer;
   transition: all 0.3s ease;
   border-radius: 8px;
+  background-color: #ffffff;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .menu-item:hover {
-  background-color: #e9ecef;
+  background-color: #f8f9fa;
+  transform: translateX(2px);
 }
 
 .menu-item.active {
@@ -654,50 +642,68 @@ const isExpanded = (value: string) => {
 
 .arrow {
   transition: transform 0.3s ease;
-  font-size: 12px;
+  font-size: 10px;
+  color: #999;
+  padding: 4px;
 }
 
 .arrow.expanded {
   transform: rotate(90deg);
+  color: #3498db;
 }
 
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.3s ease;
-  max-height: 300px;
+  max-height: 500px;
+  opacity: 1;
 }
 
 .slide-enter-from,
 .slide-leave-to {
-  opacity: 0;
   max-height: 0;
+  opacity: 0;
   overflow: hidden;
 }
 
 .submenu {
-  padding-left: 20px;
-  margin-top: 5px;
+  padding-left: 16px;
+  margin: 5px 0 15px 0;
+  border-left: 2px solid #e9ecef;
 }
 
 .submenu-item {
-  padding: 10px 20px !important;
-  font-size: 14px;
+  padding: 8px 16px !important;
+  font-size: 13px;
   color: #666;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  cursor: pointer;
 }
 
 .submenu-item:hover {
-  background-color: #e9ecef;
+  background-color: #f0f4f8;
   color: #3498db;
+  padding-left: 20px !important;
 }
 
 .add-module {
-  padding: 10px 20px;
+  padding: 8px 16px;
   color: #3498db;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  margin-top: 8px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  border: 1px dashed #3498db;
+  text-align: center;
+  transition: all 0.2s ease;
 }
 
 .add-module:hover {
-  background-color: #e9ecef;
+  background-color: #edf5ff;
+  border-color: #2980b9;
 }
 </style>
