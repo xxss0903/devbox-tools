@@ -116,7 +116,7 @@ onUnmounted(() => {
 })
 
 const goBack = () => {
-  router.push({ name: 'Home' })
+  router.back()
 }
 </script>
 

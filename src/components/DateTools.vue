@@ -63,6 +63,13 @@
             <button @click="copyFormattedDate" class="copy-button">复制</button>
           </div>
         </div>
+        <div v-if="formattedTimestamp" class="result-row">
+          <span>时间戳：</span>
+          <div class="result">
+            <span>{{ formattedTimestamp }}</span>
+            <button @click="copyFormattedTimestamp" class="copy-button">复制</button>
+          </div>
+        </div>
       </div>
 
       <!-- 日期计算 -->
@@ -71,16 +78,24 @@
           <h3>日期计算</h3>
           <div class="input-group">
             <input 
-              type="date" 
+              type="datetime-local" 
               v-model="baseDate"
               class="date-input"
             />
             <input 
               type="number" 
-              v-model="daysToAdd"
-              placeholder="天数"
+              v-model="timeValue"
+              placeholder="数值"
               class="number-input"
             />
+            <select v-model="timeUnit" class="calc-type-select">
+              <option value="minutes">分钟</option>
+              <option value="hours">小时</option>
+              <option value="days">天</option>
+              <option value="weeks">周</option>
+              <option value="months">月</option>
+              <option value="years">年</option>
+            </select>
             <select v-model="calculationType" class="calc-type-select">
               <option value="add">增加</option>
               <option value="subtract">减少</option>
@@ -93,6 +108,13 @@
           <div class="result">
             <span>{{ calculatedDate }}</span>
             <button @click="copyCalculatedDate" class="copy-button">复制</button>
+          </div>
+        </div>
+        <div v-if="calculatedTimestamp" class="result-row">
+          <span>时间戳：</span>
+          <div class="result">
+            <span>{{ calculatedTimestamp }}</span>
+            <button @click="copyCalculatedTimestamp" class="copy-button">复制</button>
           </div>
         </div>
       </div>
@@ -116,10 +138,13 @@ const dateInput = ref('')
 const selectedFormat = ref('YYYY-MM-DD HH:mm:ss')
 const formattedDate = ref('')
 const baseDate = ref('')
-const daysToAdd = ref(0)
+const timeValue = ref(0)
+const timeUnit = ref('days')
 const calculationType = ref('add')
 const calculatedDate = ref('')
+const calculatedTimestamp = ref('')
 const showCopySuccess = ref(false)
+const formattedTimestamp = ref('')
 
 let timer: NodeJS.Timer
 
@@ -145,18 +170,27 @@ watch([dateInput, selectedFormat], () => {
   if (dateInput.value) {
     const date = moment(dateInput.value)
     formattedDate.value = date.format(selectedFormat.value)
+    formattedTimestamp.value = date.valueOf().toString()
   } else {
     formattedDate.value = ''
+    formattedTimestamp.value = ''
   }
 })
 
 // 日期计算
 const calculateDate = () => {
-  if (baseDate.value && daysToAdd.value) {
+  if (baseDate.value && timeValue.value) {
     const date = moment(baseDate.value)
-    calculatedDate.value = calculationType.value === 'add' 
-      ? date.add(daysToAdd.value, 'days').format('YYYY-MM-DD')
-      : date.subtract(daysToAdd.value, 'days').format('YYYY-MM-DD')
+    const value = Number(timeValue.value)
+    
+    if (calculationType.value === 'add') {
+      date.add(value, timeUnit.value)
+    } else {
+      date.subtract(value, timeUnit.value)
+    }
+    
+    calculatedDate.value = date.format('YYYY-MM-DD HH:mm:ss')
+    calculatedTimestamp.value = date.valueOf().toString()
   }
 }
 
@@ -177,9 +211,11 @@ const copyTimestamp = () => copyToClipboard(currentTimestamp.value.toString())
 const copyConvertedDate = () => copyToClipboard(convertedDate.value)
 const copyFormattedDate = () => copyToClipboard(formattedDate.value)
 const copyCalculatedDate = () => copyToClipboard(calculatedDate.value)
+const copyFormattedTimestamp = () => copyToClipboard(formattedTimestamp.value)
+const copyCalculatedTimestamp = () => copyToClipboard(calculatedTimestamp.value)
 
 const goBack = () => {
-  router.push({ name: 'CommonTools' })
+    router.back()
 }
 
 onMounted(() => {
@@ -345,6 +381,10 @@ onUnmounted(() => {
 
 .number-input {
   width: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .format-select,
@@ -355,6 +395,7 @@ onUnmounted(() => {
   font-size: 14px;
   background: white;
   width: auto;
+  min-width: 80px;
 }
 
 .result {

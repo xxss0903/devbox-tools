@@ -5,7 +5,7 @@ const route = useRoute()
 const router = useRouter()
 
 const goBack = () => {
-  router.push({ name: 'Home' })
+  router.back()
 }
 </script>
 

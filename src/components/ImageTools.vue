@@ -151,7 +151,7 @@ const deleteCustomTool = () => {
 }
 
 const goBack = () => {
-  router.push({ name: 'Home' })
+  router.back()
 }
 
 const handleModulesUpdated = () => {
