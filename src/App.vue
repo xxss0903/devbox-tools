@@ -4,17 +4,123 @@ import { useRouter, useRoute } from 'vue-router'
 import router from './router'
 import type { CustomModule, TitleModule } from './types/modules'
 import WidgetComponent from './components/WidgetComponent.vue'
+import type { title } from 'process'
 
 const route = useRoute()
 const searchQuery = ref('')
 
+const defaultImageTools = [
+  {
+    title: '图片压缩',
+    value: 'ImageCompressor',
+    url: 'https://img.icons8.com/?size=100&id=USMo5UMGEvMw&format=png&color=000000'
+  },
+  {
+    title: 'PNG转ICO',
+    value: 'PngToIco',
+    url: 'https://img.icons8.com/?size=100&id=H6SA7amfKduZ&format=png&color=000000'
+  },
+  {
+    title: '图片Base64转换',
+    value: 'ImageBase64Converter',
+    url: 'https://img.icons8.com/?size=100&id=WPr0mrffLj6D&format=png&color=000000'
+  },
+  {
+    title: '图像裁剪',
+    value: 'ImageCropper',
+      url: 'https://img.icons8.com/?size=100&id=qxnheTBF0af8&format=png&color=000000'
+  },
+  {
+    title: 'Icons8',
+    value: 'Icons8Viewer',
+    url: 'https://img.icons8.com/?size=100&id=118523&format=png&color=000000'
+  },
+  {
+    title: '图片圆角',
+    value: 'ImageRounder',
+    url: 'https://img.icons8.com/?size=100&id=0uYcfoG9OUaw&format=png&color=000000'
+  },
+  {
+    title: '屏幕截图(CTR+ALT+C)',
+    value: 'ScreenshotTool',
+    url: 'https://img.icons8.com/?size=100&id=112798&format=png&color=000000'
+  },
+  {
+    title: 'Svg渲染',
+    value: 'SvgEditor',
+    url: 'https://img.icons8.com/?size=100&id=57475&format=png&color=000000'
+  },
+  {
+    title: '印章编辑器',
+    value: 'StampEditor',
+    url: 'https://img.icons8.com/?size=100&id=22964&format=png&color=000000'
+  },
+  {
+    title: '图片大小调整',
+    value: 'ImageResizer',
+    url: 'https://img.icons8.com/?size=100&id=J2af-td1smV_&format=png&color=000000'
+  }
+]
+
+const defaultAndroidTools = [
+  {
+    title: 'Android工具',
+    value: 'AndroidTools',
+    url: 'https://img.icons8.com/?size=100&id=J2af-td1smV_&format=png&color=000000'
+  }
+]
+const defaultPdfTools = [
+  {
+    title: 'PDF结构工具',
+    value: 'PDFBoxApp',
+    url: 'https://img.icons8.com/?size=100&id=USMo5UMGEvMw&format=png&color=000000'
+  }
+]
+const defaultColorTools = [{
+    title: '颜色工具',
+    value: 'TransparencyConverter',
+    url: 'https://img.icons8.com/?size=100&id=24C4lD5fvL8K&format=png&color=000000'
+  }
+]
+const defaultCommonTools =  [
+  {
+    title: '编码/解码转换',
+    value: 'CodeConverter',
+    url: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+  },
+  {
+    title: '工作日记',
+    value: 'WorkDiary',
+    url: 'https://img.icons8.com/?size=100&id=64503&format=png&color=000000'
+  },
+  {
+    title: '粘贴板管理',
+    value: 'ClipboardManager',
+    url: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
+  },
+  {
+    title: '计算器',
+    value: 'Calculator',
+    url: 'https://img.icons8.com/?size=100&id=41LOFTWPsRas&format=png&color=000000'
+  },
+  {
+    title: '休息提醒',
+    value: 'ScreenBlocker',
+    url: 'https://img.icons8.com/?size=100&id=13841&format=png&color=000000'
+  },
+  {
+    title: '时间戳工具',
+    value: 'DateTools',
+    url: 'https://img.icons8.com/?size=100&id=b8BSnWwKGHNv&format=png&color=000000'
+  }
+]
 // 基础导航数据
 const titles = ref<TitleModule[]>([
-  { title: '常用工具', value: '/', children: [] },
-  { title: '图片工具', value: '/image-tools', children: [] },
-  { title: 'PDF工具', value: '/pdf-tools', children: [] },
-  { title: '颜色工具', value: '/color-tools', children: [] },
-  { title: 'Android工具', value: '/android-tools', children: [] }
+  { title: '常用工具', value: '/', children: defaultCommonTools },
+  { title: '图片工具', value: '/image-tools', children: defaultImageTools },
+  { title: 'PDF工具', value: '/pdf-tools', children: defaultPdfTools },
+  { title: '颜色工具', value: '/color-tools', children: defaultColorTools },
+  { title: 'Android工具', value: '/android-tools', children: defaultAndroidTools }
 ])
 
 // 标签页管理
@@ -52,6 +158,7 @@ const filteredRoutes = computed(() => {
 
 // 导航函数
 const navigateTo = (path: string) => {
+  console.log('navigateTo', path)
   if (path.startsWith('http')) {
     router.push({
       name: 'CustomModuleViewer',
@@ -61,7 +168,7 @@ const navigateTo = (path: string) => {
       }
     })
   } else {
-    router.push(path)
+    router.push({ name: path })
   }
   searchQuery.value = ''
 }
@@ -113,6 +220,7 @@ const saveModules = () => {
 
 const loadModules = () => {
   const savedModules = localStorage.getItem('modules')
+  console.log('savedModules', savedModules, titles.value)
   if (savedModules) {
     titles.value = JSON.parse(savedModules)
   }
@@ -154,6 +262,7 @@ const closeTab = (path: string) => {
 // 生命周期
 onMounted(() => {
   loadModules()
+  console.log('titles', titles.value)
 })
 
 // 监听存储变化
@@ -165,6 +274,24 @@ watch(titles, () => {
 provide('titles', titles)
 provide('deleteModule', deleteModule)
 provide('openAddModuleModal', openAddModuleModal)
+
+// 在script setup部分添加新的ref
+const expandedMenus = ref<string[]>([])
+
+// 添加切换展开/收缩的方法
+const toggleMenu = (value: string) => {
+  const index = expandedMenus.value.indexOf(value)
+  if (index === -1) {
+    expandedMenus.value.push(value)
+  } else {
+    expandedMenus.value.splice(index, 1)
+  }
+}
+
+// 判断菜单是否展开的方法
+const isExpanded = (value: string) => {
+  return expandedMenus.value.includes(value)
+}
 </script>
 
 <template>
@@ -182,13 +309,31 @@ provide('openAddModuleModal', openAddModuleModal)
           </li>
         </ul>
         <ul v-else>
-          <li
-            v-for="(title, index) in titles"
-            :key="index"
-            @click="navigateTo(title.value)"
-            :class="{ active: isActiveTab(title.value) }"
-          >
-            {{ title.title }}
+          <li v-for="(title, index) in titles" :key="index">
+            <div 
+              class="menu-item"
+              :class="{ active: isActiveTab(title.value) }"
+              @click="toggleMenu(title.value)"
+            >
+              <span>{{ title.title }}</span>
+              <span class="arrow" :class="{ expanded: isExpanded(title.value) }">▶</span>
+            </div>
+            <!-- 子菜单 -->
+            <transition name="slide">
+              <ul v-if="isExpanded(title.value)" class="submenu">
+                <li
+                  v-for="child in title.children"
+                  :key="child.value"
+                  @click.stop="navigateTo(child.value || child.url)"
+                  class="submenu-item"
+                >
+                  {{ child.title }}
+                </li>
+                <li class="add-module" @click.stop="openAddModuleModal(title.value)">
+                  + 添加模块
+                </li>
+              </ul>
+            </transition>
           </li>
         </ul>
       </div>
@@ -230,7 +375,7 @@ provide('openAddModuleModal', openAddModuleModal)
       <input v-model="newModuleTitle" placeholder="模块标题" />
       <input v-model="newModuleUrl" placeholder="工具网址" />
       <button @click="addCustomModule">添加</button>
-      <button @click="showAddModuleModal = false">取消</button>
+      <button @click="showAddModuleModal = false">��消</button>
     </div>
   </div>
 </template>
@@ -486,5 +631,73 @@ provide('openAddModuleModal', openAddModuleModal)
 .sub-modules li.active {
   background-color: #3498db;
   color: #ffffff;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.menu-item:hover {
+  background-color: #e9ecef;
+}
+
+.menu-item.active {
+  background-color: #3498db;
+  color: #ffffff;
+}
+
+.arrow {
+  transition: transform 0.3s ease;
+  font-size: 12px;
+}
+
+.arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+  max-height: 300px;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+.submenu {
+  padding-left: 20px;
+  margin-top: 5px;
+}
+
+.submenu-item {
+  padding: 10px 20px !important;
+  font-size: 14px;
+  color: #666;
+}
+
+.submenu-item:hover {
+  background-color: #e9ecef;
+  color: #3498db;
+}
+
+.add-module {
+  padding: 10px 20px;
+  color: #3498db;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-module:hover {
+  background-color: #e9ecef;
 }
 </style>
