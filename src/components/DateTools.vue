@@ -1,6 +1,6 @@
 <template>
   <div class="date-tools">
-    <NavigationBar title="日期工具12" @goBack="goBack" />
+    <NavigationBar title="时间戳工具" @goBack="goBack" />
     
     <div class="content">
       <!-- 当前时间和时间戳 -->
