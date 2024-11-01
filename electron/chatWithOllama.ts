@@ -23,6 +23,7 @@ export async function chatWithOllama(win: BrowserWindow, prompt: string, model: 
     const response = await ollama.chat({...chatMessage, stream: true})
     for await (const part of response) {
       if (part.message?.content) {
+        console.log("generate chat stream:", part.message)
         win?.webContents.send('ollama-stream', part.message.content)
       }
     }

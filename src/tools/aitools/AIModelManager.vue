@@ -3,12 +3,8 @@
     <div class="header">
       <h2>AI 模型管理</h2>
       <div class="header-actions">
-        <button @click="refreshModels" class="refresh-button">
-          刷新模型列表
-        </button>
-        <button @click="showPullModal = true" class="pull-button">
-          拉取新模型
-        </button>
+        <button @click="refreshModels" class="refresh-button">刷新模型列表</button>
+        <button @click="showPullModal = true" class="pull-button">拉取新模型</button>
       </div>
     </div>
 
@@ -20,18 +16,13 @@
           <p class="model-modified">修改时间: {{ formatDate(model.modified_at) }}</p>
         </div>
         <div class="model-actions">
-          <button 
+          <button
             @click="setDefaultModel(model.name)"
             :class="['default-button', { active: model.name === defaultModel }]"
           >
             {{ model.name === defaultModel ? '默认模型' : '设为默认' }}
           </button>
-          <button 
-            @click="deleteModel(model.name)"
-            class="delete-button"
-          >
-            删除模型
-          </button>
+          <button @click="deleteModel(model.name)" class="delete-button">删除模型</button>
         </div>
       </div>
     </div>
@@ -41,47 +32,55 @@
       <div class="modal">
         <h3>拉取新模型</h3>
         <div class="input-group">
-          <input 
+          <input
             v-model="modelNameToPull"
             placeholder="输入模型名称 (例如: llama2)"
             class="model-input"
           />
-          <button 
-            @click="pullModel"
-            :disabled="isPulling"
-            class="pull-confirm-button"
-          >
+          <button @click="pullModel" :disabled="isPulling" class="pull-confirm-button">
             {{ isPulling ? '拉取中...' : '开始拉取' }}
           </button>
+        </div>
+        <div class="model-options">
+          <div
+            v-for="model in filteredModels"
+            :key="model.name"
+            class="model-option"
+            @click="modelNameToPull = model.name"
+            :class="{ active: modelNameToPull === model.name }"
+          >
+            <div class="model-option-header">
+              <span class="model-option-name">{{ model.name }}</span>
+              <div class="model-tags">
+                <span v-for="tag in model.tags" :key="tag" class="tag">
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
+            <p class="model-option-description">{{ model.description }}</p>
+          </div>
         </div>
         <div v-if="isPulling" class="pull-status">
           <div class="pull-progress">
             <div class="progress-bar">
-              <div 
-                class="progress-fill"
-                :style="{ width: `${pullProgress}%` }"
-              ></div>
+              <div class="progress-fill" :style="{ width: `${pullProgress}%` }"></div>
             </div>
             <span class="progress-text">{{ pullProgress }}%</span>
           </div>
           <div class="status-details">
             <p>{{ pullStatus }}</p>
             <p v-if="downloadSpeed" class="speed">下载速度: {{ downloadSpeed }}</p>
-            <p v-if="downloadedSize" class="size">
-              已下载: {{ downloadedSize }} / {{ totalSize }}
-            </p>
+            <p v-if="downloadedSize" class="size">已下载: {{ downloadedSize }} / {{ totalSize }}</p>
           </div>
         </div>
-        <button @click="showPullModal = false" class="close-button">
-          关闭
-        </button>
+        <button @click="showPullModal = false" class="close-button">关闭</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 interface OllamaModel {
   name: string
@@ -100,6 +99,97 @@ const downloadSpeed = ref('')
 const downloadedSize = ref('')
 const totalSize = ref('')
 const defaultModel = ref('')
+
+interface ModelOption {
+  name: string
+  description: string
+  tags: string[]
+}
+
+const availableModels = ref<ModelOption[]>([
+  {
+    name: 'llama3.2',
+    description: 'Meta最新的小型Llama 3.2模型，提供1B和3B参数版本',
+    tags: ['LLM', '轻量级', 'Meta']
+  },
+  {
+    name: 'llama3.1',
+    description: 'Meta最新的大型语言模型，支持8B、70B和405B参数规模',
+    tags: ['LLM', '高性能', 'Meta']
+  },
+  {
+    name: 'gemma2',
+    description: 'Google DeepMind推出的高性能高效模型，提供2B、9B和27B版本',
+    tags: ['LLM', 'Google', '高效']
+  },
+  {
+    name: 'qwen2.5',
+    description: '阿里云最新预训练模型，支持128K上下文，多语言能力强',
+    tags: ['LLM', '中文', '长上下文']
+  },
+  {
+    name: 'mistral',
+    description: 'Mistral AI的7B基础模型，已更新到0.3版本',
+    tags: ['LLM', '开源', '高性能']
+  },
+  {
+    name: 'mixtral',
+    description: 'Mistral AI的混合专家模型(MoE)，提供8x7B和8x22B版本',
+    tags: ['LLM', 'MoE', '高性能']
+  },
+  {
+    name: 'codellama',
+    description: '专门用于代码生成和讨论的大语言模型',
+    tags: ['代码', 'Meta', 'LLM']
+  },
+  {
+    name: 'deepseek-coder-v2',
+    description: '开源的混合专家代码模型，性能可比肩GPT4-Turbo',
+    tags: ['代码', 'MoE', '高性能']
+  },
+  {
+    name: 'phi3',
+    description: '微软推出的轻量级模型，3.8B参数但性能超越同级模型',
+    tags: ['LLM', '轻量级', '微软']
+  },
+  {
+    name: 'neural-chat',
+    description: '基于Mistral的微调模型，具有良好的领域和语言覆盖',
+    tags: ['对话', 'Intel', '通用']
+  },
+  {
+    name: 'dolphin-mixtral',
+    description: '基于Mixtral的无审查模型，在编程任务上表现出色',
+    tags: ['代码', 'MoE', '无审查']
+  },
+  {
+    name: 'llava',
+    description: '结合视觉编码器的多模态模型，支持图像理解',
+    tags: ['视觉', '多模态', 'LLM']
+  },
+  {
+    name: 'yi',
+    description: '高性能双语言模型，支持中英文',
+    tags: ['LLM', '中文', '双语']
+  },
+  {
+    name: 'qwen2-math',
+    description: '专注于数学能力的模型，性能超越多个开源和闭源模型',
+    tags: ['数学', '专业', '推理']
+  },
+  {
+    name: 'openchat',
+    description: '在多个基准测试上超越ChatGPT的开源模型',
+    tags: ['对话', '高性能', '开源']
+  }
+])
+
+const filteredModels = computed(() => {
+  if (!modelNameToPull.value) return availableModels.value
+  return availableModels.value.filter((model) =>
+    model.name.toLowerCase().includes(modelNameToPull.value.toLowerCase())
+  )
+})
 
 // 格式化文件大小
 const formatSize = (bytes: number) => {
@@ -154,33 +244,30 @@ const pullModel = async () => {
     let lastUpdate = startTime
 
     // 监听进度更新
-    window.electronAPI.onModelPullProgress((data: {
-      status: string,
-      completed: number,
-      total: number,
-      digest?: string
-    }) => {
-      const now = Date.now()
-      
-      if (data.status.indexOf("pulling") >= 0) {
-        pullStatus.value = '正在下载模型文件...'
-        pullProgress.value = Math.round((data.completed / data.total) * 100) || 0
-        downloadedSize.value = formatBytes(data.completed)
-        totalSize.value = formatBytes(data.total)
-        
-        // 每秒更新一次速度
-        if (now - lastUpdate > 1000) {
-          downloadSpeed.value = calculateSpeed(data.completed, now - startTime)
-          lastUpdate = now
+    window.electronAPI.onModelPullProgress(
+      (data: { status: string; completed: number; total: number; digest?: string }) => {
+        const now = Date.now()
+
+        if (data.status.indexOf('pulling') >= 0) {
+          pullStatus.value = '正在下载模型文件...'
+          pullProgress.value = Math.round((data.completed / data.total) * 100) || 0
+          downloadedSize.value = formatBytes(data.completed)
+          totalSize.value = formatBytes(data.total)
+
+          // 每秒更新一次速度
+          if (now - lastUpdate > 1000) {
+            downloadSpeed.value = calculateSpeed(data.completed, now - startTime)
+            lastUpdate = now
+          }
+        } else if (data.status.indexOf('verifying') >= 0) {
+          pullStatus.value = '正在验证模型完整性...'
+        } else if (data.status.indexOf('extracting') >= 0) {
+          pullStatus.value = '正在解压模型文件...'
+        } else if (data.status.indexOf('success') >= 0) {
+          pullStatus.value = '模型拉取成功'
         }
-      } else if (data.status.indexOf('verifying') >= 0) {
-        pullStatus.value = '正在验证模型完整性...'
-      } else if (data.status.indexOf('extracting') >= 0) {
-        pullStatus.value = '正在解压模型文件...'
-      } else if (data.status.indexOf('success') >= 0) {
-        pullStatus.value = '模型拉取成功'
       }
-    })
+    )
 
     await window.electronAPI.pullOllamaModel(modelNameToPull.value)
     await refreshModels()
@@ -291,23 +378,23 @@ onMounted(async () => {
 }
 
 .refresh-button {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 
 .pull-button {
-  background-color: #2196F3;
+  background-color: #2196f3;
   color: white;
 }
 
 .default-button {
-  background-color: #9E9E9E;
+  background-color: #9e9e9e;
   color: white;
   flex: 1;
 }
 
 .default-button.active {
-  background-color: #4CAF50;
+  background-color: #4caf50;
 }
 
 .delete-button {
@@ -333,7 +420,7 @@ onMounted(async () => {
   background: white;
   padding: 30px;
   border-radius: 8px;
-  width: 400px;
+  width: 500px;
 }
 
 .input-group {
@@ -367,19 +454,19 @@ onMounted(async () => {
 }
 
 .speed {
-  color: #2196F3;
+  color: #2196f3;
   font-family: monospace;
 }
 
 .size {
-  color: #4CAF50;
+  color: #4caf50;
   font-family: monospace;
 }
 
 .progress-text {
   margin-left: 10px;
   font-weight: 500;
-  color: #2196F3;
+  color: #2196f3;
 }
 
 .pull-progress {
@@ -398,7 +485,7 @@ onMounted(async () => {
 
 .progress-fill {
   height: 100%;
-  background: #2196F3;
+  background: #2196f3;
   transition: width 0.3s ease;
 }
 
@@ -412,4 +499,62 @@ button:disabled {
   cursor: not-allowed;
   transform: none;
 }
-</style> 
+
+.model-options {
+  margin-top: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.model-option {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.model-option:last-child {
+  border-bottom: none;
+}
+
+.model-option:hover {
+  background-color: #f5f5f5;
+}
+
+.model-option.active {
+  background-color: #e3f2fd;
+}
+
+.model-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.model-option-name {
+  font-weight: 500;
+  color: #2196f3;
+}
+
+.model-option-description {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.model-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  background-color: #e0e0e0;
+  border-radius: 12px;
+  color: #666;
+}
+</style>
