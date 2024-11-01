@@ -1,7 +1,6 @@
 <template>
   <div class="image-rounder">
-    <NavigationBar title="图片圆角裁剪" @goBack="goBack" />
-    <div 
+    <div
       class="content-wrapper"
       :class="{ dragging: isDragging }"
       @dragenter="handleDragEnter"
@@ -255,7 +254,7 @@ const handleDrop = async (event: DragEvent) => {
 
   const files = Array.from(event.dataTransfer?.files || [])
   const imageFiles = files.filter(file => file.type.startsWith('image/'))
-  
+
   if (imageFiles.length === 1) {
     // 单个文件处理
     const file = imageFiles[0]

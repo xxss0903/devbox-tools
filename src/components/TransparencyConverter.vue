@@ -27,7 +27,7 @@ const copyToClipboard = (text: string) => {
   textArea.value = text
   document.body.appendChild(textArea)
   textArea.select()
-  
+
   try {
     document.execCommand('copy')
     copyMessage.value = '已复制到剪贴板'
@@ -37,7 +37,7 @@ const copyToClipboard = (text: string) => {
   }
 
   document.body.removeChild(textArea)
-  
+
   setTimeout(() => {
     copyMessage.value = ''
   }, 2000)
@@ -70,7 +70,6 @@ function updateOpacity() {
 
 <template>
   <div class="transparency-converter">
-    <NavigationBar title="颜色转换工具" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <h2>颜色设置</h2>
@@ -122,7 +121,7 @@ function updateOpacity() {
 .transparency-converter {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   background-color: #f0f2f5;
   font-family: 'Helvetica Neue', Arial, sans-serif;
 }

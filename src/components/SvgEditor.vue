@@ -1,6 +1,5 @@
 <template>
   <div class="svg-editor">
-    <NavigationBar title="SVG 预览与编辑" @goBack="goBack" />
     <div class="editor-content">
       <div class="input-section">
         <label for="svg-input" class="file-input-label">

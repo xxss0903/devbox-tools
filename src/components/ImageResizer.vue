@@ -1,11 +1,6 @@
 <template>
   <div class="image-resizer-container">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">图像大小调整工具</h2>
-    </div>
-    
-    <div 
+    <div
       class="image-resizer-content"
       :class="{ dragging: isDragging }"
       @dragenter="handleDragEnter"
@@ -33,7 +28,7 @@
               />
             </label>
           </div>
-          
+
           <div v-if="imageUrl" class="image-preview">
             <h3>原始图片</h3>
             <img :src="imageUrl" alt="原始图片" class="preview-img" />
@@ -49,8 +44,8 @@
             <h3 class="section-title">预设尺寸</h3>
             <div class="preset-sizes">
               <!-- 预设尺寸卡片 -->
-              <div 
-                v-for="size in presetSizes" 
+              <div
+                v-for="size in presetSizes"
                 :key="size"
                 class="size-card"
                 :class="{ active: selectedSizes.includes(size) }"
@@ -73,14 +68,14 @@
                   <span class="toggle-slider"></span>
                 </label>
               </div>
-              
+
               <div v-if="useCustomSize" class="custom-size-inputs">
                 <div class="dimension-input">
                   <label>宽度</label>
                   <div class="input-with-unit">
-                    <input 
-                      type="number" 
-                      v-model="customWidth" 
+                    <input
+                      type="number"
+                      v-model="customWidth"
                       placeholder="宽度"
                       class="size-input"
                     >
@@ -91,9 +86,9 @@
                 <div class="dimension-input">
                   <label>高度</label>
                   <div class="input-with-unit">
-                    <input 
-                      type="number" 
-                      v-model="customHeight" 
+                    <input
+                      type="number"
+                      v-model="customHeight"
                       placeholder="高度"
                       class="size-input"
                     >
@@ -104,9 +99,9 @@
             </div>
 
             <div class="action-buttons">
-              <button 
-                @click="resizeImage" 
-                :disabled="!imageUrl || !hasSelectedSizes" 
+              <button
+                @click="resizeImage"
+                :disabled="!imageUrl || !hasSelectedSizes"
                 class="resize-button"
               >
                 调整大小
@@ -120,8 +115,8 @@
       <div v-if="resizedImages.length > 0" class="results-section">
         <div class="resized-header">
           <h3>调整后的图片（点击单张下载）</h3>
-          <button 
-            @click="downloadAllImages" 
+          <button
+            @click="downloadAllImages"
             class="download-all-button"
           >
             下载所有图片
@@ -130,8 +125,8 @@
         <div class="resized-grid">
           <div v-for="(img, index) in resizedImages" :key="index" class="resized-item">
             <p>{{ img.size.width }} x {{ img.size.height }}</p>
-            <img 
-              :src="img.url" 
+            <img
+              :src="img.url"
               alt="调整后的图片"
               @click="downloadImage(img)"
               class="result-image"
@@ -193,16 +188,16 @@ const onFileChange = (event: Event) => {
 const resizeToSize = (img: HTMLImageElement, width: number, height: number): string => {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
-  
+
   canvas.width = width
   canvas.height = height
-  
+
   if (ctx) {
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(img, 0, 0, width, height)
   }
-  
+
   return canvas.toDataURL('image/png')
 }
 
@@ -210,7 +205,7 @@ const resizeImage = () => {
   const img = new Image()
   img.onload = () => {
     resizedImages.value = []
-    
+
     // 处理预设尺寸
     for (const size of selectedSizes.value) {
       const resizedUrl = resizeToSize(img, size, size)
@@ -219,7 +214,7 @@ const resizeImage = () => {
         size: { width: size, height: size }
       })
     }
-    
+
     // 处理自定义尺寸
     if (useCustomSize.value && customWidth.value && customHeight.value) {
       const resizedUrl = resizeToSize(img, customWidth.value, customHeight.value)
@@ -228,7 +223,7 @@ const resizeImage = () => {
         size: { width: customWidth.value, height: customHeight.value }
       })
     }
-    
+
     // 复制最后一个调整后的图片到剪贴板
     if (resizedImages.value.length > 0) {
       const lastImage = resizedImages.value[resizedImages.value.length - 1]
@@ -258,16 +253,16 @@ const downloadAllImages = () => {
   const timestamp = new Date().getTime()
   // 使用原始文件名创建文件夹
   const folderName = originalFileName.value || `resized-images-${timestamp}`
-  
+
   const zip = new JSZip()
-  
+
   resizedImages.value.forEach((img) => {
     const imageData = img.url.split(',')[1]
     // 使用原始文件名创建压缩包中的文件名
     const fileName = `${folderName}/${originalFileName.value}-${img.size.width}x${img.size.height}.png`
     zip.file(fileName, imageData, { base64: true })
   })
-  
+
   zip.generateAsync({ type: 'blob' })
     .then((content) => {
       const link = document.createElement('a')
@@ -876,9 +871,9 @@ input:checked + .toggle-slider:before {
   .size-selection-section {
     width: 100%;
   }
-  
+
   .image-resizer-content {
     padding-bottom: 120px;
   }
 }
-</style> 
+</style>

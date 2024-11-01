@@ -90,7 +90,6 @@ onMounted(async () => {
 
 <template>
   <div class="screen-blocker">
-    <NavigationBar title="定时休息" @goBack="goBack" />
     <div class="content-wrapper">
       <div class="content">
         <h2>定时休息设置</h2>

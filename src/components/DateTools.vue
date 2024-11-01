@@ -1,7 +1,5 @@
 <template>
   <div class="date-tools">
-    <NavigationBar title="时间戳工具" @goBack="goBack" />
-    
     <div class="content">
       <!-- 当前时间和时间戳 -->
       <div class="tool-section">
@@ -20,8 +18,8 @@
         <div class="section-row">
           <h3>时间戳转换</h3>
           <div class="input-group">
-            <input 
-              type="number" 
+            <input
+              type="number"
               v-model="timestampInput"
               placeholder="输入时间戳"
               class="timestamp-input"
@@ -42,8 +40,8 @@
         <div class="section-row">
           <h3>日期格式化</h3>
           <div class="input-group">
-            <input 
-              type="datetime-local" 
+            <input
+              type="datetime-local"
               v-model="dateInput"
               class="date-input"
             />
@@ -77,13 +75,13 @@
         <div class="section-row">
           <h3>日期计算</h3>
           <div class="input-group">
-            <input 
-              type="datetime-local" 
+            <input
+              type="datetime-local"
               v-model="baseDate"
               class="date-input"
             />
-            <input 
-              type="number" 
+            <input
+              type="number"
               v-model="timeValue"
               placeholder="数值"
               class="number-input"
@@ -182,13 +180,13 @@ const calculateDate = () => {
   if (baseDate.value && timeValue.value) {
     const date = moment(baseDate.value)
     const value = Number(timeValue.value)
-    
+
     if (calculationType.value === 'add') {
       date.add(value, timeUnit.value)
     } else {
       date.subtract(value, timeUnit.value)
     }
-    
+
     calculatedDate.value = date.format('YYYY-MM-DD HH:mm:ss')
     calculatedTimestamp.value = date.valueOf().toString()
   }
@@ -505,4 +503,4 @@ onUnmounted(() => {
   border-radius: 4px;
   z-index: 1000;
 }
-</style> 
+</style>

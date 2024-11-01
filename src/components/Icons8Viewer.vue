@@ -95,7 +95,6 @@ onMounted(() => {
 
 <template>
   <div class="icons8-viewer">
-    <NavigationBar title="Icons8" @goBack="goBack" />
     <div class="webview-container">
       <div class="navigation-buttons">
         <button @click="handleBackNavigation()" :disabled="!canGoBack" class="nav-button">

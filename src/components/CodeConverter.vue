@@ -79,7 +79,6 @@ const goBack = () => {
 
 <template>
   <div class="code-converter">
-    <NavigationBar title="代码转换器" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <div class="radio-group">

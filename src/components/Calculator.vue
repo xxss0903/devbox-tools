@@ -1,6 +1,5 @@
 <template>
   <div class="calculator-wrapper" @keydown="handleKeyDown" tabindex="0">
-    <NavigationBar title="计算器" @goBack="goBack"/>
     <div class="calculator-container">
       <div class="calculator-sidebar">
         <h3>计算器类型</h3>
@@ -90,7 +89,7 @@ onUnmounted(() => {
 .calculator-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 

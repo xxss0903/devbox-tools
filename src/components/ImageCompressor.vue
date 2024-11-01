@@ -220,7 +220,6 @@ const clearAll = () => {
 
 <template>
   <div class="image-compressor">
-    <NavigationBar title="图片压缩工具" @goBack="goBack" />
     <div
       class="compressor-content"
       :class="{ dragging: isDragging }"

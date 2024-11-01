@@ -1,10 +1,6 @@
 <template>
   <div class="image-cropper-container">
-    <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">图像裁剪工具（点击图片下载）</h2>
-    </div>
-    <div 
+    <div
       class="image-cropper-content"
       :class="{ dragging: isDragging }"
       @dragenter="handleDragEnter"

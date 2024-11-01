@@ -83,7 +83,6 @@ const downloadModalImage = () => {
 
 <template>
   <div class="image-base64-converter">
-    <NavigationBar title="图片Base64转换" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <div class="file-input-wrapper">

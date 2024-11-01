@@ -61,7 +61,6 @@ const goBack = () => {
 
 <template>
   <div class="png-to-ico">
-    <NavigationBar title="PNG转ICO" @goBack="goBack" />
     <div class="converter-content">
       <div class="control-panel">
         <input type="file" accept="image/png, image/jpeg" @change="handleFileChange" />

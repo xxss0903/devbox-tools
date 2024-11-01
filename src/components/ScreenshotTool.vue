@@ -1,6 +1,5 @@
 <template>
   <div class="screenshot-tool">
-    <NavigationBar title="截图工具" @goBack="goBack" />
     <div class="content">
       <button @click="takeScreenshot">开始截图</button>
       <div v-if="screenshotDataURL" class="screenshot-preview">

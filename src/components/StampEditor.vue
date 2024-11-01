@@ -17,8 +17,6 @@ const goBack = () => {
 
 <template>
   <div class="stamp-editor">
-    <NavigationBar title="印章编辑器" @goBack="goBack" />
-
     <div class="editor-selector">
       <select v-model="editorType">
         <option value="invoice">发票章制作</option>
