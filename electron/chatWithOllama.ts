@@ -1,24 +1,31 @@
 import { BrowserWindow } from "electron";
 import { ipcMain } from "electron";
-import ollama from 'ollama'
+import ollama, { ChatRequest } from 'ollama'
 
 let defaultModel = "qwen2.5"
 
-export async function chatWithOllama(win: BrowserWindow, prompt: string, model: string | undefined = defaultModel): Promise<void> {
+export async function chatWithOllama(win: BrowserWindow, prompt: string, model: string | undefined = defaultModel, image?: string): Promise<void> {
   try {
-    const response = await ollama.chat({
+    let chatMessage: ChatRequest;
+    console.log('chatWithOllama image:', image)
+    if(image) {  
+      chatMessage = {
+        model: model,
+        messages: [{role: "user", content: prompt, images: [image]}],
+      }
+    } else {
+      chatMessage = {
         model: model,
         messages: [{role: "user", content: prompt}],
-        stream: true
-    })
-
+      }
+    }
+    console.log('chatMessage ai msg:', chatMessage) 
+    const response = await ollama.chat({...chatMessage, stream: true})
     for await (const part of response) {
-      // 发送每个部分的响应
       if (part.message?.content) {
         win?.webContents.send('ollama-stream', part.message.content)
       }
     }
-    // 发送完成信号
     win?.webContents.send('ollama-done')
   } catch (error) {
     console.error('Ollama API 调用失败:', error);
@@ -81,10 +88,10 @@ export function getDefaultModel(): string {
 }
 
 export function setupOllamaChatHandle(win: BrowserWindow) {
-  // 保存主窗口引用
-  ipcMain.handle('chat-with-ai', async (event, prompt: string, model?: string) => {
+  // 修改 chat-with-ai 处理器以支持图片
+  ipcMain.handle('chat-with-ai', async (event, prompt: string, model?: string, image?: string) => {
     try {
-      await chatWithOllama(win, prompt, model)
+      await chatWithOllama(win, prompt, model, image)
       return true
     } catch (error) {
       console.error('Chat error:', error)

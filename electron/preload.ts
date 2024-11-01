@@ -103,7 +103,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('screen-blocker-status-change', callback),
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
-  chatWithAI: (prompt: string, model?: string) => ipcRenderer.invoke('chat-with-ai', prompt, model),
+  chatWithAI: (prompt: string, model?: string, image?: string) => ipcRenderer.invoke('chat-with-ai', prompt, model, image),
   getOllamaModels: () => ipcRenderer.invoke('get-ollama-models'),
   pullOllamaModel: (modelName: string) => ipcRenderer.invoke('pull-ollama-model', modelName),
   deleteOllamaModel: (modelName: string) => ipcRenderer.invoke('delete-ollama-model', modelName),

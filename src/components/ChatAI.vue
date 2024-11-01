@@ -32,13 +32,25 @@
           placeholder="输入您的问题..."
           class="input-field"
         ></textarea>
-        <button 
-          @click="sendMessage" 
-          :disabled="isProcessing"
-          class="send-button"
-        >
-          {{ isProcessing ? '处理中...' : '发送' }}
-        </button>
+        <div class="button-group">
+          <button class="upload-button" @click="triggerImageUpload">
+            <i class="fas fa-image"></i>
+          </button>
+          <button 
+            @click="sendMessage" 
+            :disabled="isProcessing"
+            class="send-button"
+          >
+            {{ isProcessing ? '处理中...' : '发送' }}
+          </button>
+        </div>
+        <input
+          type="file"
+          ref="imageInput"
+          accept="image/*"
+          style="display: none"
+          @change="handleImageUpload"
+        />
       </div>
     </div>
   </div>
@@ -51,6 +63,7 @@ import { marked } from 'marked'
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  image?: string
 }
 
 const messages = ref<ChatMessage[]>([])
@@ -59,6 +72,8 @@ const isProcessing = ref(false)
 const availableModels = ref<string[]>([])
 const selectedModel = ref('')
 const messagesRef = ref<HTMLDivElement | null>(null)
+const imageInput = ref<HTMLInputElement | null>(null)
+const selectedImage = ref<string | null>(null)
 
 const loadAvailableModels = async () => {
   try {
@@ -129,7 +144,64 @@ const renderMessage = (message: ChatMessage) => {
   if (message.role === 'assistant') {
     return renderMarkdown(message.content)
   }
+  // 如果是用户消息且包含图片
+  if (message.role === 'user' && message.image) {
+    return `
+      <div class="message-with-image">
+        <img src="${message.image}" alt="用户上传的图片" class="uploaded-image" />
+        <p>${message.content}</p>
+      </div>
+    `
+  }
   return message.content
+}
+
+// 触发文件选择
+const triggerImageUpload = () => {
+  imageInput.value?.click()
+}
+
+// 修改图片上传处理函数
+const handleImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  try {
+    // 将图片转换为 base64
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64Image = e.target?.result as string
+      // 提取 base64 数据部分（去掉 "data:image/png;base64," 前缀）
+      const imageData = base64Image.split(',')[1]
+      selectedImage.value = base64Image
+
+      // 自动发送图片分析请求
+      const prompt = "请详细描述这张图片的内容"
+      messages.value.push({ 
+        role: 'user', 
+        content: `[图片分析请求]`,
+        image: base64Image 
+      })
+      isProcessing.value = true
+
+      try {
+        messages.value.push({ role: 'assistant', content: '' })
+        // 传递图片数据给 AI
+        await window.electronAPI.chatWithAI(prompt, selectedModel.value.model, imageData)
+      } catch (error) {
+        console.error('发送消息失败:', error)
+        messages.value[messages.value.length - 1].content = '分析失败，请重试'
+        isProcessing.value = false
+      }
+    }
+    reader.readAsDataURL(file)
+  } catch (error) {
+    console.error('处理图片失败:', error)
+  }
+  
+  // 清空文件选择，允许重复选择同一文件
+  target.value = ''
 }
 
 onMounted(async () => {
@@ -226,23 +298,66 @@ onMounted(async () => {
   font-size: 14px;
 }
 
+.button-group {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.upload-button {
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  height: 42px;
+  width: 42px;
+}
+
+.upload-button:hover {
+  background-color: #43A047;
+  transform: translateY(-1px);
+}
+
 .send-button {
   padding: 0 20px;
+  height: 42px;
   background-color: #2196F3;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 80px;
 }
 
 .send-button:hover:not(:disabled) {
   background-color: #1976D2;
+  transform: translateY(-1px);
 }
 
 .send-button:disabled {
   background-color: #90CAF9;
   cursor: not-allowed;
+  transform: none;
+}
+
+.message-with-image {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.uploaded-image {
+  max-width: 300px;
+  max-height: 200px;
+  border-radius: 4px;
+  object-fit: contain;
 }
 
 /* 滚动条样式 */
