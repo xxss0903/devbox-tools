@@ -1,8 +1,6 @@
 <template>
   <div class="work-diary-container">
     <div class="navigation-bar">
-      <button class="back-button" @click="goBack">返回</button>
-      <h2 class="detail-title">工作日记</h2>
       <button @click="saveDiary" class="save-button">保存</button>
       <button @click="clearDatabase" class="clear-button">清空日志</button>
       <button @click="generateWeeklySummary" class="summary-button">生成周报</button>
