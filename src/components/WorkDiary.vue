@@ -52,7 +52,7 @@
         <div class="modal">
           <div class="modal-content">
             <h2>周报摘要</h2>
-            <div class="summary-content">{{ summaryContent }}</div>
+            <div class="summary-content" v-html="summaryContent"></div>
             <div class="modal-buttons">
               <button @click="copySummary" class="copy-button">复制</button>
               <button @click="closeSummaryModal" class="close-button">关闭</button>
@@ -179,7 +179,7 @@ const copySummary = () => {
   navigator.clipboard
     .writeText(summaryContent.value)
     .then(() => {
-      alert('周报内容已复制到剪贴板')
+      
     })
     .catch((err) => {
       console.error('复制失败:', err)

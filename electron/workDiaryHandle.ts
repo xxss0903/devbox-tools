@@ -31,11 +31,11 @@ export function setupWorkDiaryHandle(win: BrowserWindow) {
       [startDate, endDate]
     )
 
-    let summary = `周报 (${startDate} 至 ${endDate}):\n\n`
+    let summary = `周报 (${startDate} 至 ${endDate}):\n`
 
     for (const entry of entries) {
       summary += `日期: ${entry.date}\n`
-      summary += `内容: ${entry.content}\n`
+      summary += `内容: ${entry.content}`
 
       const todos = JSON.parse(entry.todos || '[]')
       if (todos.length > 0) {
@@ -45,7 +45,7 @@ export function setupWorkDiaryHandle(win: BrowserWindow) {
         }
       }
 
-      summary += '\n---\n\n'
+      summary += '------------------\n'
     }
 
     // 这里可以添加更复杂的摘要生成逻辑,例如使用 AI 生成摘要
