@@ -17,7 +17,7 @@
         <div class="model-info">
           <h3>{{ model.name }}</h3>
           <p class="model-size">大小: {{ formatSize(model.size) }}</p>
-          <p class="model-modified">修改时间: {{ formatDate(model.modified) }}</p>
+          <p class="model-modified">修改时间: {{ formatDate(model.modified_at) }}</p>
         </div>
         <div class="model-actions">
           <button 

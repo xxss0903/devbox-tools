@@ -5,7 +5,7 @@
       <div class="model-select">
         <select v-model="selectedModel" class="model-selector">
           <option v-for="model in availableModels" :key="model" :value="model">
-            {{ model }}
+            {{ model.name || model.model}}
           </option>
         </select>
       </div>
@@ -76,11 +76,13 @@ const sendMessage = async () => {
   isProcessing.value = true
 
   try {
+    console.log('selectedModel', selectedModel.value)
     messages.value.push({ role: 'assistant', content: '' })
-    await window.electronAPI.chatWithAI(userMessage, selectedModel.value)
+    await window.electronAPI.chatWithAI(userMessage, selectedModel.value.model)
   } catch (error) {
     console.error('发送消息失败:', error)
     messages.value[messages.value.length - 1].content = '发送失败，请重试'
+    isProcessing.value = false
   }
 }
 
@@ -117,7 +119,7 @@ onMounted(async () => {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 250px);
   display: flex;
   flex-direction: column;
 }
