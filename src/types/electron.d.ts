@@ -11,7 +11,12 @@ export interface IElectronAPI {
   ) => Promise<{ name: string; size: number; data: string }[]>
   writeImageToClipboard: (imageData: string) => Promise<void>
   chatWithAI: (prompt: string, model?: string) => Promise<boolean>
-  getOllamaModels: () => Promise<string[]>
+  getOllamaModels: () => Promise<any[]>
+  pullOllamaModel: (modelName: string) => Promise<void>
+  deleteOllamaModel: (modelName: string) => Promise<void>
+  setDefaultModel: (modelName: string) => Promise<void>
+  getDefaultModel: () => Promise<string>
+  onModelPullProgress: (callback: (progress: number) => void) => void
   onOllamaStream: (callback: (content: string) => void) => void
   onOllamaDone: (callback: () => void) => void
 }

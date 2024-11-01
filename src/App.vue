@@ -115,8 +115,13 @@ const defaultCommonTools =  [
   }
 ]
 
-// 在 defaultCommonTools 后添加 AI 工具配置
+// 修改 defaultAITools 数组
 const defaultAITools = [
+  {
+    title: '模型管理',
+    value: 'AIModelManager',
+    url: 'https://img.icons8.com/?size=100&id=55498&format=png&color=000000'
+  },
   {
     title: '周报管理',
     value: 'WeeklyReportAI',
@@ -235,11 +240,11 @@ const saveModules = () => {
 }
 
 const loadModules = () => {
-  const savedModules = localStorage.getItem('modules')
-  console.log('savedModules', savedModules, titles.value)
-  if (savedModules) {
-    titles.value = JSON.parse(savedModules)
-  }
+  // const savedModules = localStorage.getItem('modules')
+  // console.log('savedModules', savedModules, titles.value)
+  // if (savedModules) {
+  //   titles.value = JSON.parse(savedModules)
+  // }
 }
 
 // 标签页管理

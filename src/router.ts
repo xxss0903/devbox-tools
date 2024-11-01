@@ -27,6 +27,7 @@ import CommonTools from './components/CommonTools.vue'
 import DateTools from './components/DateTools.vue'
 import WeeklyReportAI from './components/WeeklyReportAI.vue'
 import ChatAI from './components/ChatAI.vue'
+import AIModelManager from './components/AIModelManager.vue'
 
 const routes = [
   {
@@ -227,6 +228,15 @@ const routes = [
     meta: {
       title: '智能问答',
       keywords: ['AI', '聊天', '问答']
+    }
+  },
+  {
+    path: '/ai-model-manager',
+    name: 'AIModelManager',
+    component: AIModelManager,
+    meta: {
+      title: 'AI模型管理',
+      keywords: ['AI', '模型', '管理']
     }
   }
 ]

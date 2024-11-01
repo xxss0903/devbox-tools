@@ -117,7 +117,7 @@ onMounted(async () => {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  height: calc(100vh - 100px);
+  height: calc(100vh - 200px);
   display: flex;
   flex-direction: column;
 }
@@ -145,6 +145,8 @@ onMounted(async () => {
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  max-height: calc(100vh - 300px);
+  overflow: hidden;
 }
 
 .messages {
@@ -154,6 +156,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: calc(100vh - 400px);
 }
 
 .message {

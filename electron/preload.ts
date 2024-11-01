@@ -105,6 +105,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
   chatWithAI: (prompt: string, model?: string) => ipcRenderer.invoke('chat-with-ai', prompt, model),
   getOllamaModels: () => ipcRenderer.invoke('get-ollama-models'),
+  pullOllamaModel: (modelName: string) => ipcRenderer.invoke('pull-ollama-model', modelName),
+  deleteOllamaModel: (modelName: string) => ipcRenderer.invoke('delete-ollama-model', modelName),
+  setDefaultModel: (modelName: string) => ipcRenderer.invoke('set-default-model', modelName),
+  getDefaultModel: () => ipcRenderer.invoke('get-default-model'),
+  onModelPullProgress: (callback: (progress: number) => void) => 
+    ipcRenderer.on('model-pull-progress', (_, progress) => callback(progress)),
   onOllamaStream: (callback: (content: string) => void) => 
     ipcRenderer.on('ollama-stream', (_, content) => callback(content)),
   onOllamaDone: (callback: () => void) => 

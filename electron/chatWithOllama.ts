@@ -2,7 +2,9 @@ import { BrowserWindow } from "electron";
 import { ipcMain } from "electron";
 import ollama from 'ollama'
 
-export async function chatWithOllama(win: BrowserWindow, prompt: string, model: string | undefined = "qwen2.5"): Promise<void> {
+let defaultModel = "qwen2.5"
+
+export async function chatWithOllama(win: BrowserWindow, prompt: string, model: string | undefined = defaultModel): Promise<void> {
   try {
     const response = await ollama.chat({
         model: model,
@@ -24,14 +26,58 @@ export async function chatWithOllama(win: BrowserWindow, prompt: string, model: 
   }
 }
 
-export async function getOllamaModels(): Promise<string[]> {
+export async function getOllamaModels(): Promise<any[]> {
   try {
-    const models = await ollama.list()
-    return models.models.map(model => model.name)
+    const response = await ollama.list()
+    return response.models
   } catch (error) {
     console.error('获取模型列表失败:', error)
     throw error
   }
+}
+
+export async function pullOllamaModel(win: BrowserWindow, modelName: string): Promise<void> {
+  try {
+    const pull = await ollama.pull({
+      model: modelName,
+      stream: true
+    })
+
+    for await (const part of pull) {
+      if(part.status.indexOf('pulling') < 0){
+        console.log('pull model part', part)
+      }
+      // 发送详细的进度信息
+      win.webContents.send('model-pull-progress', {
+        status: part.status,
+        completed: part.completed || 0,
+        total: part.total || 0,
+        digest: part.digest
+      })
+    }
+  } catch (error) {
+    console.error('拉取模型失败:', error)
+    throw error
+  }
+}
+
+export async function deleteOllamaModel(modelName: string): Promise<void> {
+  try {
+    await ollama.delete({
+      model: modelName
+    })
+  } catch (error) {
+    console.error('删除模型失败:', error)
+    throw error
+  }
+}
+
+export function setDefaultModel(modelName: string): void {
+  defaultModel = modelName
+}
+
+export function getDefaultModel(): string {
+  return defaultModel
 }
 
 export function setupOllamaChatHandle(win: BrowserWindow) {
@@ -48,6 +94,22 @@ export function setupOllamaChatHandle(win: BrowserWindow) {
 
   ipcMain.handle('get-ollama-models', async () => {
     return await getOllamaModels()
+  })
+
+  ipcMain.handle('pull-ollama-model', async (_, modelName: string) => {
+    return await pullOllamaModel(win, modelName)
+  })
+
+  ipcMain.handle('delete-ollama-model', async (_, modelName: string) => {
+    return await deleteOllamaModel(modelName)
+  })
+
+  ipcMain.handle('set-default-model', async (_, modelName: string) => {
+    setDefaultModel(modelName)
+  })
+
+  ipcMain.handle('get-default-model', async () => {
+    return getDefaultModel()
   })
 }
 
