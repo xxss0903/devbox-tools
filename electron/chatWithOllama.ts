@@ -2,7 +2,7 @@ import { BrowserWindow } from "electron";
 import { ipcMain } from "electron";
 import ollama from 'ollama'
 
-export async function chatWithOllama(prompt: string, model: string = "qwen2.5"): Promise<void> {
+export async function chatWithOllama(win: BrowserWindow, prompt: string, model: string | undefined = "qwen2.5"): Promise<void> {
   try {
     const response = await ollama.chat({
         model: model,
@@ -13,11 +13,11 @@ export async function chatWithOllama(prompt: string, model: string = "qwen2.5"):
     for await (const part of response) {
       // 发送每个部分的响应
       if (part.message?.content) {
-        ipcMain.emit('ollama-stream', part.message.content)
+        win?.webContents.send('ollama-stream', part.message.content)
       }
     }
     // 发送完成信号
-    ipcMain.emit('ollama-done')
+    win?.webContents.send('ollama-done')
   } catch (error) {
     console.error('Ollama API 调用失败:', error);
     throw error;
@@ -35,24 +35,15 @@ export async function getOllamaModels(): Promise<string[]> {
 }
 
 export function setupOllamaChatHandle(win: BrowserWindow) {
-  // 修改为处理流式响应
+  // 保存主窗口引用
   ipcMain.handle('chat-with-ai', async (event, prompt: string, model?: string) => {
     try {
-      await chatWithOllama(prompt, model)
+      await chatWithOllama(win, prompt, model)
       return true
     } catch (error) {
       console.error('Chat error:', error)
       throw error
     }
-  })
-
-  // 添加流式响应的事件监听器
-  ipcMain.on('ollama-stream', (event: any) => {
-    win.webContents.send('ollama-stream', event)
-  })
-
-  ipcMain.on('ollama-done', () => {
-    win.webContents.send('ollama-done')
   })
 
   ipcMain.handle('get-ollama-models', async () => {

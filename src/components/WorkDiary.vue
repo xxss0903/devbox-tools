@@ -55,28 +55,30 @@
             <div class="summary-content" v-html="summaryContent"></div>
             
             <!-- AI 分析结果 -->
-            <div v-if="aiSummaryContent" class="ai-summary-content">
+            <div v-if="aiSummaryContent" class="ai-summary-content" ref="aiSummaryRef">
               <h3>AI 分析结果</h3>
               <div v-html="aiSummaryContent"></div>
             </div>
 
             <div class="modal-buttons">
-               <!-- 添加 AI 分析按钮 -->
-            <select v-model="selectedModel" class="model-selector">
-              <option v-for="model in availableModels" :key="model" :value="model">
-                {{ model }}
-              </option>
-            </select>
-            <button 
-              @click="analyzeWithAI" 
-              class="ai-analyze-button"
-              :disabled="isAiAnalyzing"
-            >
-              {{ isAiAnalyzing ? '分析中...' : 'AI 智能分析' }}
-            </button>
-
-              <button @click="copySummary" class="copy-button">复制</button>
-              <button @click="closeSummaryModal" class="close-button">关闭</button>
+              <div class="model-select-group">
+                <select v-model="selectedModel" class="model-selector">
+                  <option v-for="model in availableModels" :key="model" :value="model">
+                    {{ model }}
+                  </option>
+                </select>
+                <button 
+                  @click="analyzeWithAI" 
+                  class="ai-analyze-button"
+                  :disabled="isAiAnalyzing"
+                >
+                  {{ isAiAnalyzing ? '分析中...' : 'AI 智能分析' }}
+                </button>
+              </div>
+              <div class="action-buttons">
+                <button @click="copySummary" class="copy-button">复制内容</button>
+                <button @click="closeSummaryModal" class="close-button">关闭</button>
+              </div>
             </div>
           </div>
         </div>
@@ -100,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -136,6 +138,7 @@ const isAiAnalyzing = ref(false)
 const availableModels = ref<string[]>([])
 const selectedModel = ref('') // 初始值设为空字符串
 const streamContent = ref('')
+const aiSummaryRef = ref<HTMLDivElement | null>(null)
 
 const editorOptions = {
   modules: {
@@ -266,10 +269,26 @@ onMounted(async () => {
   await loadDiary(dateStr)
   await getSavedReminderTime() // 获取保存的提醒时间
 
-  // 添加流式响应的监听器
+  // 修改流式响应的监听器部分
   window.electronAPI.onOllamaStream((content: string) => {
     streamContent.value += content
     aiSummaryContent.value = streamContent.value
+    // 使用 nextTick 确保 DOM 更新后再滚动
+    nextTick(() => {
+      const element = aiSummaryRef.value
+      if (element) {
+        // 计算是否需要滚动
+        const isScrolledToBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 100
+        
+        // 如果已经接近底部，则自动滚动
+        if (isScrolledToBottom) {
+          element.scrollTo({
+            top: element.scrollHeight,
+            behavior: 'smooth'
+          })
+        }
+      }
+    })
   })
 
   window.electronAPI.onOllamaDone(() => {
@@ -635,7 +654,7 @@ const loadAvailableModels = async () => {
   padding: 20px;
   border-radius: 5px;
   width: 80%;
-  max-width: 600px;
+  max-width: 1200px;
   max-height: 80vh;
   overflow-y: auto;
 }
@@ -661,36 +680,92 @@ const loadAvailableModels = async () => {
 
 .modal-buttons {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 15px;
   margin-top: 20px;
+  width: 100%;
+}
+
+.model-select-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.model-selector {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.model-selector:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ai-analyze-button {
+  padding: 8px 16px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  font-weight: 500;
+}
+
+.ai-analyze-button:hover:not(:disabled) {
+  background-color: #1976D2;
+  transform: translateY(-1px);
+}
+
+.ai-analyze-button:disabled {
+  background-color: #90CAF9;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .copy-button,
 .close-button {
   padding: 8px 16px;
-  margin-left: 10px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  min-width: 100px;
+  font-weight: 500;
 }
 
 .copy-button {
-  background-color: #4caf50;
+  background-color: #4CAF50;
   color: white;
 }
 
 .copy-button:hover {
-  background-color: #45a049;
+  background-color: #43A047;
+  transform: translateY(-1px);
 }
 
 .close-button {
-  background-color: #3498db;
+  background-color: #9E9E9E;
   color: white;
 }
 
 .close-button:hover {
-  background-color: #2980b9;
+  background-color: #757575;
+  transform: translateY(-1px);
 }
 
 .delete-button {
@@ -724,7 +799,7 @@ const loadAvailableModels = async () => {
   background-color: #fefefe;
   padding: 20px;
   border-radius: 5px;
-  width: 300px;
+  width: 800px;
 }
 
 .modal-content {
@@ -793,9 +868,49 @@ const loadAvailableModels = async () => {
 
 .ai-summary-content {
   margin-top: 20px;
-  padding: 20px;
-  border: 1px solid #e9ecef;
-  border-radius: 5px;
+  padding: 15px;
+  background-color: #E3F2FD;
+  border-radius: 4px;
+  border-left: 4px solid #2196F3;
+  max-height: 400px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  line-height: 1.6;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+  /* 添加平滑滚动效果 */
+  scroll-behavior: smooth;
+  /* 改善移动端滚动体验 */
+  -webkit-overflow-scrolling: touch;
+  /* 确保内容有足够的空间 */
+  padding-bottom: 50px;
+}
+
+/* 确保内容容器有足够的内边距，避免滚动时文字贴边 */
+.ai-summary-content > div {
+  padding-bottom: 20px;
+}
+
+/* 美滚动条 */
+.ai-summary-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ai-summary-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.ai-summary-content::-webkit-scrollbar-thumb {
+  background: #90CAF9;
+  border-radius: 4px;
+}
+
+.ai-summary-content::-webkit-scrollbar-thumb:hover {
+  background: #64B5F6;
 }
 
 .ai-summary-content h3 {
