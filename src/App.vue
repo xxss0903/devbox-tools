@@ -114,13 +114,29 @@ const defaultCommonTools =  [
     url: 'https://img.icons8.com/?size=100&id=b8BSnWwKGHNv&format=png&color=000000'
   }
 ]
+
+// 在 defaultCommonTools 后添加 AI 工具配置
+const defaultAITools = [
+  {
+    title: '周报管理',
+    value: 'WeeklyReportAI',
+    url: 'https://img.icons8.com/?size=100&id=55494&format=png&color=000000'
+  },
+  {
+    title: '智能问答',
+    value: 'ChatAI',
+    url: 'https://img.icons8.com/?size=100&id=55500&format=png&color=000000'
+  }
+]
+
 // 基础导航数据
 const titles = ref<TitleModule[]>([
   { title: '常用工具', value: '/', children: defaultCommonTools },
   { title: '图片工具', value: '/image-tools', children: defaultImageTools },
   { title: 'PDF工具', value: '/pdf-tools', children: defaultPdfTools },
   { title: '颜色工具', value: '/color-tools', children: defaultColorTools },
-  { title: 'Android工具', value: '/android-tools', children: defaultAndroidTools }
+  { title: 'Android工具', value: '/android-tools', children: defaultAndroidTools },
+  { title: 'AI工具', value: '/ai-tools', children: defaultAITools }
 ])
 
 // 标签页管理
@@ -275,7 +291,7 @@ provide('titles', titles)
 provide('deleteModule', deleteModule)
 provide('openAddModuleModal', openAddModuleModal)
 
-// ���script setup部分添加新的ref
+// script setup部分添加新的ref
 const expandedMenus = ref<string[]>([])
 
 // 添加切换展开/收缩的方法

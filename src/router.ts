@@ -25,6 +25,8 @@ import ImageResizer from './components/ImageResizer.vue'
 import CustomModuleViewer from './components/CustomModuleViewer.vue'
 import CommonTools from './components/CommonTools.vue'
 import DateTools from './components/DateTools.vue'
+import WeeklyReportAI from './components/WeeklyReportAI.vue'
+import ChatAI from './components/ChatAI.vue'
 
 const routes = [
   {
@@ -207,6 +209,24 @@ const routes = [
       title: '日期工具',
       searchable: true,
       keywords: ['date', 'time', 'tools', '日期', '时间', '工具']
+    }
+  },
+  {
+    path: '/weekly-report-ai',
+    name: 'WeeklyReportAI',
+    component: WeeklyReportAI,
+    meta: {
+      title: '周报管理',
+      keywords: ['AI', '周报', '分析']
+    }
+  },
+  {
+    path: '/chat-ai',
+    name: 'ChatAI',
+    component: ChatAI,
+    meta: {
+      title: '智能问答',
+      keywords: ['AI', '聊天', '问答']
     }
   }
 ]
