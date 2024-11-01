@@ -17,6 +17,7 @@ import {
 } from './clipboardManager'
 import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
+import { chatWithOllama } from './chatWithOllama'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))

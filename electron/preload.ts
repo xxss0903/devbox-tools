@@ -103,6 +103,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('screen-blocker-status-change', callback),
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
+  chatWithAI: (prompt: string, model?: string) => ipcRenderer.invoke('chat-with-ai', prompt, model),
+  getOllamaModels: () => ipcRenderer.invoke('get-ollama-models'),
 })
 
 console.log('electronAPI exposed')

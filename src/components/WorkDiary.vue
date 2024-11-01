@@ -53,7 +53,28 @@
           <div class="modal-content">
             <h2>周报摘要</h2>
             <div class="summary-content" v-html="summaryContent"></div>
+            
+            <!-- AI 分析结果 -->
+            <div v-if="aiSummaryContent" class="ai-summary-content">
+              <h3>AI 分析结果</h3>
+              <div v-html="aiSummaryContent"></div>
+            </div>
+
             <div class="modal-buttons">
+               <!-- 添加 AI 分析按钮 -->
+            <select v-model="selectedModel" class="model-selector">
+              <option v-for="model in availableModels" :key="model" :value="model">
+                {{ model }}
+              </option>
+            </select>
+            <button 
+              @click="analyzeWithAI" 
+              class="ai-analyze-button"
+              :disabled="isAiAnalyzing"
+            >
+              {{ isAiAnalyzing ? '分析中...' : 'AI 智能分析' }}
+            </button>
+
               <button @click="copySummary" class="copy-button">复制</button>
               <button @click="closeSummaryModal" class="close-button">关闭</button>
             </div>
@@ -110,6 +131,10 @@ const showSummaryModal = ref(false)
 const summaryContent = ref('')
 const showTimePickerModal = ref(false)
 const selectedTime = ref('18:00') // 默认设置为18:00
+const aiSummaryContent = ref('')
+const isAiAnalyzing = ref(false)
+const availableModels = ref<string[]>([])
+const selectedModel = ref('') // 初始值设为空字符串
 
 const editorOptions = {
   modules: {
@@ -179,7 +204,7 @@ const copySummary = () => {
   navigator.clipboard
     .writeText(summaryContent.value)
     .then(() => {
-      
+      // 成功时不需要提示
     })
     .catch((err) => {
       console.error('复制失败:', err)
@@ -234,6 +259,7 @@ const getSavedReminderTime = async () => {
 
 // 修改 onMounted 函数
 onMounted(async () => {
+  await loadAvailableModels()
   await loadDiaryEntries()
   let dateStr = moment().format('YYYY-MM-DD')
   await loadDiary(dateStr)
@@ -336,6 +362,49 @@ const confirmTimeSelection = () => {
 const setReminder = async () => {
   await getSavedReminderTime() // 获取保存的提醒时间
   openTimePickerModal()
+}
+
+// 添加新的 AI 分析函数
+const analyzeWithAI = async () => {
+  try {
+    isAiAnalyzing.value = true
+    const prompt = `请分析以下周报内容，并按照以下格式输出：
+【中心医院签字板】
+1. 各部门工作内容：
+   - IT部门：
+   - 医疗部门：
+   - 行政部门：
+   - 其他部门：
+
+2. 重点工作进展：
+
+3. 存在的问题：
+
+4. 下周工作计划：
+
+周报原文：${summaryContent.value}`
+
+    const response = await window.electronAPI.chatWithAI(prompt, selectedModel.value)
+    aiSummaryContent.value = response
+  } catch (error) {
+    console.error('AI 分析失败:', error)
+    aiSummaryContent.value = '分析失败，请稍后重试'
+  } finally {
+    isAiAnalyzing.value = false
+  }
+}
+
+// 获取可用模型列表
+const loadAvailableModels = async () => {
+  try {
+    availableModels.value = await window.electronAPI.getOllamaModels()
+    // 如果有可用模型，则选中第一个
+    if (availableModels.value.length > 0) {
+      selectedModel.value = availableModels.value[0]
+    }
+  } catch (error) {
+    console.error('获取模型列表失败:', error)
+  }
 }
 </script>
 
@@ -692,5 +761,78 @@ const setReminder = async () => {
 
 .close-button:hover {
   background-color: #d32f2f;
+}
+
+.ai-analyze-button {
+  margin-top: 20px;
+  padding: 8px 16px;
+  background-color: #9b59b6;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.ai-analyze-button:hover {
+  background-color: #8e44ad;
+}
+
+.ai-summary-content {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  border-radius: 5px;
+}
+
+.ai-summary-content h3 {
+  margin-bottom: 10px;
+}
+
+.ai-analyze-button {
+  margin: 15px 0;
+  padding: 8px 16px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.ai-analyze-button:hover {
+  background-color: #1976D2;
+}
+
+.ai-analyze-button:disabled {
+  background-color: #90CAF9;
+  cursor: not-allowed;
+}
+
+.ai-summary-content {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+.ai-summary-content h3 {
+  margin-bottom: 10px;
+  color: #1976D2;
+}
+
+.model-selector {
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+}
+
+.model-selector:focus {
+  outline: none;
+  border-color: #2196F3;
 }
 </style>
