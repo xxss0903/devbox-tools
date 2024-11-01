@@ -5,7 +5,7 @@
       <div class="model-select">
         <select v-model="selectedModel" class="model-selector">
           <option v-for="model in availableModels" :key="model" :value="model">
-            {{ model }}
+            {{ model.name || model.model }}
           </option>
         </select>
       </div>
@@ -169,7 +169,7 @@ onMounted(async () => {
 }
 
 .content-input {
-  width: 100%;
+  width: 95%;
   height: 200px;
   padding: 15px;
   border: 1px solid #ddd;
