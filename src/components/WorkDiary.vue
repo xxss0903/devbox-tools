@@ -402,21 +402,10 @@ const analyzeWithAI = async () => {
     streamContent.value = '' // 清空之前的内容
     aiSummaryContent.value = '' // 清空之前的分析结果
     
-    const prompt = `请分析以下周报内容，并按照以下格式输出：
-【中心医院签字板】
-1. 各部门工作内容：
-   - IT部门：
-   - 医疗部门：
-   - 行政部门：
-   - 其他部门：
-
-2. 重点工作进展：
-
-3. 存在的问题：
-
-4. 下周工作计划：
-
-周报原文：${summaryContent.value}`
+    const prompt = `你是一个工作日报的分析专家，请分析以下周报内容，将相同内容放到【】内然后跟具体的工作内容，内容精简不要啰嗦，没一项工作只有一行，类似下面的格式：
+    【知情文书APP改版】测试的BUG修改；
+    【印章提取】印章提取裁剪；
+    周报原文：${summaryContent.value}`
 
     await window.electronAPI.chatWithAI(prompt, selectedModel.value)
   } catch (error) {
