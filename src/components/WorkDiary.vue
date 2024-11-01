@@ -135,6 +135,7 @@ const aiSummaryContent = ref('')
 const isAiAnalyzing = ref(false)
 const availableModels = ref<string[]>([])
 const selectedModel = ref('') // 初始值设为空字符串
+const streamContent = ref('')
 
 const editorOptions = {
   modules: {
@@ -264,6 +265,17 @@ onMounted(async () => {
   let dateStr = moment().format('YYYY-MM-DD')
   await loadDiary(dateStr)
   await getSavedReminderTime() // 获取保存的提醒时间
+
+  // 添加流式响应的监听器
+  window.electronAPI.onOllamaStream((content: string) => {
+    streamContent.value += content
+    aiSummaryContent.value = streamContent.value
+  })
+
+  window.electronAPI.onOllamaDone(() => {
+    isAiAnalyzing.value = false
+    streamContent.value = '' // 清空临时内容
+  })
 })
 
 // 创建一个防抖的 loadDiary 函数
@@ -364,10 +376,13 @@ const setReminder = async () => {
   openTimePickerModal()
 }
 
-// 添加新的 AI 分析函数
+// 修改 AI 分析函数
 const analyzeWithAI = async () => {
   try {
     isAiAnalyzing.value = true
+    streamContent.value = '' // 清空之前的内容
+    aiSummaryContent.value = '' // 清空之前的分析结果
+    
     const prompt = `请分析以下周报内容，并按照以下格式输出：
 【中心医院签字板】
 1. 各部门工作内容：
@@ -384,12 +399,10 @@ const analyzeWithAI = async () => {
 
 周报原文：${summaryContent.value}`
 
-    const response = await window.electronAPI.chatWithAI(prompt, selectedModel.value)
-    aiSummaryContent.value = response
+    await window.electronAPI.chatWithAI(prompt, selectedModel.value)
   } catch (error) {
     console.error('AI 分析失败:', error)
     aiSummaryContent.value = '分析失败，请稍后重试'
-  } finally {
     isAiAnalyzing.value = false
   }
 }

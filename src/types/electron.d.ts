@@ -10,8 +10,10 @@ export interface IElectronAPI {
     filePaths: string[]
   ) => Promise<{ name: string; size: number; data: string }[]>
   writeImageToClipboard: (imageData: string) => Promise<void>
-  chatWithAI: (prompt: string, model?: string) => Promise<string>
+  chatWithAI: (prompt: string, model?: string) => Promise<boolean>
   getOllamaModels: () => Promise<string[]>
+  onOllamaStream: (callback: (content: string) => void) => void
+  onOllamaDone: (callback: () => void) => void
 }
 
 declare global {

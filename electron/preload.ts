@@ -89,7 +89,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   processDroppedFiles: (filePaths: any) => {
     console.log('Processing dropped files:', filePaths)
-    return ipcRenderer.invoke('handle-file-drop', filePaths)
+    return ipcRenderer.invoke('handle-file-drop', filePaths)  
   },
   onClipboardUpdate: (callback: (content: string) => void) =>
     ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
@@ -105,6 +105,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
   chatWithAI: (prompt: string, model?: string) => ipcRenderer.invoke('chat-with-ai', prompt, model),
   getOllamaModels: () => ipcRenderer.invoke('get-ollama-models'),
+  onOllamaStream: (callback: (content: string) => void) => 
+    ipcRenderer.on('ollama-stream', (_, content) => callback(content)),
+  onOllamaDone: (callback: () => void) => 
+    ipcRenderer.on('ollama-done', () => callback()),
 })
 
 console.log('electronAPI exposed')
