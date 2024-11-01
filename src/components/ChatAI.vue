@@ -18,7 +18,10 @@
           :key="index"
           :class="['message', message.role]"
         >
-          <div class="message-content" v-html="message.content"></div>
+          <div 
+            class="message-content" 
+            v-html="renderMessage(message)"
+          ></div>
         </div>
       </div>
 
@@ -43,6 +46,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
+import { marked } from 'marked'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -94,18 +98,42 @@ const scrollToBottom = () => {
   })
 }
 
+// 添加 markdown 渲染函数
+const renderMarkdown = (content: string) => {
+  try {
+    return marked(content)
+  } catch (error) {
+    console.error('Markdown 渲染失败:', error)
+    return content
+  }
+}
+
+// 修改消息发送部分
+window.electronAPI.onOllamaStream((content: string) => {
+  if (messages.value.length > 0) {
+    const lastMessage = messages.value[messages.value.length - 1]
+    if (lastMessage.role === 'assistant') {
+      lastMessage.content += content
+      // 使用 markdown 渲染
+      const messageElement = document.querySelector('.message.assistant:last-child .message-content')
+      if (messageElement) {
+        messageElement.innerHTML = renderMarkdown(lastMessage.content)
+      }
+      scrollToBottom()
+    }
+  }
+})
+
+// 修改消息渲染部分
+const renderMessage = (message: ChatMessage) => {
+  if (message.role === 'assistant') {
+    return renderMarkdown(message.content)
+  }
+  return message.content
+}
+
 onMounted(async () => {
   await loadAvailableModels()
-
-  window.electronAPI.onOllamaStream((content: string) => {
-    if (messages.value.length > 0) {
-      const lastMessage = messages.value[messages.value.length - 1]
-      if (lastMessage.role === 'assistant') {
-        lastMessage.content += content
-        scrollToBottom()
-      }
-    }
-  })
 
   window.electronAPI.onOllamaDone(() => {
     isProcessing.value = false
@@ -234,5 +262,69 @@ onMounted(async () => {
 
 .messages::-webkit-scrollbar-thumb:hover {
   background: #64B5F6;
+}
+
+/* 添加 markdown 样式 */
+.message-content :deep(p) {
+  margin: 0.5em 0;
+}
+
+.message-content :deep(code) {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.message-content :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.message-content :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+
+.message-content :deep(blockquote) {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid #ddd;
+  color: #666;
+}
+
+.message-content :deep(ul), 
+.message-content :deep(ol) {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.message-content :deep(table) {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: 100%;
+}
+
+.message-content :deep(th),
+.message-content :deep(td) {
+  border: 1px solid #ddd;
+  padding: 0.5em;
+}
+
+.message-content :deep(th) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 调整助手消息的样式 */
+.message.assistant .message-content {
+  color: #333;
+  line-height: 1.6;
+}
+
+/* 调整用户消息的样式 */
+.message.user .message-content {
+  color: white;
 }
 </style> 

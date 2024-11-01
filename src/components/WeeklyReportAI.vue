@@ -32,8 +32,8 @@
       </div>
 
       <div v-if="aiResponse" class="analysis-result" ref="resultRef">
-        <h3>分析结果</h3>
-        <div class="result-content" v-html="aiResponse"></div>
+        <h3>AI 分析结果</h3>
+        <div v-html="renderMarkdown(aiResponse)"></div>
       </div>
     </div>
   </div>
@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
+import { marked } from 'marked'
 
 const weeklyContent = ref('')
 const aiResponse = ref('')
@@ -91,6 +92,16 @@ const clearContent = () => {
   aiResponse.value = ''
 }
 
+// 添加 markdown 渲染函数
+const renderMarkdown = (content: string) => {
+  try {
+    return marked(content)
+  } catch (error) {
+    console.error('Markdown 渲染失败:', error)
+    return content
+  }
+}
+
 onMounted(async () => {
   await loadAvailableModels()
 
@@ -99,6 +110,9 @@ onMounted(async () => {
     aiResponse.value += content
     nextTick(() => {
       if (resultRef.value) {
+        // 使用 markdown 渲染
+        resultRef.value.innerHTML = renderMarkdown(aiResponse.value)
+        
         const isScrolledToBottom = 
           resultRef.value.scrollHeight - resultRef.value.scrollTop <= resultRef.value.clientHeight + 100
         
@@ -236,5 +250,58 @@ onMounted(async () => {
 
 .analysis-result::-webkit-scrollbar-thumb:hover {
   background: #64B5F6;
+}
+
+/* 添加 markdown 样式 */
+.analysis-result :deep(p) {
+  margin: 0.5em 0;
+}
+
+.analysis-result :deep(code) {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.analysis-result :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.analysis-result :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+
+.analysis-result :deep(blockquote) {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid #2196F3;
+  color: #666;
+}
+
+.analysis-result :deep(ul), 
+.analysis-result :deep(ol) {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.analysis-result :deep(table) {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: 100%;
+}
+
+.analysis-result :deep(th),
+.analysis-result :deep(td) {
+  border: 1px solid #ddd;
+  padding: 0.5em;
+}
+
+.analysis-result :deep(th) {
+  background-color: rgba(33, 150, 243, 0.1);
 }
 </style> 
