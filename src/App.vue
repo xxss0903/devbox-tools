@@ -178,14 +178,15 @@ const filteredRoutes = computed(() => {
 })
 
 // 导航函数
-const navigateTo = (path: string) => {
-  console.log('navigateTo', path)
-  if (path.startsWith('http')) {
+const navigateTo = (route: any) => {
+  const path = route.value
+  console.log('navigateTo', route, path)
+  if (path.startsWith('http') || path.startsWith('custom-')) {
     router.push({
       name: 'CustomModuleViewer',
       query: {
-        url: path,
-        title: '自定义模块'
+        url: route.url,
+        title: route.title
       }
     })
   } else {
@@ -240,11 +241,11 @@ const saveModules = () => {
 }
 
 const loadModules = () => {
-  // const savedModules = localStorage.getItem('modules')
-  // console.log('savedModules', savedModules, titles.value)
-  // if (savedModules) {
-  //   titles.value = JSON.parse(savedModules)
-  // }
+  const savedModules = localStorage.getItem('modules')
+  console.log('savedModules', savedModules, titles.value)
+  if (savedModules) {
+    titles.value = JSON.parse(savedModules)
+  }
 }
 
 // 标签页管理
@@ -325,7 +326,7 @@ const isExpanded = (value: string) => {
           <input v-model="searchQuery" placeholder="搜索功能..." type="text" />
         </div>
         <ul v-if="searchQuery" class="search-results">
-          <li v-for="route in filteredRoutes" :key="route.path" @click="navigateTo(route.path)">
+          <li v-for="route in filteredRoutes" :key="route.path" @click="navigateTo(route)">
             {{ route.meta?.title || route.name }}
           </li>
         </ul>
@@ -345,7 +346,7 @@ const isExpanded = (value: string) => {
                 <li
                   v-for="child in title.children"
                   :key="child.value"
-                  @click.stop="navigateTo(child.value || child.url)"
+                  @click.stop="navigateTo(child)"
                   class="submenu-item"
                 >
                   {{ child.title }}
