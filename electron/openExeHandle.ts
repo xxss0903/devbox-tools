@@ -10,7 +10,7 @@ export function setupOpenExeHandle(win: BrowserWindow) {
 ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
     const javaPath = path.join(app.getAppPath(), 'public', 'jdk-17.0.12', 'bin', 'java')
     const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
-    const command = `${javaPath} -jar "${pdfBoxPath}" debug "${filePath}"`
+    const command = `java -jar "${pdfBoxPath}" debug "${filePath}"`
     // const pdfBoxPath = path.join(app.getAppPath(), 'public', 'pdfbox-app.jar')
 
     return new Promise((resolve, reject) => {
