@@ -95,11 +95,13 @@ async function createWindow() {
   setupWebviewPermissions()
   // 初始化数据库
   await initDatabase()
-  const isDebug = true
+  const isDebug = false
   if (isDebug) {
     console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
     win.loadURL('http://localhost:5173')
     // win.webContents.executeJavaScript(`alert('当前环境: 开发环境');`)
+    // 默认打开开发者工具
+    win.webContents.openDevTools()
   } else {
     win.loadFile(path.join(__dirname, '/index.html'))
   }
@@ -197,9 +199,6 @@ function initMainWinListener(win: BrowserWindow) {
     event.preventDefault() // 阻止窗口关闭
     win?.minimize() // 最小化窗口
   })
-
-  // 默认打开开发者工具
-  win.webContents.openDevTools()
 }
 
 // 只使用中文
