@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import ToolsContainer from './ToolsContainer.vue'
+import ToolsContainer from '../widgets/ToolsContainer.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -39,12 +39,12 @@ const goBack = () => {
     <div class="signature-info-container">
       <button @click="getSignatureInfo">获取签名信息</button>
       <button @click="executeADB">执行ADB命令</button>
-      
+
       <div v-if="signatureInfo" class="info-display">
         <h3>签名信息：</h3>
         <pre>{{ signatureInfo }}</pre>
       </div>
-      
+
       <div v-if="adbResult" class="info-display">
         <h3>ADB 命令执行结果：</h3>
         <pre>{{ adbResult }}</pre>

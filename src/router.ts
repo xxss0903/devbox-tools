@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import ImageTools from './tools/imagetools/ImageTools.vue'
 import ImageCompressor from './tools/imagetools/ImageCompressor.vue'
-import PngToIco from './components/PngToIco.vue'
+import PngToIco from './tools/imagetools/PngToIco.vue'
 import ColorTools from './tools/colortools/ColorTools.vue'
 import TransparencyConverter from './tools/colortools/TransparencyConverter.vue'
 import CodeConverter from './tools/commontools/CodeConverter.vue'
@@ -9,24 +9,24 @@ import AndroidTools from './components/AndroidTools.vue'
 import SignatureInfo from './components/SignatureInfo.vue'
 import ImageBase64Converter from './tools/imagetools/ImageBase64Converter.vue'
 import ImageCropper from './tools/imagetools/ImageCropper.vue'
-import WorkDiary from './components/WorkDiary.vue'
+import WorkDiary from './tools/commontools/WorkDiary.vue'
 import Icons8Viewer from './tools/commontools/Icons8Viewer.vue'
-import ScreenshotTool from './components/ScreenshotTool.vue'
+import ScreenshotTool from './tools/imagetools/ScreenshotTool.vue'
 import ClipboardManager from './tools/commontools/ClipboardManager.vue'
 import ImageRounder from './tools/imagetools/ImageRounder.vue'
 import SvgEditor from './components/SvgEditor.vue'
 import Calculator from './tools/commontools/Calculator.vue'
 import StampEditor from './tools/commontools/StampEditor.vue'
-import PDFTools from './components/PDFTools.vue'
-import PDFBoxApp from './components/PDFBoxApp.vue'
+import PDFTools from './tools/pdftools/PDFTools.vue'
+import PDFBoxApp from './tools/pdftools/PDFBoxApp.vue'
 import ScreenBlocker from './tools/commontools/ScreenBlocker.vue'
 import ImageResizer from './tools/imagetools/ImageResizer.vue'
 import CustomModuleViewer from './components/CustomModuleViewer.vue'
 import CommonTools from './tools/commontools/CommonTools.vue'
-import DateTools from './components/DateTools.vue'
-import WeeklyReportAI from './components/WeeklyReportAI.vue'
-import ChatAI from './components/ChatAI.vue'
-import AIModelManager from './components/AIModelManager.vue'
+import DateTools from './tools/commontools/DateTools.vue'
+import WeeklyReportAI from './tools/aitools/WeeklyReportAI.vue'
+import ChatAI from './tools/aitools/ChatAI.vue'
+import AIModelManager from './tools/aitools/AIModelManager.vue'
 
 const routes = [
   {
@@ -241,7 +241,7 @@ const routes = [
   {
     path: '/project-manage-tools',
     name: 'ProjectManageTools',
-    component: () => import('./components/ProjectManageTools.vue'),
+    component: () => import('./tools/projecttools/ProjectManageTools.vue'),
     meta: {
       title: '项目工具',
       searchable: true,
@@ -251,7 +251,7 @@ const routes = [
   {
     path: '/project-recycle-bin',
     name: 'ProjectRecycleBin',
-    component: () => import('./components/projectmanager/ProjectRecycleBin.vue'),
+    component: () => import('./tools/projecttools/ProjectRecycleBin.vue'),
     meta: {
       title: '项目回收站',
       searchable: true,

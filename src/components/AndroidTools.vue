@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import ToolsContainer from './ToolsContainer.vue'
+import ToolsContainer from '../widgets/ToolsContainer.vue'
 import ToolItem from './ToolItem.vue'
 import NavigationBar from './NavigationBar.vue'
 

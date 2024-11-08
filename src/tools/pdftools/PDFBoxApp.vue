@@ -1,4 +1,4 @@
-<template>
+  <template>
     <div class="image-cropper-container">
       <div class="image-cropper-content">
         <div class="controls">

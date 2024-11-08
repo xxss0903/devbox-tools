@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import NavigationBar from './NavigationBar.vue'
+import NavigationBar from '../../components/NavigationBar.vue'
 
 const router = useRouter()
 const selectedFile = ref<File | null>(null)

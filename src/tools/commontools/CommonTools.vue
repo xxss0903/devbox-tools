@@ -2,7 +2,7 @@
 import { useRouter, useRoute } from 'vue-router'
 import { inject, computed, ref, watch, onMounted, onUnmounted, type Ref } from 'vue'
 import ToolItem from '../../components/ToolItem.vue'
-import ToolsContainer from '../../components/ToolsContainer.vue'
+import ToolsContainer from '../../widgets/ToolsContainer.vue'
 import type { CustomModule, TitleModule } from '../../types/modules'
 
 const router = useRouter()
