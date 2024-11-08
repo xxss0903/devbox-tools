@@ -1,5 +1,4 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from './views/HomeView.vue'
 import ImageTools from './components/ImageTools.vue'
 import ImageCompressor from './components/ImageCompressor.vue'
 import PngToIco from './components/PngToIco.vue'
@@ -193,7 +192,7 @@ const routes = [
     meta: {
       title: '图片大小调整',
       searchable: true,
-      keywords: ['image', 'resizer', '图片大小', '调整', '图片大小调整']
+      keywords: ['image', 'resizer', '图片大小', '图片大小调整']
     }
   },
   {
@@ -237,6 +236,26 @@ const routes = [
     meta: {
       title: 'AI模型管理',
       keywords: ['AI', '模型', '管理']
+    }
+  },
+  {
+    path: '/project-manage-tools',
+    name: 'ProjectManageTools',
+    component: () => import('./components/ProjectManageTools.vue'),
+    meta: {
+      title: '项目工具',
+      searchable: true,
+      keywords: ['project', 'tools', '项目', '工具', '管理']
+    }
+  },
+  {
+    path: '/project-recycle-bin',
+    name: 'ProjectRecycleBin',
+    component: () => import('./components/projectmanager/ProjectRecycleBin.vue'),
+    meta: {
+      title: '项目回收站',
+      searchable: true,
+      keywords: ['project', 'recycle', 'bin', '项目', '回收站']
     }
   }
 ]

@@ -51,7 +51,7 @@ if (process.platform === 'darwin') {
 app.setName('铁牛工具箱')
 
 // 数据库连接
-let sequelize: Sequelize
+export let sequelize: Sequelize
 // 主窗口
 let win: BrowserWindow | null = null
 
@@ -95,7 +95,7 @@ async function createWindow() {
   setupWebviewPermissions()
   // 初始化数据库
   await initDatabase()
-  const isDebug = false
+  const isDebug = true
   if (isDebug) {
     console.log('process.env.NODE_ENV:', process.env.NODE_ENV, 'development')
     win.loadURL('http://localhost:5173')

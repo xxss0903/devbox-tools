@@ -117,4 +117,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('ollama-done', () => callback()),
 })
 
+contextBridge.exposeInMainWorld('projectAPI', {
+  createProject: (projectData: any) => ipcRenderer.invoke('create-project', projectData),
+  getProjects: () => ipcRenderer.invoke('get-projects'),
+  updateProject: (id: number, updates: any) => ipcRenderer.invoke('update-project', id, updates),
+  deleteProject: (id: number) => ipcRenderer.invoke('delete-project', id),
+})
+
 console.log('electronAPI exposed')

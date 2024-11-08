@@ -133,6 +133,18 @@ const defaultAITools = [
     url: 'https://img.icons8.com/?size=100&id=55500&format=png&color=000000'
   }
 ]
+const defaultProjectTools = [
+  {
+    title: '项目管理',
+    value: 'ProjectManageTools',
+    url: 'https://img.icons8.com/?size=100&id=55498&format=png&color=000000'
+  },
+  {
+    title: '项目回收站',
+    value: 'ProjectRecycleBin',
+    url: 'https://img.icons8.com/?size=100&id=55500&format=png&color=000000'
+  }
+]
 
 // 基础导航数据
 const titles = ref<TitleModule[]>([
@@ -141,6 +153,7 @@ const titles = ref<TitleModule[]>([
   { title: 'PDF工具', value: '/pdf-tools', children: defaultPdfTools },
   { title: '颜色工具', value: '/color-tools', children: defaultColorTools },
   { title: 'Android工具', value: '/android-tools', children: defaultAndroidTools },
+  { title: '项目工具', value: '/project-tools', children: defaultProjectTools },
   { title: 'AI工具', value: '/ai-tools', children: defaultAITools }
 ])
 
@@ -241,11 +254,11 @@ const saveModules = () => {
 }
 
 const loadModules = () => {
-  const savedModules = localStorage.getItem('modules')
-  console.log('savedModules', savedModules, titles.value)
-  if (savedModules) {
-    titles.value = JSON.parse(savedModules)
-  }
+  // const savedModules = localStorage.getItem('modules')
+  // console.log('savedModules', savedModules, titles.value)
+  // if (savedModules) {
+  //   titles.value = JSON.parse(savedModules)
+  // }
 }
 
 // 标签页管理

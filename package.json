@@ -23,6 +23,7 @@
     "auto-launch": "^5.0.5",
     "crypto-js": "^4.2.0",
     "electron-screenshots": "^0.5.27",
+    "element-plus": "^2.x.x",
     "fabric": "^5.2.0",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",

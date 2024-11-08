@@ -24,5 +24,11 @@ export interface IElectronAPI {
 declare global {
   interface Window {
     electronAPI: IElectronAPI
+    projectAPI: {
+      createProject: (projectData: any) => Promise<any>
+      getProjects: () => Promise<any[]>
+      updateProject: (id: number, updates: any) => Promise<any>
+      deleteProject: (id: number) => Promise<boolean>
+    }
   }
 }
