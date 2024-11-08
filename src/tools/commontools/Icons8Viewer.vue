@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
-import NavigationBar from './NavigationBar.vue'
+import NavigationBar from '../../components/NavigationBar.vue'
 
 const router = useRouter()
 

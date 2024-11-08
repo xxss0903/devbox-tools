@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { MD5 } from 'crypto-js'
-import NavigationBar from './NavigationBar.vue'
+import NavigationBar from '../../components/NavigationBar.vue'
 
 const router = useRouter()
 

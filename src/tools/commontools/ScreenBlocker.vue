@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import NavigationBar from './NavigationBar.vue'
+import NavigationBar from '../../components/NavigationBar.vue'
 import moment from 'moment'
 
 const router = useRouter() // 路由

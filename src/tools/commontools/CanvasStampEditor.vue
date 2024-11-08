@@ -239,7 +239,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import NavigationBar from './NavigationBar.vue'
+import NavigationBar from '../../components/NavigationBar.vue'
 const editorControls = ref<HTMLDivElement | null>(null)
 const router = useRouter()
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
