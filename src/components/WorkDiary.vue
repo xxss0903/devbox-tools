@@ -62,7 +62,7 @@
               <div class="model-select-group">
                 <select v-model="selectedModel" class="model-selector">
                   <option v-for="model in availableModels" :key="model" :value="model">
-                    {{ model }}
+                    {{ model.name ? model.name : model.model }}
                   </option>
                 </select>
                 <button 
@@ -405,9 +405,9 @@ const analyzeWithAI = async () => {
     【印章提取】印章提取裁剪；
     周报原文：${summaryContent.value}`
 
-    await window.electronAPI.chatWithAI(prompt, selectedModel.value)
+    await window.electronAPI.chatWithAI(prompt, selectedModel.value.name ? selectedModel.value.name : selectedModel.value.model)
   } catch (error) {
-    console.error('AI 分析失败:', error)
+    console.error('AI 分析失败:', error, selectedModel.value)
     aiSummaryContent.value = '分析失败，请稍后重试'
     isAiAnalyzing.value = false
   }

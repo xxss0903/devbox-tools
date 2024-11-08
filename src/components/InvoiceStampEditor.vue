@@ -279,7 +279,7 @@ import {
   type ISecurityPattern,
   type IStampType,
   type ITaxNumber
-} from './stamps/DrawStampUtils'
+} from 'drawstamputils'
 const editorControls = ref<HTMLDivElement | null>(null)
 const stampCanvas = ref<HTMLCanvasElement | null>(null)
 const MM_PER_PIXEL = 10 // 毫米换算像素

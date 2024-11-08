@@ -1,18 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { fabric } from 'fabric'
-import NavigationBar from './NavigationBar.vue'
 import CanvasStampEditor from './CanvasStampEditor.vue'
 import InvoiceStampEditor from './InvoiceStampEditor.vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 
 const editorType = ref('invoice')
 
-const goBack = () => {
-  router.back()
-}
 </script>
 
 <template>
