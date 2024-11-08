@@ -18,6 +18,7 @@ import {
 } from './clipboardManager'
 import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
+import { Project } from './models/Project'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -106,7 +107,7 @@ async function createWindow() {
     win.loadFile(path.join(__dirname, '/index.html'))
   }
 
-  // 添加IPC监��器
+  // 添加IPC监器
   ipcMain.handle('get-auto-launch', async () => {
     return await autoLaunch.isEnabled()
   })
@@ -118,6 +119,59 @@ async function createWindow() {
       await autoLaunch.disable()
     }
     return await autoLaunch.isEnabled()
+  })
+
+  // 项目相关的IPC处理器
+  ipcMain.handle('create-project', async (_, projectData) => {
+    try {
+      const project = await Project.create(projectData)
+      return project
+    } catch (error) {
+      console.error('创建项目失败:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('get-projects', async () => {
+    try {
+      const projects = await Project.findAll({
+        where: {
+          isArchived: false
+        }
+      })
+      return projects
+    } catch (error) {
+      console.error('获取项目列表失败:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('update-project', async (_, id, updates) => {
+    try {
+      const project = await Project.findByPk(id)
+      if (!project) {
+        throw new Error('项目不存在')
+      }
+      await project.update(updates)
+      return project
+    } catch (error) {
+      console.error('更新项目失败:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('delete-project', async (_, id) => {
+    try {
+      const project = await Project.findByPk(id)
+      if (!project) {
+        throw new Error('项目不存在')
+      }
+      await project.update({ isArchived: true })
+      return true
+    } catch (error) {
+      console.error('删除项目失败:', error)
+      throw error
+    }
   })
 }
 
@@ -165,15 +219,24 @@ async function initDatabase() {
   const dbPath = path.join(app.getPath('userData'), 'database.sqlite')
   sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: dbPath
+    storage: dbPath,
+    logging: false // 关闭 SQL 日志输出
   })
 
   // 测试数据库连接
   try {
     await sequelize.authenticate()
     console.log('数据库连接成功')
+    
+    // 初始化 Project 模型
+    Project.initModel(sequelize)
+    
+    // 同步项目表
+    await Project.sync()
+    
+    console.log('项目表同步成功')
   } catch (err) {
-    console.error('无法连接到数据库:', err)
+    console.error('数据库初始化失败:', err)
   }
 
   // 设置SQLite数据库文件路径

@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   Folder, Delete, TrendCharts, Download, 
@@ -172,6 +172,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project } from '@/types/project'
 import { format } from 'date-fns'
 import { ElectronAPI } from '@/types/electron'
+import moment from 'moment'
 
 const router = useRouter()
 const isDragging = ref(false)
@@ -238,16 +239,22 @@ const handleDrop = async (e: DragEvent) => {
         }
       )
 
+      const now = moment().valueOf().toString()
       const newProject: Project = {
-        id: Date.now().toString(),
+        id: moment().valueOf().toString(),
         name: entry.name,
         path: filePath,
-        createTime: new Date().toISOString(),
-        updateTime: new Date().toISOString(),
+        createTime: now,
+        updateTime: now,
         isFavorite: false,
         isArchived: false
       }
-      projects.value.push(newProject)
+
+      console.log('new project', newProject)
+      // 保存到数据库
+      await window.projectAPI.createProject(newProject)
+      // 重新加载项目列表
+      await loadProjects()
       ElMessage.success('项目创建成功')
     } catch (error) {
       // 用户取消或发生错误
@@ -278,7 +285,13 @@ const filteredProjects = computed(() => {
 })
 
 const formatDate = (date: string) => {
-  return format(new Date(date), 'yyyy-MM-dd HH:mm')
+  try {
+    console.log('update date', date)
+    return date ? format(new Date(date), 'yyyy-MM-dd HH:mm') : ''
+  } catch (error) {
+    console.error('日期格式化错误:', error)
+    return '无效日期'
+  }
 }
 
 const toggleFavorite = (project: Project) => {
@@ -292,15 +305,17 @@ const editProject = (project: Project) => {
 
 const saveProject = async () => {
   if (!currentProject.value) return
-  
+  console.log(currentProject.value)
   try {
-    const index = projects.value.findIndex(p => p.id === currentProject.value?.id)
-    if (index !== -1) {
-      projects.value[index] = { 
+    const now = moment().valueOf()
+    await window.projectAPI.updateProject(
+      currentProject.value.id,
+      {
         ...currentProject.value,
-        updateTime: new Date().toISOString()
+        updateTime: now
       }
-    }
+    )
+    await loadProjects()
     editDialogVisible.value = false
     ElMessage.success('保存成功')
   } catch (error) {
@@ -320,8 +335,8 @@ const deleteProject = async (project: Project) => {
       }
     )
     
-    project.isArchived = true
-    projects.value = projects.value.filter(p => p.id !== project.id)
+    await window.projectAPI.deleteProject(project.id)
+    await loadProjects()
     ElMessage.success('删除成功')
   } catch {
     // 用户取消删除
@@ -347,16 +362,22 @@ const handleSelectFolder = async () => {
       }
     )
 
-    const newProject: Project = {
-      id: Date.now().toString(),
+    const now = moment().valueOf().toString();
+    const newProject = {
+      id: moment().valueOf().toString(),
       name,
       path: filePath,
-      createTime: new Date().toISOString(),
-      updateTime: new Date().toISOString(),
+      createTime: now,
+      updateTime: now,
       isFavorite: false,
       isArchived: false
     }
-    projects.value.push(newProject)
+
+    console.log('new project', newProject)
+    // 保存到数据库
+    await window.projectAPI.createProject(newProject)
+    // 重新加载项目列表
+    await loadProjects()
     ElMessage.success('项目创建成功')
   } catch (error) {
     if (error instanceof Error) {
@@ -364,6 +385,21 @@ const handleSelectFolder = async () => {
     }
   }
 }
+
+// 在setup中添加初始化加载项目列表
+const loadProjects = async () => {
+  try {
+    const projectList = await window.projectAPI.getProjects()
+    projects.value = projectList
+  } catch (error) {
+    ElMessage.error('加载项目列表失败')
+  }
+}
+
+// 在组件挂载时加载项目列表
+onMounted(() => {
+  loadProjects()
+})
 </script>
 
 <style scoped>
