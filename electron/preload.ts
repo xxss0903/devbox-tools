@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('execute-adb', command)
   },
   selectFolder: () => ipcRenderer.invoke('select-folder'),
+  selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
   refreshWorkDiary: () => ipcRenderer.invoke('refresh-work-diary'),
   saveDiaryEntry: (date: string, content: string, todos: string) =>
     ipcRenderer.invoke('save-diary-entry', { date, content, todos }),
@@ -98,7 +99,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date),
   executeCommand: (command: string) => ipcRenderer.invoke('execute-command', command),
   openPDFBoxApp: (filePath: string) => ipcRenderer.invoke('open-pdfbox-app', filePath),
-  getFilePath: () => ipcRenderer.invoke('get-file-path'),
+  getFilePath: async (file: File) => {
+    return file.path
+  },
   onScreenBlockerStatusChange: (callback: (event: any, status: boolean) => void) => 
     ipcRenderer.on('screen-blocker-status-change', callback),
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
@@ -115,6 +118,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('ollama-stream', (_, content) => callback(content)),
   onOllamaDone: (callback: () => void) => 
     ipcRenderer.on('ollama-done', () => callback()),
+  // 添加获取拖放文件夹路径的方法
+  getDroppedFolderPath: (file: File) => ipcRenderer.invoke('get-dropped-folder-path', file.path),
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

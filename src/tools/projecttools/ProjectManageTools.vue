@@ -3,10 +3,12 @@
        @dragover="handleDragOver"
        @drop="handleDrop">
     <div class="tools-header">
-      <h1>项目管理工具</h1>
       <div class="tools-actions">
         <el-button type="primary" @click="showToolCards = !showToolCards">
           {{ showToolCards ? '隐藏工具栏' : '显示工具栏' }}
+        </el-button>
+        <el-button type="primary" @click="handleSelectFolder">
+          选择项目文件夹
         </el-button>
       </div>
     </div>
@@ -169,10 +171,11 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project } from '@/types/project'
 import { format } from 'date-fns'
+import { ElectronAPI } from '@/types/electron'
 
 const router = useRouter()
 const isDragging = ref(false)
-const showToolCards = ref(true)
+const showToolCards = ref(false)
 
 // 项目列表相关状态
 const projects = ref<Project[]>([])
@@ -201,11 +204,11 @@ const handleDrop = async (e: DragEvent) => {
   
   const entries = Array.from(items).filter(item => 
     item.kind === 'file' && 
-    (item.webkitGetAsEntry()?.isDirectory || item.webkitGetAsEntry()?.isFile)
+    item.webkitGetAsEntry()?.isDirectory
   )
 
   if (entries.length === 0) {
-    ElMessage.warning('请拖放文件夹或文件')
+    ElMessage.warning('请拖放文件夹')
     return
   }
 
@@ -213,12 +216,20 @@ const handleDrop = async (e: DragEvent) => {
     const entry = item.webkitGetAsEntry()
     if (!entry) continue
 
-    const path = (item.getAsFile() as File).path
-    const name = entry.name
+    const file = item.getAsFile()
+    if (!file) continue
 
     try {
+      console.log(file)
+      // 通过 IPC 获取文件夹路径
+      const filePath = await window.electronAPI.getDroppedFolderPath(file)
+      if (!filePath) {
+        ElMessage.warning('无法获取文件夹路径')
+        continue
+      }
+
       await ElMessageBox.confirm(
-        `是否创建新项目？\n项目名称: ${name}\n项目路径: ${path}`,
+        `是否创建新项目？\n项目名称: ${entry.name}\n项目路径: ${filePath}`,
         '创建新项目',
         {
           confirmButtonText: '确定',
@@ -226,11 +237,11 @@ const handleDrop = async (e: DragEvent) => {
           type: 'info',
         }
       )
-      // TODO: 创建项目逻辑
+
       const newProject: Project = {
         id: Date.now().toString(),
-        name,
-        path,
+        name: entry.name,
+        path: filePath,
         createTime: new Date().toISOString(),
         updateTime: new Date().toISOString(),
         isFavorite: false,
@@ -238,8 +249,11 @@ const handleDrop = async (e: DragEvent) => {
       }
       projects.value.push(newProject)
       ElMessage.success('项目创建成功')
-    } catch {
-      // 用户取消
+    } catch (error) {
+      // 用户取消或发生错误
+      if (error instanceof Error) {
+        ElMessage.error(`创建项目失败: ${error.message}`)
+      }
     }
   }
 }
@@ -311,6 +325,43 @@ const deleteProject = async (project: Project) => {
     ElMessage.success('删除成功')
   } catch {
     // 用户取消删除
+  }
+}
+
+const handleSelectFolder = async () => {
+  try {
+    const result = await window.electronAPI.selectProjectFolder()
+    if (!result || result.length === 0) return
+    
+    const folder = result[0]
+    const filePath = folder.data
+    const name = folder.name
+
+    await ElMessageBox.confirm(
+      `是否创建新项目？\n项目名称: ${name}\n项目路径: ${filePath}`,
+      '创建新项目',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info',
+      }
+    )
+
+    const newProject: Project = {
+      id: Date.now().toString(),
+      name,
+      path: filePath,
+      createTime: new Date().toISOString(),
+      updateTime: new Date().toISOString(),
+      isFavorite: false,
+      isArchived: false
+    }
+    projects.value.push(newProject)
+    ElMessage.success('项目创建成功')
+  } catch (error) {
+    if (error instanceof Error) {
+      ElMessage.error(`创建项目失败: ${error.message}`)
+    }
   }
 }
 </script>

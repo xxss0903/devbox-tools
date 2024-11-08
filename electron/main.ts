@@ -5,7 +5,8 @@ import {
   session,
   Menu,
   Tray,
-  ipcMain
+  ipcMain,
+  dialog
 } from 'electron'
 import path from 'path'
 import { Sequelize } from 'sequelize'
@@ -17,7 +18,6 @@ import {
 } from './clipboardManager'
 import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
-import { chatWithOllama } from './chatWithOllama'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -106,7 +106,7 @@ async function createWindow() {
     win.loadFile(path.join(__dirname, '/index.html'))
   }
 
-  // 添加IPC监听器
+  // 添加IPC监��器
   ipcMain.handle('get-auto-launch', async () => {
     return await autoLaunch.isEnabled()
   })
@@ -269,3 +269,29 @@ function initTray() {
   })
 
 }
+
+// 添加 IPC 处理器
+ipcMain.handle('get-dropped-folder-path', async (_, filePath) => {
+  console.log('get-dropped-folder-path:', _, filePath)
+  return filePath
+})
+
+ipcMain.handle('select-project-folder', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: '选择项目文件夹'
+  })
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return []
+  }
+
+  const folderPath = result.filePaths[0]
+  const folderName = path.basename(folderPath)
+
+  return [{
+    name: folderName,
+    size: 0,
+    data: folderPath
+  }]
+})

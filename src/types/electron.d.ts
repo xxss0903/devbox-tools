@@ -19,6 +19,8 @@ export interface IElectronAPI {
   onModelPullProgress: (callback: (progress: number) => void) => void
   onOllamaStream: (callback: (content: string) => void) => void
   onOllamaDone: (callback: () => void) => void
+  getFilePath: (file: File) => Promise<string>
+  getDroppedFolderPath: (file: File) => Promise<string>
 }
 
 declare global {
