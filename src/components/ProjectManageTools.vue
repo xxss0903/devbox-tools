@@ -2,9 +2,17 @@
   <div class="project-tools" 
        @dragover="handleDragOver"
        @drop="handleDrop">
-    <h1>项目管理工具</h1>
-    <div class="tool-grid">
-      <!-- 项目管理卡片 -->
+    <div class="tools-header">
+      <h1>项目管理工具</h1>
+      <div class="tools-actions">
+        <el-button type="primary" @click="showToolCards = !showToolCards">
+          {{ showToolCards ? '隐藏工具栏' : '显示工具栏' }}
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 工具卡片区域 -->
+    <div v-show="showToolCards" class="tool-grid">
       <div class="tool-card" @click="navigateTo('ProjectManager')">
         <div class="icon">
           <el-icon><Folder /></el-icon>
@@ -15,7 +23,6 @@
         </div>
       </div>
 
-      <!-- 项目回收站卡片 -->
       <div class="tool-card" @click="navigateTo('ProjectRecycleBin')">
         <div class="icon">
           <el-icon><Delete /></el-icon>
@@ -26,7 +33,6 @@
         </div>
       </div>
 
-      <!-- 项目统计卡片 -->
       <div class="tool-card" @click="navigateTo('ProjectStatistics')">
         <div class="icon">
           <el-icon><TrendCharts /></el-icon>
@@ -37,7 +43,6 @@
         </div>
       </div>
 
-      <!-- 项目导出卡片 -->
       <div class="tool-card" @click="navigateTo('ProjectExport')">
         <div class="icon">
           <el-icon><Download /></el-icon>
@@ -49,27 +54,139 @@
       </div>
     </div>
 
-    <!-- 添加拖拽提示遮罩 -->
+    <!-- 项目列表区域 -->
+    <div class="project-list-container">
+      <div class="list-header">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索项目..."
+          prefix-icon="Search"
+          clearable
+        />
+        <div class="header-actions">
+          <el-radio-group v-model="viewMode" size="small">
+            <el-radio-button label="all">全部</el-radio-button>
+            <el-radio-button label="favorite">收藏</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
+
+      <el-table :data="filteredProjects" style="width: 100%">
+        <el-table-column width="50">
+          <template #default="{ row }">
+            <el-icon 
+              :class="['favorite-icon', { active: row.isFavorite }]"
+              @click="toggleFavorite(row)"
+            >
+              <Star />
+            </el-icon>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="name" label="项目名称" min-width="200">
+          <template #default="{ row }">
+            <div class="project-name">
+              <el-icon><Folder /></el-icon>
+              <span>{{ row.name }}</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="path" label="项目路径" min-width="300" />
+        
+        <el-table-column prop="updateTime" label="更新时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.updateTime) }}
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button-group>
+              <el-button 
+                type="primary" 
+                size="small" 
+                @click="editProject(row)"
+              >
+                编辑
+              </el-button>
+              <el-button 
+                type="danger" 
+                size="small" 
+                @click="deleteProject(row)"
+              >
+                删除
+              </el-button>
+            </el-button-group>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <!-- 拖拽提示遮罩 -->
     <div v-if="isDragging" class="drag-overlay">
       <el-icon class="drag-icon"><Upload /></el-icon>
       <p>将文件夹拖放到这里以创建新项目</p>
     </div>
+
+    <!-- 编辑项目对话框 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑项目"
+      width="500px"
+    >
+      <el-form 
+        v-if="currentProject"
+        :model="currentProject"
+        label-width="100px"
+      >
+        <el-form-item label="项目名称">
+          <el-input v-model="currentProject.name" />
+        </el-form-item>
+        <el-form-item label="项目描述">
+          <el-input 
+            v-model="currentProject.description" 
+            type="textarea" 
+            rows="3"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveProject">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Folder, Delete, TrendCharts, Download, Upload } from '@element-plus/icons-vue'
+import { 
+  Folder, Delete, TrendCharts, Download, 
+  Upload, Star, Search 
+} from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { Project } from '@/types/project'
+import { format } from 'date-fns'
 
 const router = useRouter()
 const isDragging = ref(false)
+const showToolCards = ref(true)
 
+// 项目列表相关状态
+const projects = ref<Project[]>([])
+const searchQuery = ref('')
+const viewMode = ref<'all' | 'favorite'>('all')
+const editDialogVisible = ref(false)
+const currentProject = ref<Project | null>(null)
+
+// 路由导航
 const navigateTo = (route: string) => {
   router.push({ name: route })
 }
 
+// 拖拽相关方法
 const handleDragOver = (e: DragEvent) => {
   e.preventDefault()
   isDragging.value = true
@@ -109,11 +226,91 @@ const handleDrop = async (e: DragEvent) => {
           type: 'info',
         }
       )
-      // TODO: 这里添加创建项目的逻辑
+      // TODO: 创建项目逻辑
+      const newProject: Project = {
+        id: Date.now().toString(),
+        name,
+        path,
+        createTime: new Date().toISOString(),
+        updateTime: new Date().toISOString(),
+        isFavorite: false,
+        isArchived: false
+      }
+      projects.value.push(newProject)
       ElMessage.success('项目创建成功')
     } catch {
       // 用户取消
     }
+  }
+}
+
+// 项目列表相关方法
+const filteredProjects = computed(() => {
+  let result = projects.value
+
+  if (viewMode.value === 'favorite') {
+    result = result.filter(p => p.isFavorite)
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.path.toLowerCase().includes(query)
+    )
+  }
+
+  return result
+})
+
+const formatDate = (date: string) => {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm')
+}
+
+const toggleFavorite = (project: Project) => {
+  project.isFavorite = !project.isFavorite
+}
+
+const editProject = (project: Project) => {
+  currentProject.value = { ...project }
+  editDialogVisible.value = true
+}
+
+const saveProject = async () => {
+  if (!currentProject.value) return
+  
+  try {
+    const index = projects.value.findIndex(p => p.id === currentProject.value?.id)
+    if (index !== -1) {
+      projects.value[index] = { 
+        ...currentProject.value,
+        updateTime: new Date().toISOString()
+      }
+    }
+    editDialogVisible.value = false
+    ElMessage.success('保存成功')
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
+}
+
+const deleteProject = async (project: Project) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除该项目吗？删除后可在回收站中恢复',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    project.isArchived = true
+    projects.value = projects.value.filter(p => p.id !== project.id)
+    ElMessage.success('删除成功')
+  } catch {
+    // 用户取消删除
   }
 }
 </script>
@@ -123,11 +320,18 @@ const handleDrop = async (e: DragEvent) => {
   padding: 20px;
 }
 
+.tools-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .tool-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
-  margin-top: 20px;
+  margin-bottom: 30px;
 }
 
 .tool-card {
@@ -177,6 +381,45 @@ const handleDrop = async (e: DragEvent) => {
   margin: 0;
   font-size: 14px;
   color: var(--el-text-color-secondary);
+}
+
+.project-list-container {
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--el-border-color);
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.project-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favorite-icon {
+  cursor: pointer;
+  color: var(--el-text-color-secondary);
+  transition: color 0.3s;
+}
+
+.favorite-icon.active {
+  color: #f7ba2a;
+}
+
+.favorite-icon:hover {
+  color: #f7ba2a;
 }
 
 .drag-overlay {

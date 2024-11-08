@@ -1,10 +1,10 @@
-export interface ProjectAttributes {
-  id?: number
+export interface Project {
+  id: string
   name: string
+  path: string
+  createTime: string
+  updateTime: string
+  isFavorite: boolean
+  isArchived: boolean
   description?: string
-  startDate: Date
-  endDate?: Date
-  status: 'active' | 'completed' | 'archived'
-  createdAt?: Date
-  updatedAt?: Date
 } 

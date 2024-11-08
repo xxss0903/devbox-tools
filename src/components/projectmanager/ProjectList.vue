@@ -1,138 +1,192 @@
 <template>
   <div class="project-list">
-    <div class="header">
-      <h2>项目管理</h2>
-      <el-button type="primary" @click="showCreateDialog">
-        创建项目
-      </el-button>
+    <div class="list-header">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索项目..."
+        prefix-icon="Search"
+        clearable
+      />
+      <div class="header-actions">
+        <el-radio-group v-model="viewMode" size="small">
+          <el-radio-button label="all">全部</el-radio-button>
+          <el-radio-button label="favorite">收藏</el-radio-button>
+        </el-radio-group>
+      </div>
     </div>
 
-    <el-table :data="projects" style="width: 100%">
-      <el-table-column prop="name" label="项目名称" />
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column prop="startDate" label="开始日期">
+    <el-table :data="filteredProjects" style="width: 100%">
+      <el-table-column width="50">
         <template #default="{ row }">
-          {{ formatDate(row.startDate) }}
+          <el-icon 
+            :class="['favorite-icon', { active: row.isFavorite }]"
+            @click="toggleFavorite(row)"
+          >
+            <Star />
+          </el-icon>
         </template>
       </el-table-column>
-      <el-table-column prop="endDate" label="结束日期">
+
+      <el-table-column prop="name" label="项目名称" min-width="200">
         <template #default="{ row }">
-          {{ row.endDate ? formatDate(row.endDate) : '未设置' }}
+          <div class="project-name">
+            <el-icon><Folder /></el-icon>
+            <span>{{ row.name }}</span>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态">
+
+      <el-table-column prop="path" label="项目路径" min-width="300" />
+      
+      <el-table-column prop="updateTime" label="更新时间" width="180">
         <template #default="{ row }">
-          <el-tag :type="getStatusType(row.status)">
-            {{ getStatusText(row.status) }}
-          </el-tag>
+          {{ formatDate(row.updateTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200">
+
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button-group>
-            <el-button size="small" @click="editProject(row)">编辑</el-button>
             <el-button 
+              type="primary" 
               size="small" 
+              @click="editProject(row)"
+            >
+              编辑
+            </el-button>
+            <el-button 
               type="danger" 
-              @click="deleteProject(row.id)"
-            >删除</el-button>
+              size="small" 
+              @click="deleteProject(row)"
+            >
+              删除
+            </el-button>
           </el-button-group>
         </template>
       </el-table-column>
     </el-table>
 
-    <ProjectForm
-      v-model:visible="dialogVisible"
-      :project="currentProject"
-      @submit="handleSubmit"
-    />
+    <!-- 编辑项目对话框 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑项目"
+      width="500px"
+    >
+      <el-form 
+        v-if="currentProject"
+        :model="currentProject"
+        label-width="100px"
+      >
+        <el-form-item label="项目名称">
+          <el-input v-model="currentProject.name" />
+        </el-form-item>
+        <el-form-item label="项目描述">
+          <el-input 
+            v-model="currentProject.description" 
+            type="textarea" 
+            rows="3"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveProject">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import ProjectForm from './ProjectForm.vue'
-import type { ProjectAttributes } from '../../types/project'
+import { ref, computed } from 'vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { Star, Folder, Search } from '@element-plus/icons-vue'
+import type { Project } from '@/types/project'
+import { format } from 'date-fns'
 
-const projects = ref<ProjectAttributes[]>([])
-const dialogVisible = ref(false)
-const currentProject = ref<ProjectAttributes | null>(null)
+// 项目列表数据
+const projects = ref<Project[]>([])
+const searchQuery = ref('')
+const viewMode = ref<'all' | 'favorite'>('all')
+const editDialogVisible = ref(false)
+const currentProject = ref<Project | null>(null)
 
-const formatDate = (date: string | Date) => {
-  return new Date(date).toLocaleDateString('zh-CN')
-}
+// 过滤后的项目列表
+const filteredProjects = computed(() => {
+  let result = projects.value
 
-const getStatusType = (status: string) => {
-  const types = {
-    active: 'success',
-    completed: 'info',
-    archived: 'warning'
+  if (viewMode.value === 'favorite') {
+    result = result.filter(p => p.isFavorite)
   }
-  return types[status as keyof typeof types]
-}
 
-const getStatusText = (status: string) => {
-  const texts = {
-    active: '进行中',
-    completed: '已完成',
-    archived: '已归档'
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.path.toLowerCase().includes(query)
+    )
   }
-  return texts[status as keyof typeof texts]
-}
 
-const loadProjects = async () => {
-  try {
-    projects.value = await window.projectAPI.getProjects()
-  } catch (error) {
-    ElMessage.error('加载项目列表失败')
-  }
-}
-
-const showCreateDialog = () => {
-  currentProject.value = null
-  dialogVisible.value = true
-}
-
-const editProject = (project: ProjectAttributes) => {
-  currentProject.value = project
-  dialogVisible.value = true
-}
-
-const handleSubmit = async (projectData: ProjectAttributes) => {
-  try {
-    if (currentProject.value?.id) {
-      await window.projectAPI.updateProject(currentProject.value.id, projectData)
-      ElMessage.success('项目更新成功')
-    } else {
-      await window.projectAPI.createProject(projectData)
-      ElMessage.success('项目创建成功')
-    }
-    dialogVisible.value = false
-    loadProjects()
-  } catch (error) {
-    ElMessage.error('操作失败')
-  }
-}
-
-const deleteProject = async (id: number) => {
-  try {
-    await ElMessageBox.confirm('确定要删除这个项目吗？', '警告', {
-      type: 'warning'
-    })
-    await window.projectAPI.deleteProject(id)
-    ElMessage.success('项目删除成功')
-    loadProjects()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
-}
-
-onMounted(() => {
-  loadProjects()
+  return result
 })
+
+// 格式化日期
+const formatDate = (date: string) => {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm')
+}
+
+// 切换收藏状态
+const toggleFavorite = (project: Project) => {
+  project.isFavorite = !project.isFavorite
+  // TODO: 保存到后端
+}
+
+// 编辑项目
+const editProject = (project: Project) => {
+  currentProject.value = { ...project }
+  editDialogVisible.value = true
+}
+
+// 保存项目
+const saveProject = async () => {
+  if (!currentProject.value) return
+  
+  try {
+    // TODO: 保存到后端
+    const index = projects.value.findIndex(p => p.id === currentProject.value?.id)
+    if (index !== -1) {
+      projects.value[index] = { 
+        ...currentProject.value,
+        updateTime: new Date().toISOString()
+      }
+    }
+    editDialogVisible.value = false
+    ElMessage.success('保存成功')
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
+}
+
+// 删除项目
+const deleteProject = async (project: Project) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除该项目吗？删除后可在回收站中恢复',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    // TODO: 调用后端删除接口
+    project.isArchived = true
+    projects.value = projects.value.filter(p => p.id !== project.id)
+    ElMessage.success('删除成功')
+  } catch {
+    // 用户取消删除
+  }
+}
 </script>
 
 <style scoped>
@@ -140,14 +194,35 @@ onMounted(() => {
   padding: 20px;
 }
 
-.header {
+.list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
 
-.header h2 {
-  margin: 0;
+.header-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.project-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favorite-icon {
+  cursor: pointer;
+  color: var(--el-text-color-secondary);
+  transition: color 0.3s;
+}
+
+.favorite-icon.active {
+  color: #f7ba2a;
+}
+
+.favorite-icon:hover {
+  color: #f7ba2a;
 }
 </style> 
