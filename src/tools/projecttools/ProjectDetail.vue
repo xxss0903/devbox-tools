@@ -3,13 +3,19 @@
     <!-- 项目基本信息卡片 -->
     <div class="info-card">
       <div class="header">
-        <div class="title">
-          <el-icon><Folder /></el-icon>
-          <h2>{{ project?.name }}</h2>
-          <el-tag :type="project?.isFavorite ? 'warning' : 'info'" class="favorite-tag">
-            <el-icon><Star /></el-icon>
-            {{ project?.isFavorite ? '已收藏' : '未收藏' }}
-          </el-tag>
+        <div class="left-section">
+          <el-button @click="goBack" class="back-button" type="primary" plain>
+            <el-icon><Back /></el-icon>
+            返回列表
+          </el-button>
+          <div class="title">
+            <el-icon><Folder /></el-icon>
+            <h2>{{ project?.name }}</h2>
+            <el-tag :type="project?.isFavorite ? 'warning' : 'info'" class="favorite-tag">
+              <el-icon><Star /></el-icon>
+              {{ project?.isFavorite ? '已收藏' : '未收藏' }}
+            </el-tag>
+          </div>
         </div>
         <div class="actions">
           <el-button-group>
@@ -108,8 +114,17 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { Folder, FolderOpened, Document, Edit, Star, Search, Files } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  Folder,
+  FolderOpened,
+  Document,
+  Edit,
+  Star,
+  Search,
+  Files,
+  Back
+} from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import moment from 'moment'
 
@@ -119,6 +134,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const route = useRoute()
+const router = useRouter()
 
 interface Project {
   id: string
@@ -223,6 +239,10 @@ const loadProjectInfo = async () => {
   }
 }
 
+const goBack = () => {
+  router.back()
+}
+
 onMounted(() => {
   loadProjectInfo()
 })
@@ -248,6 +268,18 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.left-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .title {
