@@ -55,12 +55,22 @@
     <!-- 项目列表区域 -->
     <div class="project-list-container">
       <div class="list-header">
-        <el-input v-model="searchQuery" placeholder="搜索项目..." prefix-icon="Search" clearable />
-        <div class="header-actions">
-          <el-radio-group v-model="viewMode" size="small">
-            <el-radio-button label="all">全部</el-radio-button>
-            <el-radio-button label="favorite">收藏</el-radio-button>
-          </el-radio-group>
+        <div class="left-section">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索项目..."
+            class="search-input"
+            :prefix-icon="Search"
+            clearable
+          />
+          <el-switch
+            v-model="showFavoriteOnly"
+            class="favorite-switch"
+            :active-icon="Star"
+            :inactive-icon="Document"
+            active-text="收藏"
+            inactive-text="全部"
+          />
         </div>
       </div>
 
@@ -138,7 +148,8 @@ import {
   Download,
   Upload,
   Star,
-  Search
+  Search,
+  Document
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project } from '@/types/project'
@@ -153,7 +164,6 @@ const showToolCards = ref(false)
 // 项目列表相关状态
 const projects = ref<Project[]>([])
 const searchQuery = ref('')
-const viewMode = ref<'all' | 'favorite'>('all')
 const editDialogVisible = ref(false)
 const currentProject = ref<Project | null>(null)
 
@@ -237,10 +247,12 @@ const handleDrop = async (e: DragEvent) => {
 }
 
 // 项目列表相关方法
+const showFavoriteOnly = ref(false)
+
 const filteredProjects = computed(() => {
   let result = projects.value
 
-  if (viewMode.value === 'favorite') {
+  if (showFavoriteOnly.value) {
     result = result.filter((p) => p.isFavorite)
   }
 
@@ -449,9 +461,27 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.header-actions {
+.left-section {
   display: flex;
+  align-items: center;
   gap: 16px;
+}
+
+.search-input {
+  width: 300px;
+}
+
+.favorite-switch {
+  margin-left: 8px;
+}
+
+:deep(.el-switch__label) {
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+}
+
+:deep(.el-switch.is-checked .el-switch__label) {
+  color: var(--el-color-primary);
 }
 
 .project-name {
