@@ -224,6 +224,7 @@ const openInFinder = async () => {
 // 加载项目信息
 const loadProjectInfo = async () => {
   try {
+    console.log('load project props.id:', props.id)
     const projectData = await window.projectAPI.getProject(props.id)
     project.value = projectData.dataValues
 
@@ -233,8 +234,8 @@ const loadProjectInfo = async () => {
     stats.value = projectStats
 
     // 加载文件树结构
-    const treeData = await window.electronAPI.getProjectFileTree(project.value.path)
-    fileTreeData.value = treeData
+    // const treeData = await window.electronAPI.getProjectFileTree(project.value.path)
+    // fileTreeData.value = treeData
   } catch (error) {
     console.error(error)
     ElMessage.error('加载项目信息失败')

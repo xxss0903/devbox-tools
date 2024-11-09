@@ -7,12 +7,13 @@ export interface Project {
   updateTime: string
   isFavorite: boolean
   isArchived: boolean
+  dataValues?: any
 }
 
 export interface IProjectAPI {
   createProject: (projectData: Project) => Promise<Project>
-  getProjects: () => Promise<Project[]>
-  getProject: (id: string) => Promise<Project>
+  getProjects: () => Promise<Array<{ dataValues: Project }>>
+  getProject: (id: string) => Promise<{ dataValues: Project }>
   updateProject: (id: string, updates: Partial<Project>) => Promise<Project>
   deleteProject: (id: string) => Promise<void>
 }
