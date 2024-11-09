@@ -88,9 +88,9 @@
 
         <el-table-column prop="name" label="项目名称" min-width="200">
           <template #default="{ row }">
-            <div class="project-name">
+            <div class="project-name" @click="openProjectDetail(row)">
               <el-icon><Folder /></el-icon>
-              <span>{{ row.name }}</span>
+              <span class="clickable-name">{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
@@ -153,8 +153,6 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project } from '@/types/project'
-import { format } from 'date-fns'
-import { ElectronAPI } from '@/types/electron'
 import moment from 'moment'
 
 const router = useRouter()
@@ -377,6 +375,14 @@ const loadProjects = async () => {
 onMounted(() => {
   loadProjects()
 })
+
+const openProjectDetail = (project: Project) => {
+  router.push({
+    name: 'ProjectDetail',
+    params: { id: project.id },
+    query: { title: project.name }
+  })
+}
 </script>
 
 <style scoped>
@@ -528,5 +534,16 @@ onMounted(() => {
 .drag-overlay p {
   font-size: 18px;
   color: var(--el-color-primary);
+}
+
+.clickable-name {
+  cursor: pointer;
+  color: var(--el-color-primary);
+  transition: color 0.2s;
+}
+
+.clickable-name:hover {
+  color: var(--el-color-primary-light-3);
+  text-decoration: underline;
 }
 </style>

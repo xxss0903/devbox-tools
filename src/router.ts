@@ -34,10 +34,10 @@ const routes = [
     path: '/',
     name: 'Home',
     component: () => import('./views/HomeView.vue'),
-    meta: { 
-      title: '首页', 
-      searchable: true, 
-      keywords: ['home', '主页', '首页', '工具箱'] 
+    meta: {
+      title: '首页',
+      searchable: true,
+      keywords: ['home', '主页', '首页', '工具箱']
     }
   },
   {
@@ -271,6 +271,16 @@ const routes = [
       title: 'JSON格式化',
       searchable: true,
       keywords: ['json', 'format', '格式化', '美化', '压缩']
+    }
+  },
+  {
+    path: '/project/:id',
+    name: 'ProjectDetail',
+    component: () => import('./tools/projecttools/ProjectDetail.vue'),
+    props: true,
+    meta: {
+      title: '项目详情',
+      newTab: true // 标记需要在新标签页打开
     }
   }
 ]
