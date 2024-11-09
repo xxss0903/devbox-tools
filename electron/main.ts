@@ -1,28 +1,15 @@
-import {
-  app,
-  BrowserWindow,
-  globalShortcut,
-  session,
-  Menu,
-  Tray,
-  ipcMain,
-  dialog
-} from 'electron'
+import { app, BrowserWindow, globalShortcut, session, Menu, Tray, ipcMain, dialog } from 'electron'
 import path from 'path'
 import { Sequelize } from 'sequelize'
 import { setupIPCHandle } from './ipcHandle'
 import { setupIPCOn, startCapture } from './ipcOn'
-import {
-  checkAndUpdateClipboard,
-  watchClipboard
-} from './clipboardManager'
+import { checkAndUpdateClipboard, watchClipboard } from './clipboardManager'
 import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
 import { Project } from './models/Project'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
-
 
 // 设置mac应用图标
 if (process.platform === 'darwin') {
@@ -124,6 +111,7 @@ async function createWindow() {
   // 项目相关的IPC处理器
   ipcMain.handle('create-project', async (_, projectData) => {
     try {
+      console.log('create roject', _, projectData)
       const project = await Project.create(projectData)
       return project
     } catch (error) {
@@ -177,9 +165,9 @@ async function createWindow() {
 
 function setupContentSecurityPolicy(win: BrowserWindow) {
   const devCSP =
-    'default-src \'self\' \'unsafe-inline\' \'unsafe-eval\' blob:; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://icons8.com blob:; connect-src \'self\' ws: wss: https://icons8.com blob:; img-src \'self\' data: https: http: blob: https://icons8.com; style-src \'self\' \'unsafe-inline\' https://icons8.com; frame-src \'self\' https://icons8.com blob:;'
+    "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://icons8.com blob:; connect-src 'self' ws: wss: https://icons8.com blob:; img-src 'self' data: https: http: blob: https://icons8.com; style-src 'self' 'unsafe-inline' https://icons8.com; frame-src 'self' https://icons8.com blob:;"
   const prodCSP =
-    'default-src \'self\' blob:; script-src \'self\' https://icons8.com blob:; style-src \'self\' \'unsafe-inline\' https://icons8.com; img-src \'self\' data: https: http: blob: https://icons8.com; connect-src \'self\' https: https://icons8.com blob:; frame-src \'self\' https://icons8.com blob:;'
+    "default-src 'self' blob:; script-src 'self' https://icons8.com blob:; style-src 'self' 'unsafe-inline' https://icons8.com; img-src 'self' data: https: http: blob: https://icons8.com; connect-src 'self' https: https://icons8.com blob:; frame-src 'self' https://icons8.com blob:;"
 
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -198,7 +186,7 @@ function setupWebviewPermissions() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          'default-src \'self\' \'unsafe-inline\' \'unsafe-eval\' data: https: http: blob:; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https: http: blob:; connect-src \'self\' https: http: ws: wss: blob:; img-src \'self\' data: https: http: blob:; style-src \'self\' \'unsafe-inline\' https: http:; frame-src \'self\' https: http: blob:;'
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: blob:; connect-src 'self' https: http: ws: wss: blob:; img-src 'self' data: https: http: blob:; style-src 'self' 'unsafe-inline' https: http:; frame-src 'self' https: http: blob:;"
         ]
       }
     })
@@ -213,7 +201,6 @@ function initGlobalShortcut(win: BrowserWindow) {
   })
 }
 
-
 async function initDatabase() {
   // 设置数据库连接
   const dbPath = path.join(app.getPath('userData'), 'database.sqlite')
@@ -227,13 +214,13 @@ async function initDatabase() {
   try {
     await sequelize.authenticate()
     console.log('数据库连接成功')
-    
+
     // 初始化 Project 模型
     Project.initModel(sequelize)
-    
+
     // 同步项目表
     await Project.sync()
-    
+
     console.log('项目表同步成功')
   } catch (err) {
     console.error('数据库初始化失败:', err)
@@ -265,7 +252,7 @@ function initMainWinListener(win: BrowserWindow) {
 }
 
 // 只使用中文
-app.commandLine.appendSwitch('lang', 'zh-CN');
+app.commandLine.appendSwitch('lang', 'zh-CN')
 
 // 初始化应用
 app.whenReady().then(() => {
@@ -330,7 +317,6 @@ function initTray() {
       }
     }
   })
-
 }
 
 // 添加 IPC 处理器
@@ -352,9 +338,11 @@ ipcMain.handle('select-project-folder', async () => {
   const folderPath = result.filePaths[0]
   const folderName = path.basename(folderPath)
 
-  return [{
-    name: folderName,
-    size: 0,
-    data: folderPath
-  }]
+  return [
+    {
+      name: folderName,
+      size: 0,
+      data: folderPath
+    }
+  ]
 })
