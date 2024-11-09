@@ -21,16 +21,26 @@ export interface IElectronAPI {
   onOllamaDone: (callback: () => void) => void
   getFilePath: (file: File) => Promise<string>
   getDroppedFolderPath: (file: File) => Promise<string>
+  selectProjectFolder: () => Promise<Array<{ name: string; data: string }>>
+  openInEditor: (path: string) => Promise<void>
+  openInFinder: (path: string) => Promise<void>
+  getProjectStats: (path: string) => Promise<{
+    fileCount: number
+    folderCount: number
+    totalSize: number
+  }>
+  getProjectFileTree: (path: string) => Promise<
+    Array<{
+      name: string
+      path: string
+      isDirectory: boolean
+      children?: Array<any>
+    }>
+  >
 }
 
 declare global {
   interface Window {
     electronAPI: IElectronAPI
-    projectAPI: {
-      createProject: (projectData: any) => Promise<any>
-      getProjects: () => Promise<any[]>
-      updateProject: (id: string, updates: any) => Promise<any>
-      deleteProject: (id: string) => Promise<boolean>
-    }
   }
 }

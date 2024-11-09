@@ -1,4 +1,14 @@
-import { app, BrowserWindow, globalShortcut, session, Menu, Tray, ipcMain, dialog } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  session,
+  Menu,
+  Tray,
+  ipcMain,
+  dialog,
+  shell
+} from 'electron'
 import path from 'path'
 import { Sequelize } from 'sequelize'
 import { setupIPCHandle } from './ipcHandle'
@@ -7,6 +17,7 @@ import { checkAndUpdateClipboard, watchClipboard } from './clipboardManager'
 import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
 import { Project } from './models/Project'
+import { promises as fs } from 'fs'
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -158,6 +169,115 @@ async function createWindow() {
       return true
     } catch (error) {
       console.error('删除项目失败:', error)
+      throw error
+    }
+  })
+
+  // 在 main.ts 中添加 getProject 处理器
+  ipcMain.handle('project:get', async (event, id) => {
+    try {
+      const project = await Project.findByPk(id)
+      if (!project) {
+        throw new Error('Project not found')
+      }
+      return project
+    } catch (error) {
+      console.error('Error getting project:', error)
+      throw error
+    }
+  })
+
+  // 获取项目统计信息
+  ipcMain.handle('project:getStats', async (event, projectPath: string) => {
+    try {
+      let fileCount = 0
+      let folderCount = 0
+      let totalSize = 0
+
+      const processDirectory = async (dirPath: string) => {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true })
+
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name)
+
+          if (entry.isDirectory()) {
+            folderCount++
+            await processDirectory(fullPath)
+          } else if (entry.isFile()) {
+            fileCount++
+            const stats = await fs.stat(fullPath)
+            totalSize += stats.size
+          }
+        }
+      }
+
+      await processDirectory(projectPath)
+
+      return {
+        fileCount,
+        folderCount,
+        totalSize
+      }
+    } catch (error) {
+      console.error('Error getting project stats:', error)
+      throw error
+    }
+  })
+
+  // 获取项目文件树
+  ipcMain.handle('project:getFileTree', async (event, projectPath: string) => {
+    try {
+      const buildTree = async (
+        dirPath: string,
+        basePath: string
+      ): Promise<
+        Array<{
+          name: string
+          path: string
+          isDirectory: boolean
+          children?: Array<any>
+        }>
+      > => {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true })
+        const result = []
+
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name)
+          const relativePath = path.relative(basePath, fullPath)
+
+          if (entry.isDirectory()) {
+            result.push({
+              name: entry.name,
+              path: relativePath,
+              isDirectory: true,
+              children: await buildTree(fullPath, basePath)
+            })
+          } else {
+            result.push({
+              name: entry.name,
+              path: relativePath,
+              isDirectory: false
+            })
+          }
+        }
+
+        return result
+      }
+
+      return await buildTree(projectPath, projectPath)
+    } catch (error) {
+      console.error('Error getting project file tree:', error)
+      throw error
+    }
+  })
+
+  // 在文件夹中显示
+  ipcMain.handle('project:openInFinder', async (event, filePath: string) => {
+    try {
+      await shell.showItemInFolder(filePath)
+      return true
+    } catch (error) {
+      console.error('Error showing in finder:', error)
       throw error
     }
   })
@@ -345,4 +465,68 @@ ipcMain.handle('select-project-folder', async () => {
       data: folderPath
     }
   ]
+})
+
+// 项目相关的 IPC 处理器
+ipcMain.handle('project:create', async (event, projectData) => {
+  try {
+    const project = await Project.create(projectData)
+    return project
+  } catch (error) {
+    console.error('Error creating project:', error)
+    throw error
+  }
+})
+
+ipcMain.handle('project:getAll', async () => {
+  try {
+    const projects = await Project.findAll({
+      where: {
+        isArchived: false
+      }
+    })
+    return projects
+  } catch (error) {
+    console.error('Error getting projects:', error)
+    throw error
+  }
+})
+
+ipcMain.handle('project:update', async (event, id, updates) => {
+  try {
+    const project = await Project.findByPk(id)
+    if (!project) {
+      throw new Error('Project not found')
+    }
+    await project.update(updates)
+    return project
+  } catch (error) {
+    console.error('Error updating project:', error)
+    throw error
+  }
+})
+
+ipcMain.handle('project:delete', async (event, id) => {
+  try {
+    const project = await Project.findByPk(id)
+    if (!project) {
+      throw new Error('Project not found')
+    }
+    await project.update({ isArchived: true })
+    return true
+  } catch (error) {
+    console.error('Error deleting project:', error)
+    throw error
+  }
+})
+
+// 文件操作相关的 IPC 处理器
+ipcMain.handle('project:openInEditor', async (event, filePath) => {
+  try {
+    await shell.openPath(filePath)
+    return true
+  } catch (error) {
+    console.error('Error opening in editor:', error)
+    throw error
+  }
 })

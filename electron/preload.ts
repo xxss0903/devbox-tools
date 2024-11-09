@@ -23,8 +23,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 创建屏幕关闭计时器
   createScreenBlocker: (duration: number, screenType: string) =>
     ipcRenderer.invoke('create-screen-blocker', duration, screenType),
-    // 开启/关闭屏幕的保护时间，开启就会根据时间倒计时开启屏幕保护
-    toggleScreenBlock: () => ipcRenderer.send('toggle-screen-block'),
+  // 开启/关闭屏幕的保护时间，开启就会根据时间倒计时开启屏幕保护
+  toggleScreenBlock: () => ipcRenderer.send('toggle-screen-block'),
   // 获取日志提醒时间
   getSavedReminderTime: () => ipcRenderer.invoke('get-saved-reminder-time'),
   // 设置日志提醒时间
@@ -90,7 +90,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   processDroppedFiles: (filePaths: any) => {
     console.log('Processing dropped files:', filePaths)
-    return ipcRenderer.invoke('handle-file-drop', filePaths)  
+    return ipcRenderer.invoke('handle-file-drop', filePaths)
   },
   onClipboardUpdate: (callback: (content: string) => void) =>
     ipcRenderer.on('clipboard-update', (_, content) => callback(content)),
@@ -102,31 +102,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFilePath: async (file: File) => {
     return file.path
   },
-  onScreenBlockerStatusChange: (callback: (event: any, status: boolean) => void) => 
+  onScreenBlockerStatusChange: (callback: (event: any, status: boolean) => void) =>
     ipcRenderer.on('screen-blocker-status-change', callback),
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
   setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
-  chatWithAI: (prompt: string, model?: string, image?: string) => ipcRenderer.invoke('chat-with-ai', prompt, model, image),
+  chatWithAI: (prompt: string, model?: string, image?: string) =>
+    ipcRenderer.invoke('chat-with-ai', prompt, model, image),
   getOllamaModels: () => ipcRenderer.invoke('get-ollama-models'),
   pullOllamaModel: (modelName: string) => ipcRenderer.invoke('pull-ollama-model', modelName),
   deleteOllamaModel: (modelName: string) => ipcRenderer.invoke('delete-ollama-model', modelName),
   setDefaultModel: (modelName: string) => ipcRenderer.invoke('set-default-model', modelName),
   getDefaultModel: () => ipcRenderer.invoke('get-default-model'),
-  onModelPullProgress: (callback: (progress: number) => void) => 
+  onModelPullProgress: (callback: (progress: number) => void) =>
     ipcRenderer.on('model-pull-progress', (_, progress) => callback(progress)),
-  onOllamaStream: (callback: (content: string) => void) => 
+  onOllamaStream: (callback: (content: string) => void) =>
     ipcRenderer.on('ollama-stream', (_, content) => callback(content)),
-  onOllamaDone: (callback: () => void) => 
-    ipcRenderer.on('ollama-done', () => callback()),
+  onOllamaDone: (callback: () => void) => ipcRenderer.on('ollama-done', () => callback()),
   // 添加获取拖放文件夹路径的方法
   getDroppedFolderPath: (file: File) => ipcRenderer.invoke('get-dropped-folder-path', file.path),
+  getProjectStats: (path: string) => ipcRenderer.invoke('project:getStats', path),
+  getProjectFileTree: (path: string) => ipcRenderer.invoke('project:getFileTree', path),
+  openInEditor: (path: string) => ipcRenderer.invoke('project:openInEditor', path),
+  openInFinder: (path: string) => ipcRenderer.invoke('project:openInFinder', path)
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {
-  createProject: (projectData: any) => ipcRenderer.invoke('create-project', projectData),
+  createProject: (projectData: any) => ipcRenderer.invoke('project:create', projectData),
   getProjects: () => ipcRenderer.invoke('get-projects'),
-  updateProject: (id: number, updates: any) => ipcRenderer.invoke('update-project', id, updates),
-  deleteProject: (id: number) => ipcRenderer.invoke('delete-project', id),
+  getProject: (id: any) => ipcRenderer.invoke('project:get', id),
+  updateProject: (id: any, updates: any) => ipcRenderer.invoke('project:update', id, updates),
+  deleteProject: (id: any) => ipcRenderer.invoke('project:delete', id)
 })
 
 console.log('electronAPI exposed')
