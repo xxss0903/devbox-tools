@@ -31,9 +31,13 @@ import AIModelManager from './tools/aitools/AIModelManager.vue'
 const routes = [
   {
     path: '/',
-    name: 'CommonTools',
-    component: CommonTools,
-    meta: { title: '常用工具', searchable: true, keywords: ['home', '主页', '首页', '常用工具'] }
+    name: 'Home',
+    component: () => import('./views/HomeView.vue'),
+    meta: { 
+      title: '首页', 
+      searchable: true, 
+      keywords: ['home', '主页', '首页', '工具箱'] 
+    }
   },
   {
     path: '/work-diary',

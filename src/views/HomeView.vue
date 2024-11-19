@@ -1,228 +1,216 @@
-<script setup lang="ts">
-import { useRouter, useRoute } from 'vue-router'
-import { inject, computed, ref, onMounted, onUnmounted, watch, type Ref } from 'vue'
-import ToolsContainer from '../widgets/ToolsContainer.vue'
-import ToolItem from '../components/ToolItem.vue'
-import type { CustomModule, TitleModule } from '../types/modules'
-
-const router = useRouter()
-const route = useRoute()
-
-// 注入 titles 数据和相关函数
-const titles = inject('titles') as Ref<TitleModule[]>
-const deleteModule = inject('deleteModule') as (module: CustomModule) => void
-const openAddModuleModal = inject('openAddModuleModal') as (parent: string) => void
-
-// 计算当前路由对应的模块
-const currentModule = computed(() => {
-  return titles.value.find((title) => title.value === route.path) || titles.value[0]
-})
-
-// 使用 ref 而不是 computed 来存储自定义工具
-const customTools = ref<CustomModule[]>([])
-
-// 更新自定义工具的函数
-const updateCustomTools = () => {
-  customTools.value = currentModule.value.children.map((child) => ({
-    name: child.title,
-    route: child.value,
-    url: child.url,
-    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
-  }))
-}
-
-// 监听 currentModule 的变化
-watch(() => currentModule.value, updateCustomTools, { immediate: true })
-
-const defaultTools = [
-  {
-    name: '编码/解码转换',
-    route: 'CodeConverter',
-    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
-  },
-  {
-    name: '工作日记',
-    route: 'WorkDiary',
-    image: 'https://img.icons8.com/?size=100&id=64503&format=png&color=000000'
-  },
-  {
-    name: '粘贴板管理',
-    route: 'ClipboardManager',
-    image: 'https://img.icons8.com/?size=100&id=67345&format=png&color=000000'
-  },
-  {
-    name: '计算器',
-    route: 'Calculator',
-    image: 'https://img.icons8.com/?size=100&id=41LOFTWPsRas&format=png&color=000000'
-  },
-  {
-    name: '休息提醒',
-    route: 'ScreenBlocker',
-    image: 'https://img.icons8.com/?size=100&id=13841&format=png&color=000000'
-  }
-]
-
-// 合并默认工具和自定义子模块
-const allTools = computed(() => {
-  return [...defaultTools, ...customTools.value]
-})
-
-const navigateTo = (routeName: string) => {
-  if (routeName.startsWith('custom-')) {
-    const customTool = customTools.value.find((tool) => tool.route === routeName)
-    if (customTool) {
-      router.push({
-        name: 'CustomModuleViewer',
-        query: {
-          url: customTool.url,
-          name: customTool.title
-        }
-      })
-    }
-  } else {
-    router.push({ name: routeName })
-  }
-}
-
-// 右键菜单相关
-const contextMenu = ref({
-  show: false,
-  x: 0,
-  y: 0,
-  tool: null as (typeof allTools.value)[0] | null
-})
-
-const showContextMenu = (event: MouseEvent, tool: (typeof allTools.value)[0]) => {
-  event.preventDefault()
-  contextMenu.value = {
-    show: true,
-    x: event.clientX,
-    y: event.clientY,
-    tool
-  }
-}
-
-const hideContextMenu = () => {
-  contextMenu.value.show = false
-}
-
-const deleteCustomTool = () => {
-  if (contextMenu.value.tool && contextMenu.value.tool.route.startsWith('custom-')) {
-    if (confirm('确定要删除这个自定义模块吗？')) {
-      deleteModule(contextMenu.value.tool as CustomModule)
-      updateCustomTools()
-    }
-  }
-  hideContextMenu()
-}
-
-const addCustomModule = () => {
-  openAddModuleModal(currentModule.value.value)
-}
-
-const handleModulesUpdated = () => {
-  updateCustomTools()
-}
-
-onMounted(() => {
-  window.addEventListener('modules-updated', handleModulesUpdated)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('modules-updated', handleModulesUpdated)
-})
-
-const goBack = () => {
-  router.push('/')
-}
-</script>
-
 <template>
-  <div class="home-view-container">
-    <ToolsContainer :title="currentModule.title" @goBack="goBack">
-      <ToolItem
-        v-for="tool in allTools"
-        :key="tool.name"
-        :title="tool.name"
-        :imageSrc="tool.image"
-        :onClick="() => navigateTo(tool.route)"
-        @contextmenu="showContextMenu($event, tool)"
-      />
-      <!-- 添加自定义模块按钮 -->
-      <div class="add-custom-module" @click="addCustomModule">
-        <span>+</span>
-        <span>添加自定义模块</span>
-      </div>
-    </ToolsContainer>
+  <div class="home">
+    <div class="welcome-section">
+      <h1>欢迎使用铁牛工具箱</h1>
+      <p>一站式开发工具集合，提升您的工作效率</p>
+    </div>
 
-    <!-- 右键菜单 -->
-    <div
-      v-if="contextMenu.show"
-      class="context-menu"
-      :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
-      @click.stop
-    >
-      <div v-if="contextMenu.tool?.route.startsWith('custom-')">
-        <button @click="deleteCustomTool">删除</button>
+    <div class="tools-grid">
+      <!-- 常用工具卡片 -->
+      <div class="tool-category">
+        <h2>常用工具</h2>
+        <div class="tool-cards">
+          <div class="tool-card" @click="navigateTo('ProjectManageTools')">
+            <el-icon><Folder /></el-icon>
+            <div class="tool-info">
+              <h3>项目管理</h3>
+              <p>管理您的所有项目</p>
+            </div>
+          </div>
+
+          <div class="tool-card" @click="navigateTo('WorkDiary')">
+            <el-icon><Calendar /></el-icon>
+            <div class="tool-info">
+              <h3>工作日记</h3>
+              <p>记录每日工作内容</p>
+            </div>
+          </div>
+
+          <div class="tool-card" @click="navigateTo('ImageTools')">
+            <el-icon><Picture /></el-icon>
+            <div class="tool-info">
+              <h3>图片工具</h3>
+              <p>图片处理工具集</p>
+            </div>
+          </div>
+
+          <div class="tool-card" @click="navigateTo('PDFTools')">
+            <el-icon><Document /></el-icon>
+            <div class="tool-info">
+              <h3>PDF工具</h3>
+              <p>PDF处理工具集</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="menu-divider"></div>
-      <button class="cancel-button" @click="hideContextMenu">取消</button>
+
+      <!-- AI工具卡片 -->
+      <div class="tool-category">
+        <h2>AI助手</h2>
+        <div class="tool-cards">
+          <div class="tool-card" @click="navigateTo('ChatAI')">
+            <el-icon><ChatDotRound /></el-icon>
+            <div class="tool-info">
+              <h3>智能问答</h3>
+              <p>AI助手随时为您解答问题</p>
+            </div>
+          </div>
+
+          <div class="tool-card" @click="navigateTo('WeeklyReportAI')">
+            <el-icon><Memo /></el-icon>
+            <div class="tool-info">
+              <h3>周报助手</h3>
+              <p>智能生成工作周报</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近使用 -->
+      <div class="tool-category">
+        <h2>最近使用</h2>
+        <div class="tool-cards">
+          <div v-for="tool in recentTools" 
+               :key="tool.name" 
+               class="tool-card"
+               @click="navigateTo(tool.route)">
+            <el-icon><component :is="tool.icon" /></el-icon>
+            <div class="tool-info">
+              <h3>{{ tool.name }}</h3>
+              <p>{{ tool.description }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  Folder,
+  Calendar,
+  Picture,
+  Document,
+  ChatDotRound,
+  Memo
+} from '@element-plus/icons-vue'
+
+const router = useRouter()
+
+// 最近使用的工具列表
+const recentTools = ref([
+  {
+    name: '截图工具',
+    description: '快速截取屏幕',
+    route: 'ScreenshotTool',
+    icon: 'Picture'
+  },
+  {
+    name: '剪贴板',
+    description: '剪贴板历史记录',
+    route: 'ClipboardManager',
+    icon: 'Document'
+  }
+])
+
+const navigateTo = (route: string) => {
+  router.push({ name: route })
+}
+</script>
+
 <style scoped>
-.home-view-container {
-  width: 100%;
-  height: 100%;
+.home {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.context-menu {
-  position: fixed;
-  background: white;
-  border: 1px solid #ccc;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+.welcome-section {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 40px 0;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
-.context-menu button {
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  text-align: left;
-  border: none;
-  background: none;
-  cursor: pointer;
+.welcome-section h1 {
+  font-size: 32px;
+  color: var(--el-text-color-primary);
+  margin-bottom: 16px;
 }
 
-.context-menu button:hover {
-  background-color: #f0f0f0;
+.welcome-section p {
+  font-size: 16px;
+  color: var(--el-text-color-secondary);
 }
 
-.add-custom-module {
+.tools-grid {
+  display: grid;
+  gap: 32px;
+}
+
+.tool-category {
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tool-category h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: var(--el-text-color-primary);
+}
+
+.tool-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.tool-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 100px;
-  height: 100px;
-  border: 2px dashed #ccc;
+  gap: 16px;
+  padding: 20px;
+  background: var(--el-fill-color-blank);
+  border: 1px solid var(--el-border-color);
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.add-custom-module:hover {
-  background-color: #f0f0f0;
+.tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--el-color-primary);
 }
 
-.add-custom-module span:first-child {
+.tool-card .el-icon {
   font-size: 24px;
-  margin-bottom: 5px;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  padding: 12px;
+  border-radius: 8px;
 }
 
-.add-custom-module span:last-child {
-  font-size: 12px;
-  text-align: center;
+.tool-info {
+  flex: 1;
+}
+
+.tool-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: var(--el-text-color-primary);
+}
+
+.tool-info p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
 }
 </style>

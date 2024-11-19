@@ -3,6 +3,7 @@
     <ClockWidget />
     <ScreenBlockerWidget />
     <AutoLaunchWidget />
+    <HomeWidget />
     <!-- 可以根据需要添加更多小组件 -->
   </div>
 </template>
@@ -11,6 +12,7 @@
 import ClockWidget from './widgets/ClockWidget.vue'
 import ScreenBlockerWidget from './widgets/ScreenBlockerWidget.vue'
 import AutoLaunchWidget from './widgets/AutoLaunchWidget.vue'
+import HomeWidget from './widgets/HomeWidget.vue'
 </script>
 
 <style scoped>
