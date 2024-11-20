@@ -39,6 +39,10 @@ export function createScreenBlocker(screenType: string, duration: number) {
       tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-matrix-blocker.html'))
     } else if (screenType === 'windows-error-blocker') {
       tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-error-blocker.html'))
+    } else if (screenType === 'windows-cartoon-blocker') {
+      tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-cartoon-blocker.html'))
+    } else if (screenType === 'windows-game-blocker') {
+      tempWindow.loadFile(path.join(__dirname, '../public/blockerscreens/windows-game-blocker.html'))
     } else {
       tempWindow.loadFile(
         path.join(__dirname, '../public/blockerscreens/windows-origin-blocker.html')

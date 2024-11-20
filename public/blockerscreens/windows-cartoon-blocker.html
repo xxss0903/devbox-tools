@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartoon Blocker</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB; /* Sky blue background */
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="cartoonCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('cartoonCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        function drawSun() {
+            ctx.beginPath();
+            ctx.arc(100, 100, 50, 0, Math.PI * 2, true);
+            ctx.fillStyle = 'yellow';
+            ctx.fill();
+        }
+
+        function drawCloud(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 20, Math.PI * 0.5, Math.PI * 1.5);
+            ctx.arc(x + 25, y - 20, 20, Math.PI * 1, Math.PI * 1.85);
+            ctx.arc(x + 55, y - 20, 20, Math.PI * 1.15, Math.PI * 2);
+            ctx.arc(x + 75, y, 20, Math.PI * 1.5, Math.PI * 0.5);
+            ctx.moveTo(x + 75, y + 20);
+            ctx.lineTo(x, y + 20);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+
+        function drawTree(x, y) {
+            ctx.fillStyle = 'saddlebrown';
+            ctx.fillRect(x, y, 20, 60); // Trunk
+            ctx.beginPath();
+            ctx.moveTo(x - 30, y);
+            ctx.lineTo(x + 50, y);
+            ctx.lineTo(x + 10, y - 50);
+            ctx.closePath();
+            ctx.fillStyle = 'green';
+            ctx.fill();
+        }
+
+        function drawHouse(x, y) {
+            ctx.fillStyle = 'peru';
+            ctx.fillRect(x, y, 100, 100); // House body
+            ctx.fillStyle = 'sienna';
+            ctx.fillRect(x + 30, y + 50, 40, 50); // Door
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 50, y - 50);
+            ctx.lineTo(x + 100, y);
+            ctx.closePath();
+            ctx.fillStyle = 'firebrick';
+            ctx.fill();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSun();
+            drawCloud(200, 100);
+            drawCloud(400, 150);
+            drawCloud(600, 80);
+            drawTree(300, 300);
+            drawTree(500, 350);
+            drawHouse(700, 300);
+        }
+
+        setInterval(draw, 1000 / 30); // 30 FPS
+    </script>
+</body>
+</html>

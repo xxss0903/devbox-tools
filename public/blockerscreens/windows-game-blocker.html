@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Blocker</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f7f7f7;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let dino = { x: 50, y: canvas.height - 100, width: 50, height: 50, dy: 0, gravity: 2, jumpHeight: -30, grounded: true };
+        let cactus = { x: canvas.width, y: canvas.height - 100, width: 20, height: 50 };
+        let isJumping = false;
+
+        function drawDino() {
+            ctx.fillStyle = 'gray';
+            ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+        }
+
+        function drawCactus() {
+            ctx.fillStyle = 'green';
+            ctx.fillRect(cactus.x, cactus.y, cactus.width, cactus.height);
+        }
+
+        function update() {
+            if (isJumping) {
+                dino.dy = dino.jumpHeight;
+                isJumping = false;
+                dino.grounded = false;
+            }
+
+            dino.y += dino.dy;
+            if (!dino.grounded) {
+                dino.dy += dino.gravity;
+            }
+
+            if (dino.y + dino.height >= canvas.height - 50) {
+                dino.y = canvas.height - 100;
+                dino.dy = 0;
+                dino.grounded = true;
+            }
+
+            cactus.x -= 5;
+            if (cactus.x + cactus.width < 0) {
+                cactus.x = canvas.width;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawDino();
+            drawCactus();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && dino.grounded) {
+                isJumping = true;
+            }
+        });
+
+        gameLoop();
+    </script>
+</body>
+</html>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import NavigationBar from '../../components/NavigationBar.vue'
 import moment from 'moment'
 
 const router = useRouter() // 路由
@@ -16,7 +15,9 @@ const screenTypes = [
   { value: 'windows-3d-blocker', label: '3D屏保' },
   { value: 'windows-origin-blocker', label: '原始屏保' },
   { value: 'windows-matrix-blocker', label: '矩阵屏保' },
-  { value: 'windows-error-blocker', label: '错误屏保' }
+  { value: 'windows-error-blocker', label: '错误屏保' },
+  { value: 'windows-cartoon-blocker', label: '卡通屏保' },
+  { value: 'windows-game-blocker', label: '游戏屏保' }
 ]
 
 const formattedRemainingTime = computed(() => {
