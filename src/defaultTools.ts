@@ -1,4 +1,3 @@
-
 export const defaultImageTools = [
   {
     title: '图片压缩',
@@ -102,6 +101,11 @@ export const defaultCommonTools =  [
     title: '时间戳工具',
     value: 'DateTools',
     url: 'https://img.icons8.com/?size=100&id=b8BSnWwKGHNv&format=png&color=000000'
+  },
+  {
+    title: 'JSON格式化',
+    value: 'JsonFormatter',
+    url: 'https://img.icons8.com/?size=100&id=55494&format=png&color=000000'
   }
 ]
 

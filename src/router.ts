@@ -27,6 +27,7 @@ import DateTools from './tools/commontools/DateTools.vue'
 import WeeklyReportAI from './tools/aitools/WeeklyReportAI.vue'
 import ChatAI from './tools/aitools/ChatAI.vue'
 import AIModelManager from './tools/aitools/AIModelManager.vue'
+import JsonFormatter from './tools/commontools/JsonFormatter.vue'
 
 const routes = [
   {
@@ -260,6 +261,16 @@ const routes = [
       title: '项目回收站',
       searchable: true,
       keywords: ['project', 'recycle', 'bin', '项目', '回收站']
+    }
+  },
+  {
+    path: '/json-formatter',
+    name: 'JsonFormatter',
+    component: () => import('./tools/commontools/JsonFormatter.vue'),
+    meta: {
+      title: 'JSON格式化',
+      searchable: true,
+      keywords: ['json', 'format', '格式化', '美化', '压缩']
     }
   }
 ]
