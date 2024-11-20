@@ -177,10 +177,10 @@ const handleImageUpload = async (event: Event) => {
       selectedImage.value = base64Image
 
       // 自动发送图片分析请求
-      const prompt = "请详细描述这张图片的内容"
+      const prompt = "Act as an OCR assistant. Analyze the provided image and:1. Recognize all visible text in the image as accurately as possible.2. Maintain the original structure and formatting of the text.3. If any words or phrases are unclear, indicate this with [unclear] in your transcription.Provide only the transcription without any additional comments."
       messages.value.push({ 
         role: 'user', 
-        content: `[图片分析请求]`,
+        content: prompt,
         image: base64Image 
       })
       isProcessing.value = true
