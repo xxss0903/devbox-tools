@@ -251,7 +251,7 @@ const clickItem = (item: ClipboardItem) => {
 .clipboard-manager {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 95%;
 }
 
 .clipboard-content {

@@ -2,36 +2,34 @@
   <div>
     <page-header title="JSON格式化" />
     <div class="json-formatter">
-      <div class="editor-container">
+      <!-- 左侧输入区域 -->
+      <div class="editor-container input-panel">
         <div class="editor-header">
           <div class="header-left">
             <span class="title">输入JSON</span>
             <el-button-group size="small">
-              <el-button @click="formatJson">格式化</el-button>
-              <el-button @click="compressJson">压缩</el-button>
               <el-button @click="clearInput">清空</el-button>
-            </el-button-group>
-          </div>
-          <div class="header-right">
-            <el-button 
+              <el-button 
               size="small" 
               type="primary"
               @click="pasteFromClipboard"
             >
               从剪贴板粘贴
             </el-button>
+            </el-button-group>
           </div>
         </div>
         <el-input
           v-model="inputJson"
           type="textarea"
-          :rows="15"
+          :rows="30"
           placeholder="请输入JSON字符串..."
           @input="handleInput"
         />
       </div>
 
-      <div class="editor-container">
+      <!-- 右侧输出区域 -->
+      <div class="editor-container output-panel">
         <div class="editor-header">
           <div class="header-left">
             <span class="title">格式化结果</span>
@@ -45,12 +43,6 @@
               <el-button @click="expandAll">展开全部</el-button>
               <el-button @click="collapseAll">折叠全部</el-button>
             </el-button-group>
-          </div>
-          <div class="header-right">
-            <el-radio-group v-model="indentSize" size="small">
-              <el-radio-button :label="2">2空格</el-radio-button>
-              <el-radio-button :label="4">4空格</el-radio-button>
-            </el-radio-group>
           </div>
         </div>
         
@@ -88,7 +80,7 @@
           v-else
           v-model="outputJson"
           type="textarea"
-          :rows="15"
+          :rows="30"
           readonly
         />
       </div>
@@ -298,8 +290,9 @@ const handleInput = () => {
 .json-formatter {
   padding: 20px;
   display: flex;
-  flex-direction: column;
   gap: 20px;
+  height: calc(100vh - 350px);
+  min-height: 0;
 }
 
 .editor-container {
@@ -307,17 +300,37 @@ const handleInput = () => {
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--el-border-color);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.input-panel {
+  width: 45%;
+  display: flex;
+  flex-direction: column;
+}
+
+.output-panel {
+  width: 55%;
+  display: flex;
+  flex-direction: column;
 }
 
 .tree-view-container {
+  flex: 1;
+  overflow: auto;
   padding: 12px;
   background: var(--el-bg-color-page);
   border-radius: 4px;
   font-family: monospace;
   font-size: 14px;
   line-height: 1.6;
-  max-height: 600px;
-  overflow: auto;
+}
+
+.editor-header {
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .custom-tree-node {
@@ -365,11 +378,24 @@ const handleInput = () => {
   font-family: monospace;
   font-size: 14px;
   line-height: 1.6;
+  flex: 1;
+  resize: none;
+}
+
+:deep(.el-textarea) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .json-object-value {
   color: var(--el-text-color-secondary);
   font-size: 12px;
   margin-left: 4px;
+}
+
+:deep(.el-tree) {
+  height: 100%;
+  overflow: auto;
 }
 </style> 
