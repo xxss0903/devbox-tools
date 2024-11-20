@@ -62,7 +62,7 @@
             :props="defaultProps"
             node-key="id"
             default-expand-all
-            :expand-on-click-node="false"
+            :expand-on-click-node="true"
           >
             <template #default="{ data }">
               <span class="custom-tree-node">
@@ -72,7 +72,10 @@
                     <span class="json-separator">: </span>
                   </template>
                 </template>
-                <span :class="getValueClass(data.value)">
+                <span :class="[
+                  getValueClass(data.value),
+                  { 'json-object-value': data.isObject || data.isArray }
+                ]">
                   {{ formatValue(data.value) }}
                 </span>
               </span>
@@ -138,9 +141,9 @@ const convertToTree = (obj: any, key?: string, parentId: string = '0'): any[] =>
     ).flat()
     return [{
       id,
-      label: key ? `${key} [${obj.length}]` : '',
+      label: key ? `${key}` : '',
       isKey: !!key,
-      value: '',
+      value: `[${obj.length}]`,
       children,
       isArray: true
     }]
@@ -150,9 +153,9 @@ const convertToTree = (obj: any, key?: string, parentId: string = '0'): any[] =>
     ).flat()
     return [{
       id,
-      label: key ? `${key} {${Object.keys(obj).length}}` : '',
+      label: key ? `${key}` : '',
       isKey: !!key,
-      value: '',
+      value: `{${Object.keys(obj).length}}`,
       children,
       isObject: true
     }]
@@ -362,5 +365,11 @@ const handleInput = () => {
   font-family: monospace;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.json-object-value {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  margin-left: 4px;
 }
 </style> 
