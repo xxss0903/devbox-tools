@@ -30,6 +30,10 @@ watch(() => currentModule.value, updateCustomTools, { immediate: true })
 // 默认工具列表
 const defaultTools = [
   {
+    name: '音乐播放器',
+    route: 'MusicPlayer',
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+  },{
     name: '编码/解码转换',
     route: 'CodeConverter',
     image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
