@@ -1,5 +1,11 @@
 import { DiaryEntry } from '../services/database'
 
+export interface FileTreeNode {
+  name: string
+  path: string
+  isDirectory: boolean
+}
+
 export interface IElectronAPI {
   executeADB: (command: string) => Promise<string>
   selectFolder: () => Promise<{ name: string; size: number; data: string }[]>
@@ -29,14 +35,7 @@ export interface IElectronAPI {
     folderCount: number
     totalSize: number
   }>
-  getProjectFileTree: (path: string) => Promise<
-    Array<{
-      name: string
-      path: string
-      isDirectory: boolean
-      children?: Array<any>
-    }>
-  >
+  getProjectFileTree: (path: string) => Promise<FileTreeNode[]>
 }
 
 declare global {

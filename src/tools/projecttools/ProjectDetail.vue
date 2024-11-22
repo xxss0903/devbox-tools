@@ -96,12 +96,11 @@
         :props="{ label: 'name' }"
         :filter-node-method="filterNode"
         node-key="path"
-        default-expand-all
       >
-        <template #default="{ node, data }">
+        <template #default="{ node }">
           <div class="custom-tree-node">
             <el-icon>
-              <Folder v-if="data.isDirectory" />
+              <Folder v-if="node.data.isDirectory" />
               <Document v-else />
             </el-icon>
             <span>{{ node.label }}</span>
@@ -151,7 +150,6 @@ interface FileTreeNode {
   name: string
   path: string
   isDirectory: boolean
-  children?: FileTreeNode[]
 }
 
 interface ProjectStats {
@@ -222,24 +220,35 @@ const openInFinder = async () => {
   }
 }
 
-// 加载项目信息
+// 修改加载项目信息的方法
 const loadProjectInfo = async () => {
   try {
     const projectData = await window.projectAPI.getProject(props.id)
     project.value = projectData.dataValues
+    console.log('Project data:', project.value) // 添加日志
 
     if (project.value && project.value.path) {
-      // 加载项目统计信息
-      const projectStats = await window.electronAPI.getProjectStats(project.value.path)
-      stats.value = projectStats
+      try {
+        // 加载项目统计信息
+        const projectStats = await window.electronAPI.getProjectStats(project.value.path)
+        console.log('Project stats:', projectStats) // 添加日志
+        stats.value = projectStats
 
-      // 加载文件树结构
-      const treeData = await window.electronAPI.getProjectFileTree(project.value.path)
-      fileTreeData.value = treeData
+        // 加载文件树结构
+        const treeData = await window.electronAPI.getProjectFileTree(project.value.path)
+        console.log('File tree data:', treeData) // 添加日志
+        fileTreeData.value = treeData
+      } catch (error) {
+        console.error('Error loading project details:', error)
+        ElMessage.error('加载项目详情失败')
+      }
+    } else {
+      console.error('Invalid project path:', project.value?.path)
+      ElMessage.warning('项目路径无效')
     }
   } catch (error) {
+    console.error('Error loading project:', error)
     ElMessage.error('加载项目信息失败')
-    console.error(error)
   }
 }
 

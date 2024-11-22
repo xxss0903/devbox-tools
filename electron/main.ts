@@ -188,31 +188,30 @@ async function createWindow() {
   })
 
   // 获取项目统计信息
-  ipcMain.handle('project:getStats', async (event, projectPath: string) => {
+  ipcMain.handle('project:getStats', async (event, projectPath) => {
     try {
-      let fileCount = 0
-      let folderCount = 0
+      // 确保路径存在
+      const exists = await fs
+        .access(projectPath)
+        .then(() => true)
+        .catch(() => false)
+      if (!exists) {
+        throw new Error('Project path does not exist')
+      }
+
+      const entries = await fs.readdir(projectPath, { withFileTypes: true })
+      const fileCount = entries.filter((entry) => entry.isFile()).length
+      const folderCount = entries.filter((entry) => entry.isDirectory()).length
+
       let totalSize = 0
-
-      const processDirectory = async (dirPath: string) => {
-        const entries = await fs.readdir(dirPath, { withFileTypes: true })
-
-        for (const entry of entries) {
-          const fullPath = path.join(dirPath, entry.name)
-
-          if (entry.isDirectory()) {
-            folderCount++
-            await processDirectory(fullPath)
-          } else if (entry.isFile()) {
-            fileCount++
-            const stats = await fs.stat(fullPath)
-            totalSize += stats.size
-          }
+      for (const entry of entries) {
+        if (entry.isFile()) {
+          const stats = await fs.stat(path.join(projectPath, entry.name))
+          totalSize += stats.size
         }
       }
 
-      await processDirectory(projectPath)
-
+      console.log('Stats result:', { fileCount, folderCount, totalSize }) // 添加日志
       return {
         fileCount,
         folderCount,
@@ -225,46 +224,40 @@ async function createWindow() {
   })
 
   // 获取项目文件树
-  ipcMain.handle('project:getFileTree', async (event, projectPath: string) => {
+  ipcMain.handle('project:getFileTree', async (event, projectPath) => {
     try {
-      const buildTree = async (
-        dirPath: string,
-        basePath: string
-      ): Promise<
-        Array<{
-          name: string
-          path: string
-          isDirectory: boolean
-          children?: Array<any>
-        }>
-      > => {
-        const entries = await fs.readdir(dirPath, { withFileTypes: true })
-        const result = []
-
-        for (const entry of entries) {
-          const fullPath = path.join(dirPath, entry.name)
-          const relativePath = path.relative(basePath, fullPath)
-
-          if (entry.isDirectory()) {
-            result.push({
-              name: entry.name,
-              path: relativePath,
-              isDirectory: true,
-              children: await buildTree(fullPath, basePath)
-            })
-          } else {
-            result.push({
-              name: entry.name,
-              path: relativePath,
-              isDirectory: false
-            })
-          }
-        }
-
-        return result
+      // 确保路径存在
+      const exists = await fs
+        .access(projectPath)
+        .then(() => true)
+        .catch(() => false)
+      if (!exists) {
+        throw new Error('Project path does not exist')
       }
 
-      return await buildTree(projectPath, projectPath)
+      // 读取目录内容
+      const entries = await fs.readdir(projectPath, { withFileTypes: true })
+
+      // 映射文件和文件夹
+      const result = entries.map((entry) => {
+        const fullPath = path.join(projectPath, entry.name)
+        return {
+          name: entry.name,
+          path: fullPath,
+          isDirectory: entry.isDirectory()
+        }
+      })
+
+      // 按文件夹在前，文件在后排序
+      result.sort((a, b) => {
+        if (a.isDirectory === b.isDirectory) {
+          return a.name.localeCompare(b.name)
+        }
+        return a.isDirectory ? -1 : 1
+      })
+
+      console.log('File tree result:', result) // 添加日志
+      return result
     } catch (error) {
       console.error('Error getting project file tree:', error)
       throw error
@@ -388,7 +381,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-  // 关闭数据库连接
+  // 关闭数据库连
   if (sequelize) {
     sequelize.close()
   }
