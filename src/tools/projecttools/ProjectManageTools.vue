@@ -378,9 +378,11 @@ onMounted(() => {
 
 const openProjectDetail = (project: Project) => {
   router.push({
-    name: 'ProjectDetail',
-    params: { id: project.id },
-    query: { title: project.name }
+    path: `/tools/project/${project.id}`,
+    query: {
+      title: project.name,
+      from: 'project-manager'
+    }
   })
 }
 </script>

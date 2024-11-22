@@ -274,13 +274,18 @@ const routes = [
     }
   },
   {
-    path: '/project/:id',
+    path: '/tools/project/:id',
     name: 'ProjectDetail',
-    component: () => import('./tools/projecttools/ProjectDetail.vue'),
-    props: true,
+    component: () => import('@/tools/projecttools/ProjectDetail.vue'),
+    props: (route) => ({
+      id: route.params.id,
+      title: route.query.title,
+      from: route.query.from
+    }),
     meta: {
-      title: '项目详情',
-      newTab: true // 标记需要在新标签页打开
+      title: (route) => `项目：${route.query.title || '详情'}`,
+      icon: 'Folder',
+      newTab: true
     }
   }
 ]
