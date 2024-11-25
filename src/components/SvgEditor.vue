@@ -45,6 +45,9 @@
               @mouseleave="endPan"
             ></div>
           </div>
+          <div>
+            <canvas ref="canvasRef" width="200" height="200"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -64,6 +67,7 @@ const panX = ref(0)
 const panY = ref(0)
 const isPanning = ref(false)
 const lastPanPoint = ref({ x: 0, y: 0 })
+const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 const goBack = () => {
   router.back()
@@ -108,6 +112,7 @@ const centerSvg = () => {
       svgElement.style.height = '100%'
     }
   }
+  drawSvgOnCanvas()
 }
 
 const saveSvg = () => {
@@ -126,11 +131,14 @@ const savePng = () => {
     const svgData = new XMLSerializer().serializeToString(svgElement)
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
+
+    canvas.width = 200
+    canvas.height = 200
+
     const img = new Image()
     img.onload = () => {
-      canvas.width = img.width
-      canvas.height = img.height
-      ctx?.drawImage(img, 0, 0)
+      ctx?.clearRect(0, 0, canvas.width, canvas.height)
+      ctx?.drawImage(img, 0, 0, 200, 200)
       const pngUrl = canvas.toDataURL('image/png')
       const link = document.createElement('a')
       link.href = pngUrl
@@ -204,13 +212,44 @@ const beautifySvg = () => {
   }
 }
 
+const drawSvgOnCanvas = () => {
+  if (!svgContent.value || !canvasRef.value) return
+
+  const canvas = canvasRef.value
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // 清空画布
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  // 创建临时的 SVG 图像
+  const svgBlob = new Blob([svgContent.value], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(svgBlob)
+  const img = new Image()
+
+  img.onload = () => {
+    // 在 canvas 上绘制 SVG
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    URL.revokeObjectURL(url)
+  }
+
+  img.onerror = () => {
+    console.error('Error loading SVG image')
+    URL.revokeObjectURL(url)
+  }
+
+  img.src = url
+}
+
 onMounted(() => {
   centerSvg()
+  drawSvgOnCanvas()
 })
 
 watch(svgContent, () => {
   nextTick(() => {
     centerSvg()
+    drawSvgOnCanvas()
   })
 })
 </script>
@@ -326,5 +365,11 @@ watch(svgContent, () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+canvas {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #ddd;
 }
 </style>
