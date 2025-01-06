@@ -118,11 +118,14 @@ const saveModules = () => {
 }
 
 const loadModules = () => {
-  // const savedModules = localStorage.getItem('modules')
-  // console.log('savedModules', savedModules, titles.value)
-  // if (savedModules) {
-  //   titles.value = JSON.parse(savedModules)
-  // }
+  let isDebug = true
+  if (!isDebug) {
+    const savedModules = localStorage.getItem('modules')
+    console.log('savedModules', savedModules, titles.value)
+    if (savedModules) {
+      titles.value = JSON.parse(savedModules)
+    }
+  }
 }
 
 // 标签页管理
