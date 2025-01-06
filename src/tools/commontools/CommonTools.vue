@@ -62,6 +62,11 @@ const defaultTools = [
     name: '时间戳工具',
     route: 'DateTools',
     image: 'https://img.icons8.com/?size=100&id=b8BSnWwKGHNv&format=png&color=000000'
+  },
+  {
+    name: 'NPM镜像源',
+    route: 'NpmRegistry',
+    image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
   }
 ]
 

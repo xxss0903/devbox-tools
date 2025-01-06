@@ -123,7 +123,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getProjectStats: (path: string) => ipcRenderer.invoke('project:getStats', path),
   getProjectFileTree: (path: string) => ipcRenderer.invoke('project:getFileTree', path),
   openInEditor: (path: string) => ipcRenderer.invoke('project:openInEditor', path),
-  openInFinder: (path: string) => ipcRenderer.invoke('project:openInFinder', path)
+  openInFinder: (path: string) => ipcRenderer.invoke('project:openInFinder', path),
+  npmRegistryGet: () => ipcRenderer.invoke('npm-registry-get'),
+  npmRegistrySet: (registry: string) => ipcRenderer.invoke('npm-registry-set', registry)
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

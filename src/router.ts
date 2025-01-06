@@ -29,6 +29,7 @@ import ChatAI from './tools/aitools/ChatAI.vue'
 import AIModelManager from './tools/aitools/AIModelManager.vue'
 import JsonFormatter from './tools/commontools/JsonFormatter.vue'
 import MusicPlayer from './tools/commontools/MusicPlayer.vue'
+import NpmRegistry from './tools/commontools/NpmRegistry.vue'
 
 const routes = [
   {
@@ -273,11 +274,21 @@ const routes = [
   {
     path: '/json-formatter',
     name: 'JsonFormatter',
-    component: () => import('./tools/commontools/JsonFormatter.vue'),
+    component: () => JsonFormatter,
     meta: {
       title: 'JSON格式化',
       searchable: true,
       keywords: ['json', 'format', '格式化', '美化', '压缩']
+    },
+  },
+  {
+    path: '/npm-registry',
+    name: 'NpmRegistry',
+    component: NpmRegistry,
+    meta: {
+      title: 'NPM镜像源',
+      searchable: true,
+      keywords: ['npm', 'registry', '镜像源', '源']
     }
   },
   {

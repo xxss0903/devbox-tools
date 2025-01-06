@@ -113,4 +113,61 @@ ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
     })
     return sources[0].thumbnail.toDataURL()
   })
+
+  // 添加 npm registry 相关的处理方法
+  ipcMain.handle('npm-registry-get', async () => {
+    return handleNpmRegistry('get')
+  })
+
+  ipcMain.handle('npm-registry-set', async (_, registry: string) => {
+    return handleNpmRegistry('set', registry)
+  })
+
+  // 添加 npm registry 相关的处理方法
+  const handleNpmRegistry = async (action: 'get' | 'set', registry?: string) => {
+    try {
+      if (action === 'get') {
+        return new Promise((resolve, reject) => {
+          exec('npm config get registry', (error, stdout, stderr) => {
+            if (error) {
+              resolve({ 
+                success: false, 
+                message: '获取镜像源失败',
+                error 
+              })
+            } else {
+              resolve({ 
+                success: true, 
+                data: stdout.trim() 
+              })
+            }
+          })
+        })
+      } else if (action === 'set' && registry) {
+        return new Promise((resolve, reject) => {
+          exec(`npm config set registry ${registry}`, (error, stdout, stderr) => {
+            if (error) {
+              resolve({ 
+                success: false, 
+                message: '切换镜像源失败',
+                error 
+              })
+            } else {
+              resolve({ 
+                success: true, 
+                message: '切换镜像源成功' 
+              })
+            }
+          })
+        })
+      }
+      return { success: false, message: '无效的操作' }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: action === 'get' ? '获取镜像源失败' : '切换镜像源失败',
+        error
+      }
+    }
+  } 
 }

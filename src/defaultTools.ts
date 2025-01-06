@@ -111,6 +111,11 @@ export const defaultCommonTools =  [
     title: 'JSON格式化',
     value: 'JsonFormatter',
     url: 'https://img.icons8.com/?size=100&id=55494&format=png&color=000000'
+  },
+  {
+    title: 'NPM镜像源',
+    value: 'NpmRegistry',
+    url: 'https://img.icons8.com/?size=100&id=gKR3Qk27h5Tc&format=png&color=000000'
   }
 ]
 
