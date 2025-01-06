@@ -28,7 +28,6 @@ import WeeklyReportAI from './tools/aitools/WeeklyReportAI.vue'
 import ChatAI from './tools/aitools/ChatAI.vue'
 import AIModelManager from './tools/aitools/AIModelManager.vue'
 import JsonFormatter from './tools/commontools/JsonFormatter.vue'
-import MusicPlayer from './tools/commontools/MusicPlayer.vue'
 import NpmRegistry from './tools/commontools/NpmRegistry.vue'
 
 const routes = [
@@ -97,12 +96,6 @@ const routes = [
     name: 'CodeConverter',
     component: CodeConverter,
     meta: { title: '代码转换', searchable: true, keywords: ['code', 'convert', '代码', '转换'] }
-  },
-  {
-    path: '/music-player',
-    name: 'MusicPlayer',
-    component: MusicPlayer,
-    meta: { title: '音乐播放器', searchable: true, keywords: ['music', 'player', '音乐', '播放器'] }
   },
   {
     path: '/android-tools',

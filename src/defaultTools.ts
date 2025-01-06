@@ -73,11 +73,6 @@ export const defaultColorTools = [{
 ]
 export const defaultCommonTools =  [
   {
-    title: '音乐播放器',
-    value: "MusicPlayer",
-    url: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
-  },
-  {
     title: '编码/解码转换',
     value: 'CodeConverter',
     url: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
