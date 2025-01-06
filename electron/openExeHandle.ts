@@ -126,9 +126,15 @@ ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
   // 添加 npm registry 相关的处理方法
   const handleNpmRegistry = async (action: 'get' | 'set', registry?: string) => {
     try {
+      // 获取全局 npm 路径
+      const npmPath = process.platform === 'win32' 
+        ? 'C:\\Program Files\\nodejs\\npm.cmd'  // Windows
+        : '/usr/local/bin/npm'  // macOS/Linux
+
       if (action === 'get') {
         return new Promise((resolve, reject) => {
-          exec('npm config get registry', (error, stdout, stderr) => {
+          exec(`"${npmPath}" config get registry`, {
+          }, (error: any, stdout: any, stderr: any) => {
             if (error) {
               resolve({ 
                 success: false, 
@@ -145,7 +151,8 @@ ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
         })
       } else if (action === 'set' && registry) {
         return new Promise((resolve, reject) => {
-          exec(`npm config set registry ${registry}`, (error, stdout, stderr) => {
+          exec(`"${npmPath}" config set registry ${registry}`, {
+          }, (error: any, stdout: any, stderr: any) => {
             if (error) {
               resolve({ 
                 success: false, 
@@ -163,6 +170,7 @@ ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
       }
       return { success: false, message: '无效的操作' }
     } catch (error) {
+      console.error('npm registry operation error', error)
       return { 
         success: false, 
         message: action === 'get' ? '获取镜像源失败' : '切换镜像源失败',

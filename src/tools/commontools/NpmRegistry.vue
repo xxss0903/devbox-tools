@@ -2,9 +2,16 @@
   <div class="npm-registry">
     <div class="header">
       <h3>NPM 镜像源管理</h3>
-      <el-button type="primary" @click="addNewRegistry">
-        <el-icon><Plus /></el-icon>添加镜像源
-      </el-button>
+      <div class="header-buttons">
+        <el-button v-if="false" type="primary" @click="getCurrentRegistry">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+        <el-button type="primary" @click="addNewRegistry">
+          <el-icon><Plus /></el-icon>
+          添加镜像源
+        </el-button>
+      </div>
     </div>
 
     <div class="registry-list">
@@ -65,7 +72,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface Registry {
@@ -80,13 +87,13 @@ const formRef = ref()
 const registryList = ref<Registry[]>([
   {
     name: 'npm官方',
-    url: 'https://registry.npmjs.org/',
+    url: 'https://registry.npmjs.org',
     current: false,
     default: true
   },
   {
     name: '淘宝镜像',
-    url: 'https://registry.npmmirror.com/',
+    url: 'https://registry.npmmirror.com',
     current: false,
     default: true
   }
@@ -107,14 +114,21 @@ const rules = {
   ]
 }
 
+// 处理 registry URL，统一格式（去除末尾的斜杠）
+const normalizeRegistryUrl = (url: string) => {
+  return url.replace(/\/$/, '')
+}
+
 // 获取当前 npm registry
 const getCurrentRegistry = async () => {
   try {
     const result = await window.electronAPI.npmRegistryGet()
+    console.log('getCurrentRegistry', result)
     if (result.success) {
-      const currentUrl = result.data
+      const currentUrl = normalizeRegistryUrl(result.data)
+      console.log('currentUrl', currentUrl)
       registryList.value.forEach(registry => {
-        registry.current = registry.url === currentUrl
+        registry.current = normalizeRegistryUrl(registry.url) === currentUrl
       })
     } else {
       ElMessage.error(result.message)
@@ -129,7 +143,11 @@ const switchRegistry = async (registry: Registry) => {
   try {
     const result = await window.electronAPI.npmRegistrySet(registry.url)
     if (result.success) {
-      await getCurrentRegistry()
+        const currentUrl = normalizeRegistryUrl(registry.url)
+        console.log('currentUrl', currentUrl)
+        registryList.value.forEach(registry => {
+            registry.current = normalizeRegistryUrl(registry.url) === currentUrl
+        })
       ElMessage.success('切换镜像源成功')
     } else {
       ElMessage.error(result.message)
@@ -150,13 +168,14 @@ const addNewRegistry = () => {
 
 const confirmAdd = async () => {
   if (!formRef.value) return
-
+  
   await formRef.value.validate((valid: boolean) => {
     if (valid) {
+      const normalizedNewUrl = normalizeRegistryUrl(newRegistry.value.url)
       const exists = registryList.value.some(
-        registry => registry.url === newRegistry.value.url
+        registry => normalizeRegistryUrl(registry.url) === normalizedNewUrl
       )
-
+      
       if (exists) {
         ElMessage.warning('该镜像源已存在')
         return
@@ -164,10 +183,11 @@ const confirmAdd = async () => {
 
       registryList.value.push({
         ...newRegistry.value,
+        url: normalizedNewUrl, // 保存时使用标准化的 URL
         current: false,
         default: false
       })
-
+      
       dialogVisible.value = false
       ElMessage.success('添加成功')
     }
@@ -221,6 +241,11 @@ onMounted(() => {
 
 .header h3 {
   margin: 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .registry-list {
