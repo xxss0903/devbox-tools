@@ -67,14 +67,16 @@
       </div>
 
       <!-- 最近使用 -->
-      <div class="tool-category">
+      <div class="tool-category" v-if="recentTools.length > 0">
         <h2>最近使用</h2>
         <div class="tool-cards">
           <div v-for="tool in recentTools" 
-               :key="tool.name" 
+               :key="tool.route" 
                class="tool-card"
                @click="navigateTo(tool.route)">
-            <el-icon><component :is="tool.icon" /></el-icon>
+            <el-icon>
+              <component :is="tool.icon || 'Document'" />
+            </el-icon>
             <div class="tool-info">
               <h3>{{ tool.name }}</h3>
               <p>{{ tool.description }}</p>
@@ -87,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Folder,
@@ -97,28 +99,77 @@ import {
   ChatDotRound,
   Memo
 } from '@element-plus/icons-vue'
+import { defaultImageTools, defaultCommonTools, defaultAITools, defaultProjectTools } from '@/defaultTools'
 
 const router = useRouter()
+const MAX_RECENT_TOOLS = 4 // 最大显示数量
+
+// 合并所有工具列表
+const allTools = [
+  ...defaultImageTools,
+  ...defaultCommonTools,
+  ...defaultAITools,
+  ...defaultProjectTools
+].map(tool => ({
+  name: tool.title,
+  value: tool.value,
+  icon: tool.icon || 'Document',
+  url: tool.url
+}))
 
 // 最近使用的工具列表
-const recentTools = ref([
-  {
-    name: '截图工具',
-    description: '快速截取屏幕',
-    route: 'ScreenshotTool',
-    icon: 'Picture'
-  },
-  {
-    name: '剪贴板',
-    description: '剪贴板历史记录',
-    route: 'ClipboardManager',
-    icon: 'Document'
+const recentTools = ref<any[]>([])
+
+// 从本地存储加载最近使用的工具
+const loadRecentTools = () => {
+  const savedTools = localStorage.getItem('recentTools')
+  console.log('recentTools', savedTools)
+  if (savedTools) {
+    recentTools.value = JSON.parse(savedTools)
   }
-])
+}
+
+// 更新最近使用的工具
+const updateRecentTools = (route: string) => {
+  // 查找当前工具信息
+  const tool = allTools.find(t => t.value === route)
+  if (!tool) return
+
+  const recentTool = {
+    name: tool.name,
+    description: tool.description || '常用工具',
+    route: tool.value,
+    icon: tool.icon,
+    lastUsed: new Date().getTime()
+  }
+
+  // 从现有列表中移除相同的工具（如果存在）
+  const existingIndex = recentTools.value.findIndex(t => t.route === route)
+  if (existingIndex !== -1) {
+    recentTools.value.splice(existingIndex, 1)
+  }
+
+  // 添加到列表开头
+  recentTools.value.unshift(recentTool)
+
+  // 保持最大显示数量
+  if (recentTools.value.length > MAX_RECENT_TOOLS) {
+    recentTools.value = recentTools.value.slice(0, MAX_RECENT_TOOLS)
+  }
+
+  // 保存到本地存储
+  localStorage.setItem('recentTools', JSON.stringify(recentTools.value))
+}
 
 const navigateTo = (route: string) => {
+  updateRecentTools(route)
   router.push({ name: route })
 }
+
+// 组件挂载时加载最近使用的工具
+onMounted(() => {
+  loadRecentTools()
+})
 </script>
 
 <style scoped>

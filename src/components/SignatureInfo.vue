@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const signatureInfo = ref('')
 const adbResult = ref('')
+const connectedDevices = ref('')
 
 const getSignatureInfo = async () => {
   try {
@@ -29,6 +30,17 @@ const executeADB = async () => {
   }
 }
 
+const getConnectedDevices = async () => {
+  try {
+    const result = await window.electronAPI.executeADB('adb devices -l')
+    connectedDevices.value = result
+    console.log('已连接设备:', result)
+  } catch (error) {
+    console.error('获取设备列表失败:', error)
+    connectedDevices.value = '获取设备列表失败'
+  }
+}
+
 const goBack = () => {
   router.push({ name: 'AndroidTools' })
 }
@@ -39,6 +51,7 @@ const goBack = () => {
     <div class="signature-info-container">
       <button @click="getSignatureInfo">获取签名信息</button>
       <button @click="executeADB">执行ADB命令</button>
+      <button @click="getConnectedDevices">获取已连接设备</button>
 
       <div v-if="signatureInfo" class="info-display">
         <h3>签名信息：</h3>
@@ -48,6 +61,11 @@ const goBack = () => {
       <div v-if="adbResult" class="info-display">
         <h3>ADB 命令执行结果：</h3>
         <pre>{{ adbResult }}</pre>
+      </div>
+
+      <div v-if="connectedDevices" class="info-display">
+        <h3>已连接设备列表：</h3>
+        <pre>{{ connectedDevices }}</pre>
       </div>
     </div>
   </ToolsContainer>

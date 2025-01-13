@@ -45,6 +45,16 @@ ipcMain.handle('open-pdfbox-app', async (_, filePath) => {
   // adb 执行命令
   ipcMain.handle('execute-adb', async (event, command: string) => {
     // ADB 执行逻辑
+    console.log('execute-adb called with command:', command)
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(stdout)
+        }
+      })
+    })
   })
 
   // 选择文件夹
