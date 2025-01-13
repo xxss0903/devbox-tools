@@ -97,7 +97,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onClipboardImageUpdate: (callback: (dataUrl: string) => void) =>
     ipcRenderer.on('clipboard-update-image', (_, dataUrl) => callback(dataUrl)),
   deleteDiaryEntry: (date: string) => ipcRenderer.invoke('delete-diary-entry', date),
-  executeCommand: (command: string) => ipcRenderer.invoke('execute-command', command),
   openPDFBoxApp: (filePath: string) => ipcRenderer.invoke('open-pdfbox-app', filePath),
   getFilePath: async (file: File) => {
     return file.path
@@ -125,7 +124,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openInEditor: (path: string) => ipcRenderer.invoke('project:openInEditor', path),
   openInFinder: (path: string) => ipcRenderer.invoke('project:openInFinder', path),
   npmRegistryGet: () => ipcRenderer.invoke('npm-registry-get'),
-  npmRegistrySet: (registry: string) => ipcRenderer.invoke('npm-registry-set', registry)
+  npmRegistrySet: (registry: string) => ipcRenderer.invoke('npm-registry-set', registry),
+  openFileDialog: (options: any) => ipcRenderer.invoke('dialog:openFile', options),
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

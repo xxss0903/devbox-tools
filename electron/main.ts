@@ -18,6 +18,10 @@ import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
 import { Project } from './models/Project'
 import { promises as fs } from 'fs'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -522,4 +526,8 @@ ipcMain.handle('project:openInEditor', async (event, filePath) => {
     console.error('Error opening in editor:', error)
     throw error
   }
+})
+
+ipcMain.handle('dialog:openFile', async (event, options) => {
+  return dialog.showOpenDialog(options)
 })
