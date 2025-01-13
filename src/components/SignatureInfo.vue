@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import ToolsContainer from '../widgets/ToolsContainer.vue'
 import { useRouter } from 'vue-router'
 
@@ -12,6 +12,8 @@ const showJksDialog = ref(false)
 const aliasName = ref('')
 const storePass = ref('')
 const selectedJksPath = ref('')
+const showCopyTip = ref(false)
+const copyTipTimer = ref<number | null>(null)
 
 const resetDisplays = () => {
   signatureInfo.value = ''
@@ -115,10 +117,85 @@ const processJksFile = async (jksPath: string) => {
   selectedJksPath.value = jksPath
 }
 
+// 添加用于解析的接口
+interface ParsedFingerprint {
+  alias: string
+  sha1: string
+  sha256: string
+  md5: string
+}
+
+const parsedFingerprints = ref<ParsedFingerprint[]>([])
+
+// 解析指纹信息
+const parseFingerprint = (text: string) => {
+  const fingerprints: ParsedFingerprint[] = []
+  let currentFingerprint: Partial<ParsedFingerprint> = {}
+  
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    console.log('command line:', trimmedLine)
+    
+    if (line.includes('别名:') || line.includes('Alias:')) {
+      if (Object.keys(currentFingerprint).length > 0) {
+        fingerprints.push(currentFingerprint as ParsedFingerprint)
+      }
+      currentFingerprint = {
+        alias: line.split(':')[1].trim()
+      }
+    } else if (trimmedLine.startsWith('SHA1:')) {
+      // 找到最后一个冒号后的所有内容
+      const colonIndex = trimmedLine.indexOf(':')
+      if (colonIndex !== -1) {
+        currentFingerprint.sha1 = trimmedLine.substring(colonIndex+1).trim()
+      }
+    } else if (trimmedLine.startsWith('SHA256:')) {
+      const colonIndex = trimmedLine.indexOf(':')
+      if (colonIndex !== -1) {
+        currentFingerprint.sha256 = trimmedLine.substring(colonIndex + 1).trim()
+      }
+    } else if (trimmedLine.startsWith('MD5:')) {
+      const colonIndex = trimmedLine.indexOf(':')
+      if (colonIndex !== -1) {
+        currentFingerprint.md5 = trimmedLine.substring(colonIndex + 1).trim()
+      }
+    }
+  }
+  
+  if (Object.keys(currentFingerprint).length > 0) {
+    fingerprints.push(currentFingerprint as ParsedFingerprint)
+  }
+  
+  console.log('解析的指纹信息:', fingerprints)
+  return fingerprints
+}
+
+// 复制文本到剪贴板
+const copyToClipboard = async (text: string) => {
+  try {
+    await window.electronAPI.writeTextToClipboard(text)
+    // 显示提示
+    showCopyTip.value = true
+    
+    // 清除之前的定时器（如果存在）
+    if (copyTipTimer.value) {
+      clearTimeout(copyTipTimer.value)
+    }
+    
+    // 设置新的定时器，2秒后隐藏提示
+    copyTipTimer.value = window.setTimeout(() => {
+      showCopyTip.value = false
+    }, 2000)
+  } catch (error) {
+    console.error('复制失败:', error)
+  }
+}
+
 const getJksInfo = async () => {
   signatureInfo.value = '正在获取指纹信息...'
   try {
-    let command = `keytool -list -v -keystore "${selectedJksPath.value}"`
+    let command = `keytool -J-Dfile.encoding=UTF-8 -list -v -keystore "${selectedJksPath.value}"`
     
     if (aliasName.value) {
       command += ` -alias ${aliasName.value}`
@@ -127,11 +204,14 @@ const getJksInfo = async () => {
       command += ` -storepass ${storePass.value}`
     }
     
+    await window.electronAPI.executeADB('chcp 65001')
     const fingerprint = await window.electronAPI.executeADB(command)
-    signatureInfo.value = `JKS文件路径：${selectedJksPath.value}\n\n${fingerprint}`
+    parsedFingerprints.value = parseFingerprint(fingerprint)
+    signatureInfo.value = fingerprint
   } catch (error) {
     console.error('获取JKS指纹信息失败:', error)
     signatureInfo.value = '获取JKS指纹信息失败：' + error
+    parsedFingerprints.value = []
   }
 }
 
@@ -164,6 +244,13 @@ const selectFile = async () => {
 const goBack = () => {
   router.push({ name: 'AndroidTools' })
 }
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  if (copyTipTimer.value) {
+    clearTimeout(copyTipTimer.value)
+  }
+})
 </script>
 
 <template>
@@ -213,8 +300,12 @@ const goBack = () => {
               
               <div class="drop-zone">
                 <i class="file-icon">📄</i>
-                <p>拖放 JKS 文件到这里</p>
-                <p>或者</p>
+                <div class="selected-file" v-if="selectedJksPath">
+                  <p class="file-path">已选择: {{ selectedJksPath }}</p>
+                </div>
+                <div class="file-hint" v-else>
+                  <p>请选择或拖放 JKS 文件到这里</p>
+                </div>
                 <button @click="selectFile" class="select-btn">选择文件</button>
               </div>
 
@@ -236,6 +327,32 @@ const goBack = () => {
           <div class="results-section">
             <div v-if="signatureInfo" class="info-display">
               <h3>签名信息：</h3>
+              <div v-if="parsedFingerprints.length > 0" class="fingerprints-container">
+                <div v-for="(fp, index) in parsedFingerprints" :key="index" class="fingerprint-item">
+                  <h4>别名: {{ fp.alias }}</h4>
+                  <div class="hash-item">
+                    <span class="hash-label">SHA1:</span>
+                    <div class="hash-value">
+                      <span>{{ fp.sha1 }}</span>
+                      <button class="copy-btn" @click="copyToClipboard(fp.sha1)">复制</button>
+                    </div>
+                  </div>
+                  <div class="hash-item">
+                    <span class="hash-label">SHA256:</span>
+                    <div class="hash-value">
+                      <span>{{ fp.sha256 }}</span>
+                      <button class="copy-btn" @click="copyToClipboard(fp.sha256)">复制</button>
+                    </div>
+                  </div>
+                  <div class="hash-item">
+                    <span class="hash-label">MD5:</span>
+                    <div class="hash-value">
+                      <span>{{ fp.md5 }}</span>
+                      <button class="copy-btn" @click="copyToClipboard(fp.md5)">复制</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <pre>{{ signatureInfo }}</pre>
             </div>
 
@@ -252,6 +369,11 @@ const goBack = () => {
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 添加复制成功提示 -->
+  <div v-if="showCopyTip" class="copy-tip">
+    复制成功
   </div>
 </template>
 
@@ -367,6 +489,9 @@ button:hover {
   margin-top: 10px;
   transition: all 0.3s ease;
   margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .dragging .drop-zone {
@@ -466,5 +591,126 @@ button:hover {
 
 .results-section .info-display:first-child {
   margin-top: 0;
+}
+
+.selected-file {
+  margin: 10px 0;
+  width: 100%;
+}
+
+.file-path {
+  color: #2196F3;
+  font-size: 14px;
+  word-break: break-all;
+  background-color: #e3f2fd;
+  padding: 8px;
+  border-radius: 4px;
+  margin: 0;
+}
+
+.file-hint {
+  margin: 10px 0;
+}
+
+.file-hint p {
+  color: #666;
+  margin: 0;
+}
+
+.fingerprints-container {
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 15px;
+  background-color: white;
+}
+
+.fingerprint-item {
+  margin-bottom: 20px;
+}
+
+.fingerprint-item:last-child {
+  margin-bottom: 0;
+}
+
+.fingerprint-item h4 {
+  margin: 0 0 10px 0;
+  color: #2196F3;
+  font-size: 16px;
+}
+
+.hash-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.hash-label {
+  flex-shrink: 0;
+  width: 70px;
+  font-weight: bold;
+  color: #666;
+}
+
+.hash-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  word-break: break-all;
+  font-family: monospace;
+}
+
+.copy-btn {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-size: 12px;
+  min-width: auto;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.copy-btn:hover {
+  background-color: #1976D2;
+}
+
+.copy-tip {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 1000;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
 }
 </style>
