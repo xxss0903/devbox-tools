@@ -25,7 +25,7 @@ export interface IElectronAPI {
   onModelPullProgress: (callback: (progress: number) => void) => void
   onOllamaStream: (callback: (content: string) => void) => void
   onOllamaDone: (callback: () => void) => void
-  getFilePath: (file: File) => Promise<string>
+  getFilePath: () => Promise<string>
   getDroppedFolderPath: (file: File) => Promise<string>
   selectProjectFolder: () => Promise<Array<{ name: string; data: string }>>
   openInEditor: (path: string) => Promise<void>

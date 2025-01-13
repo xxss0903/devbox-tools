@@ -7,6 +7,11 @@ const router = useRouter()
 const signatureInfo = ref('')
 const adbResult = ref('')
 const connectedDevices = ref('')
+const isDragging = ref(false)
+const showJksDialog = ref(false)
+const aliasName = ref('')
+const storePass = ref('')
+const selectedJksPath = ref('')
 
 const resetDisplays = () => {
   signatureInfo.value = ''
@@ -73,12 +78,73 @@ const restartADBServer = async () => {
   }
 }
 
-const getJksFingerprint = async () => {
-  resetDisplays()
+const handleDragEnter = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  isDragging.value = true
+}
+
+const handleDragLeave = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  isDragging.value = false
+}
+
+const handleDrop = async (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  isDragging.value = false
+  
+  if (e.dataTransfer?.files.length) {
+    const file = e.dataTransfer.files[0]
+    console.log('拖放的文件:', file)
+    
+    // 使用 electronAPI 获取文件路径
+    const filePath = await window.electronAPI.getDroppedFolderPath(file)
+    console.log('文件路径:', filePath)
+    
+    if (file.name.endsWith('.jks') || file.name.endsWith('.keystore')) {
+      await processJksFile(filePath)
+    } else {
+      signatureInfo.value = '请选择有效的 JKS 文件'
+    }
+  }
+}
+
+const processJksFile = async (jksPath: string) => {
+  selectedJksPath.value = jksPath
+}
+
+const getJksInfo = async () => {
+  signatureInfo.value = '正在获取指纹信息...'
   try {
-    // 打开文件选择对话框
+    let command = `keytool -list -v -keystore "${selectedJksPath.value}"`
+    
+    if (aliasName.value) {
+      command += ` -alias ${aliasName.value}`
+    }
+    if (storePass.value) {
+      command += ` -storepass ${storePass.value}`
+    }
+    
+    const fingerprint = await window.electronAPI.executeADB(command)
+    signatureInfo.value = `JKS文件路径：${selectedJksPath.value}\n\n${fingerprint}`
+  } catch (error) {
+    console.error('获取JKS指纹信息失败:', error)
+    signatureInfo.value = '获取JKS指纹信息失败：' + error
+  }
+}
+
+const getJksFingerprint = () => {
+  resetDisplays()
+  showJksDialog.value = true
+}
+
+const selectFile = async () => {
+  try {
     const result = await window.electronAPI.openFileDialog({
       title: '选择 JKS 文件',
+      properties: ['openFile'],
       filters: [
         { name: 'JKS Files', extensions: ['jks', 'keystore'] },
         { name: 'All Files', extensions: ['*'] }
@@ -87,19 +153,11 @@ const getJksFingerprint = async () => {
 
     if (!result.canceled && result.filePaths.length > 0) {
       const jksPath = result.filePaths[0]
-      signatureInfo.value = '正在获取指纹信息...'
-
-      // 使用 executeADB 来执行 keytool 命令
-      const command = `keytool -list -v -keystore "${jksPath}"`
-      const fingerprint = await window.electronAPI.executeADB(command)
-      
-      signatureInfo.value = `JKS文件路径：${jksPath}\n\n${fingerprint}`
-    } else {
-      signatureInfo.value = '未选择文件'
+      await processJksFile(jksPath)
     }
   } catch (error) {
-    console.error('获取JKS指纹信息失败:', error)
-    signatureInfo.value = '获取JKS指纹信息失败：' + error
+    console.error('选择文件失败:', error)
+    signatureInfo.value = '选择文件失败：' + error
   }
 }
 
@@ -109,7 +167,7 @@ const goBack = () => {
 </script>
 
 <template>
-  <ToolsContainer title="签名信息" @goBack="goBack">
+  <div title="签名信息" @goBack="goBack">
     <div class="signature-info-container">
       <div class="button-container">
         <button @click="getSignatureInfo">获取签名信息</button>
@@ -120,30 +178,88 @@ const goBack = () => {
       </div>
 
       <div class="content-container">
-        <div v-if="signatureInfo" class="info-display">
-          <h3>签名信息：</h3>
-          <pre>{{ signatureInfo }}</pre>
-        </div>
+        <div class="content-layout">
+          <!-- 左侧：JKS文件选择区域 -->
+          <div v-if="showJksDialog" class="jks-section"
+            @dragenter="handleDragEnter"
+            @dragover.prevent
+            @dragleave="handleDragLeave"
+            @drop="handleDrop"
+            :class="{ 'dragging': isDragging }">
+            <div class="dialog-content">
+              <h3>选择 JKS 文件</h3>
+              
+              <!-- 添加输入框 -->
+              <div class="input-group">
+                <div class="input-field">
+                  <label for="aliasName">别名 (Alias):</label>
+                  <input 
+                    id="aliasName"
+                    v-model="aliasName"
+                    type="text"
+                    placeholder="输入别名"
+                  >
+                </div>
+                <div class="input-field">
+                  <label for="storePass">密码 (Password):</label>
+                  <input 
+                    id="storePass"
+                    v-model="storePass"
+                    type="password"
+                    placeholder="输入密码"
+                  >
+                </div>
+              </div>
+              
+              <div class="drop-zone">
+                <i class="file-icon">📄</i>
+                <p>拖放 JKS 文件到这里</p>
+                <p>或者</p>
+                <button @click="selectFile" class="select-btn">选择文件</button>
+              </div>
 
-        <div v-if="adbResult" class="info-display">
-          <h3>ADB 命令执行结果：</h3>
-          <pre>{{ adbResult }}</pre>
-        </div>
+              <!-- 添加获取按钮 -->
+              <div class="action-buttons">
+                <button 
+                  @click="getJksInfo" 
+                  class="get-info-btn"
+                  :disabled="!selectedJksPath"
+                  :class="{ 'disabled': !selectedJksPath }"
+                >
+                  获取信息
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <div v-if="connectedDevices" class="info-display">
-          <h3>已连接设备列表：</h3>
-          <pre>{{ connectedDevices }}</pre>
+          <!-- 右侧：显示结果区域 -->
+          <div class="results-section">
+            <div v-if="signatureInfo" class="info-display">
+              <h3>签名信息：</h3>
+              <pre>{{ signatureInfo }}</pre>
+            </div>
+
+            <div v-if="adbResult" class="info-display">
+              <h3>ADB 命令执行结果：</h3>
+              <pre>{{ adbResult }}</pre>
+            </div>
+
+            <div v-if="connectedDevices" class="info-display">
+              <h3>已连接设备列表：</h3>
+              <pre>{{ connectedDevices }}</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </ToolsContainer>
+  </div>
 </template>
 
 <style scoped>
 .signature-info-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 80%;
 }
 
 .button-container {
@@ -161,10 +277,12 @@ const goBack = () => {
 .content-container {
   flex: 1;
   padding: 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  .content-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    width: 90%;
+  }
 }
 
 button {
@@ -189,8 +307,7 @@ button:hover {
   padding: 20px;
   background-color: #f0f0f0;
   border-radius: 5px;
-  width: 80%;
-  max-width: 90%;
+  width: 100%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -223,5 +340,131 @@ button:hover {
 
 .jks-btn:hover {
   background-color: #1976D2;
+}
+
+.jks-section {
+  margin: 20px 0;
+  width: 400px;
+  flex-shrink: 0;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.jks-section.dragging {
+  background-color: #e3f2fd;
+}
+
+.dialog-content {
+  text-align: center;
+}
+
+.drop-zone {
+  border: 2px dashed #2196F3;
+  border-radius: 8px;
+  padding: 30px;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+}
+
+.dragging .drop-zone {
+  background-color: #bbdefb;
+  border-color: #1976D2;
+}
+
+.file-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.select-btn {
+  margin-top: 15px;
+  background-color: #2196F3;
+  color: white;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.select-btn:hover {
+  background-color: #1976D2;
+}
+
+.drop-zone p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.input-group {
+  margin: 20px 0;
+  width: 100%;
+}
+
+.input-field {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.input-field label {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 14px;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.input-field input:focus {
+  outline: none;
+  border-color: #2196F3;
+}
+
+.input-field input::placeholder {
+  color: #999;
+}
+
+.action-buttons {
+  margin-top: 20px;
+}
+
+.get-info-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 30px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.get-info-btn:hover:not(.disabled) {
+  background-color: #45a049;
+}
+
+.get-info-btn.disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.results-section {
+  flex: 1;
+  min-width: 0; /* 防止flex子项溢出 */
+}
+
+.results-section .info-display:first-child {
+  margin-top: 0;
 }
 </style>
