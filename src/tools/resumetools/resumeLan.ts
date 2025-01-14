@@ -38,7 +38,9 @@ export const languageTexts: Record<'en' | 'zh', LanguageText> = {
     customSections: 'Custom Sections',
     addCustomSection: 'Add Custom Section',
     sectionTitle: 'Section Title',
-    sectionContent: 'Section Content'
+    sectionContent: 'Section Content',
+    importTemplates: 'Import Templates',
+    exportTemplates: 'Export Templates'
   },
   zh: {
     personalInfo: '个人信息',
@@ -76,6 +78,8 @@ export const languageTexts: Record<'en' | 'zh', LanguageText> = {
     customSections: '自定义模块',
     addCustomSection: '添加自定义模块',
     sectionTitle: '模块标题',
-    sectionContent: '模块内容'
+    sectionContent: '模块内容',
+    importTemplates: '导入模板',
+    exportTemplates: '导出模板'
   }
 }

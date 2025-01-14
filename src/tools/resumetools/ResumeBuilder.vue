@@ -166,6 +166,15 @@
 
     <!-- 模板管理对话框 -->
     <el-dialog v-model="showTemplateDialog" :title="t.manageTemplates" width="60%">
+      <div class="template-actions">
+        <el-button type="primary" @click="importTemplates">
+          {{ currentLang === 'en' ? 'Import Templates' : '导入模板' }}
+        </el-button>
+
+        <el-button type="primary" @click="exportTemplates">
+          {{ currentLang === 'en' ? 'Export Templates' : '导出模板' }}
+        </el-button>
+      </div>
       <el-table v-if="templates.length > 0" :data="templates" style="width: 100%">
         <el-table-column :label="t.templateName" prop="name" />
         <el-table-column :label="t.createTime" width="200">
@@ -610,6 +619,98 @@ const addCustomSection = () => {
 const removeCustomSection = (index: number) => {
   resumeData.customSections.splice(index, 1)
 }
+
+// 添加导出模板的方法
+
+const exportTemplates = () => {
+  try {
+    const templatesJson = JSON.stringify(templates.value, null, 2)
+    const blob = new Blob([templatesJson], { type: 'application/json' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `resume_templates_${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error exporting templates:', error)
+    ElMessageBox.alert(
+      currentLang.value === 'en' ? 'Failed to export templates' : '模板导出失败',
+
+      currentLang.value === 'en' ? 'Error' : '错误',
+
+      { type: 'error' }
+    )
+  }
+}
+
+// 添加导入模板的方法
+
+const importTemplates = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e) => {
+    try {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        try {
+          const importedTemplates = JSON.parse(event.target?.result as string)
+          // 确认是否覆盖现有模板
+          await ElMessageBox.confirm(
+            currentLang.value === 'en'
+              ? 'Do you want to replace existing templates or merge with them?'
+              : '是否要替换现有模板或与现有模板合并？',
+
+            currentLang.value === 'en' ? 'Import Templates' : '导入模板',
+            {
+              confirmButtonText: currentLang.value === 'en' ? 'Replace' : '替换',
+
+              cancelButtonText: currentLang.value === 'en' ? 'Merge' : '合并',
+
+              type: 'warning'
+            }
+          )
+            .then(() => {
+              // 替换现有模板
+
+              templates.value = importedTemplates
+            })
+            .catch(() => {
+              // 合并模板
+
+              templates.value = [...templates.value, ...importedTemplates]
+            })
+          saveTemplates()
+          ElMessageBox.alert(
+            currentLang.value === 'en' ? 'Templates imported successfully' : '模板导入成功',
+
+            currentLang.value === 'en' ? 'Success' : '成功',
+
+            { type: 'success' }
+          )
+        } catch (error) {
+          throw new Error('Invalid template file format')
+        }
+      }
+
+      reader.readAsText(file)
+    } catch (error) {
+      console.error('Error importing templates:', error)
+      ElMessageBox.alert(
+        currentLang.value === 'en' ? 'Failed to import templates' : '模板导入失败',
+        currentLang.value === 'en' ? 'Error' : '错误',
+        { type: 'error' }
+      )
+    }
+  }
+
+  input.click()
+}
 </script>
 
 <style scoped>
@@ -807,5 +908,12 @@ const removeCustomSection = (index: number) => {
   padding: 1rem;
   border: 1px solid #eee;
   border-radius: 4px;
+}
+
+.template-actions {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
 }
 </style>

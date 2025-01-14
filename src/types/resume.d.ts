@@ -76,4 +76,6 @@ export interface LanguageText {
   addCustomSection: string
   sectionTitle: string
   sectionContent: string
+  importTemplates: string
+  exportTemplates: string
 }
