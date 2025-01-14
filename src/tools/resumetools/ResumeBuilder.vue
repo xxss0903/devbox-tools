@@ -799,23 +799,20 @@ const showPreview = () => {
 
 <style scoped>
 .resume-builder {
-  display: flex;
-  gap: 2rem;
   padding: 2rem;
-  max-width: 1800px;
-  margin: 0 auto;
-  min-height: calc(100vh - 4rem);
+  height: calc(100vh - 18rem);
+  display: flex;
+  flex-direction: column;
 }
 
 .resume-form {
-  width: 600px;
-  flex-shrink: 0;
+  flex: 1;
   padding: 1rem;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  height: calc(100vh - 4rem);
   overflow-y: auto;
+  position: relative;
 }
 
 .resume-preview {
