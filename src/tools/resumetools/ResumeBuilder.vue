@@ -3,9 +3,14 @@
     <div class="resume-form">
       <div class="header">
         <h2>Resume Builder</h2>
-        <el-button @click="toggleLanguage">
-          {{ currentLang === 'en' ? '切换到中文' : 'Switch to English' }}
-        </el-button>
+        <div class="header-buttons">
+          <el-button @click="toggleLanguage">
+            {{ currentLang === 'en' ? '切换到中文' : 'Switch to English' }}
+          </el-button>
+          <el-button @click="showTemplateDialog = true">
+            {{ t.manageTemplates }}
+          </el-button>
+        </div>
       </div>
 
       <div class="form-section">
@@ -112,6 +117,7 @@
       <div class="actions">
         <el-button type="primary" @click="generatePDF">{{ t.generatePDF }}</el-button>
         <el-button type="primary" @click="generateWord">{{ t.generateWord }}</el-button>
+        <el-button type="success" @click="saveAsTemplate">{{ t.saveAsTemplate }}</el-button>
         <el-button @click="resetForm">{{ t.reset }}</el-button>
       </div>
     </div>
@@ -119,15 +125,46 @@
     <div class="resume-preview">
       <resume-template :data="resumeData" :lang="currentLang"></resume-template>
     </div>
+
+    <!-- 模板管理对话框 -->
+    <el-dialog
+      v-model="showTemplateDialog"
+      :title="t.manageTemplates"
+      width="60%"
+    >
+      <el-table v-if="templates.length > 0" :data="templates" style="width: 100%">
+        <el-table-column :label="t.templateName" prop="name" />
+        <el-table-column :label="t.createTime" width="200">
+          <template #default="scope">
+            {{ new Date(scope.row.createTime).toLocaleString() }}
+          </template>
+        </el-table-column>
+        <el-table-column :label="t.actions" width="200">
+          <template #default="scope">
+            <el-button type="primary" size="small" @click="loadTemplate(scope.row)">
+              {{ t.load }}
+            </el-button>
+            <el-button type="danger" size="small" @click="deleteTemplate(scope.row)">
+              {{ t.delete }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-else class="no-templates">
+        {{ t.noTemplates }}
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import ResumeTemplate from './ResumeTemplate.vue'
 import html2pdf from 'html2pdf.js'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
+import { ElMessageBox } from 'element-plus'
 
+// 基础接口定义
 interface Experience {
   company: string
   position: string
@@ -151,6 +188,125 @@ interface ResumeData {
   education: Education[]
   skills: string[]
 }
+
+// 模板相关接口
+interface SavedTemplate {
+  id: string
+  name: string
+  data: ResumeData
+  createTime: number
+}
+
+// 语言文本接口
+interface LanguageText {
+  personalInfo: string
+  fullName: string
+  title: string
+  email: string
+  phone: string
+  professionalSummary: string
+  summary: string
+  workExperience: string
+  company: string
+  position: string
+  duration: string
+  description: string
+  education: string
+  school: string
+  degree: string
+  year: string
+  skills: string
+  addExperience: string
+  addEducation: string
+  remove: string
+  generatePDF: string
+  generateWord: string
+  reset: string
+  manageTemplates: string
+  saveAsTemplate: string
+  templateName: string
+  createTime: string
+  actions: string
+  load: string
+  delete: string
+  noTemplates: string
+}
+
+// 语言文本定义
+const languageTexts: Record<'en' | 'zh', LanguageText> = {
+  en: {
+    personalInfo: 'Personal Information',
+    fullName: 'Full Name',
+    title: 'Title',
+    email: 'Email',
+    phone: 'Phone',
+    professionalSummary: 'Professional Summary',
+    summary: 'Summary',
+    workExperience: 'Work Experience',
+    company: 'Company',
+    position: 'Position',
+    duration: 'Duration',
+    description: 'Description',
+    education: 'Education',
+    school: 'School',
+    degree: 'Degree',
+    year: 'Year',
+    skills: 'Skills',
+    addExperience: 'Add Experience',
+    addEducation: 'Add Education',
+    remove: 'Remove',
+    generatePDF: 'Generate PDF',
+    generateWord: 'Generate Word',
+    reset: 'Reset',
+    manageTemplates: 'Manage Templates',
+    saveAsTemplate: 'Save as Template',
+    templateName: 'Template Name',
+    createTime: 'Create Time',
+    actions: 'Actions',
+    load: 'Load',
+    delete: 'Delete',
+    noTemplates: 'No templates yet'
+  },
+  zh: {
+    personalInfo: '个人信息',
+    fullName: '姓名',
+    title: '职位',
+    email: '邮箱',
+    phone: '电话',
+    professionalSummary: '专业总结',
+    summary: '总结',
+    workExperience: '工作经验',
+    company: '公司',
+    position: '职位',
+    duration: '时间段',
+    description: '描述',
+    education: '教育经历',
+    school: '学校',
+    degree: '学位',
+    year: '年份',
+    skills: '技能',
+    addExperience: '添加工作经验',
+    addEducation: '添加教育经历',
+    remove: '删除',
+    generatePDF: '生成PDF',
+    generateWord: '生成Word',
+    reset: '重置',
+    manageTemplates: '管理模板',
+    saveAsTemplate: '保存为模板',
+    templateName: '模板名称',
+    createTime: '创建时间',
+    actions: '操作',
+    load: '加载',
+    delete: '删除',
+    noTemplates: '暂无模板'
+  }
+}
+
+// 组件状态
+const currentLang = ref<'en' | 'zh'>('en')
+const t = computed(() => languageTexts[currentLang.value])
+const templates = ref<SavedTemplate[]>([])
+const showTemplateDialog = ref(false)
 
 const skillOptions = [
   'JavaScript',
@@ -333,89 +489,109 @@ const resetForm = () => {
   })
 }
 
-// 添加语言相关的接口和常量
-interface LanguageText {
-  personalInfo: string
-  fullName: string
-  title: string
-  email: string
-  phone: string
-  professionalSummary: string
-  summary: string
-  workExperience: string
-  company: string
-  position: string
-  duration: string
-  description: string
-  education: string
-  school: string
-  degree: string
-  year: string
-  skills: string
-  addExperience: string
-  addEducation: string
-  remove: string
-  generatePDF: string
-  generateWord: string
-  reset: string
-}
-
-const languageTexts: Record<'en' | 'zh', LanguageText> = {
-  en: {
-    personalInfo: 'Personal Information',
-    fullName: 'Full Name',
-    title: 'Title',
-    email: 'Email',
-    phone: 'Phone',
-    professionalSummary: 'Professional Summary',
-    summary: 'Summary',
-    workExperience: 'Work Experience',
-    company: 'Company',
-    position: 'Position',
-    duration: 'Duration',
-    description: 'Description',
-    education: 'Education',
-    school: 'School',
-    degree: 'Degree',
-    year: 'Year',
-    skills: 'Skills',
-    addExperience: 'Add Experience',
-    addEducation: 'Add Education',
-    remove: 'Remove',
-    generatePDF: 'Generate PDF',
-    generateWord: 'Generate Word',
-    reset: 'Reset'
-  },
-  zh: {
-    personalInfo: '个人信息',
-    fullName: '姓名',
-    title: '职位',
-    email: '邮箱',
-    phone: '电话',
-    professionalSummary: '专业总结',
-    summary: '总结',
-    workExperience: '工作经验',
-    company: '公司',
-    position: '职位',
-    duration: '时间段',
-    description: '描述',
-    education: '教育经历',
-    school: '学校',
-    degree: '学位',
-    year: '年份',
-    skills: '技能',
-    addExperience: '添加工作经验',
-    addEducation: '添加教育经历',
-    remove: '删除',
-    generatePDF: '生成PDF',
-    generateWord: '生成Word',
-    reset: '重置'
+// 从localStorage加载模板
+const loadTemplates = () => {
+  const savedTemplates = localStorage.getItem('resumeTemplates')
+  if (savedTemplates) {
+    templates.value = JSON.parse(savedTemplates)
   }
 }
 
-// 添加当前语言状态
-const currentLang = ref<'en' | 'zh'>('en')
-const t = computed(() => languageTexts[currentLang.value])
+// 保存模板到localStorage
+const saveTemplates = () => {
+  localStorage.setItem('resumeTemplates', JSON.stringify(templates.value))
+}
+
+// 保存当前简历为模板
+const saveAsTemplate = async () => {
+  try {
+    const { value: templateName } = await ElMessageBox.prompt(
+      currentLang.value === 'en' ? 'Please enter template name' : '请输入模板名称',
+      currentLang.value === 'en' ? 'Save as Template' : '保存为模板',
+      {
+        confirmButtonText: currentLang.value === 'en' ? 'Save' : '保存',
+        cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消',
+      }
+    )
+    
+    if (templateName) {
+      const newTemplate: SavedTemplate = {
+        id: Date.now().toString(),
+        name: templateName,
+        data: JSON.parse(JSON.stringify(resumeData)), // 深拷贝当前数据
+        createTime: Date.now()
+      }
+      
+      templates.value.push(newTemplate)
+      saveTemplates()
+      ElMessageBox.alert(
+        currentLang.value === 'en' ? 'Template saved successfully' : '模板保存成功',
+        currentLang.value === 'en' ? 'Success' : '成功',
+        { type: 'success' }
+      )
+    }
+  } catch (error) {
+    // 用户取消操作
+  }
+}
+
+// 加载模板
+const loadTemplate = (template: SavedTemplate) => {
+  ElMessageBox.confirm(
+    currentLang.value === 'en' 
+      ? 'This will overwrite current content. Continue?' 
+      : '这将覆盖当前内容，是否继续？',
+    currentLang.value === 'en' ? 'Warning' : '警告',
+    {
+      confirmButtonText: currentLang.value === 'en' ? 'Continue' : '继续',
+      cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    Object.assign(resumeData, JSON.parse(JSON.stringify(template.data))) // 深拷贝模板数据
+    showTemplateDialog.value = false
+    ElMessageBox.alert(
+      currentLang.value === 'en' ? 'Template loaded successfully' : '模板加载成功',
+      currentLang.value === 'en' ? 'Success' : '成功',
+      { type: 'success' }
+    )
+  }).catch(() => {
+    // 用户取消操作
+  })
+}
+
+// 删除模板
+const deleteTemplate = (template: SavedTemplate) => {
+  ElMessageBox.confirm(
+    currentLang.value === 'en' 
+      ? 'Are you sure to delete this template?' 
+      : '确定要删除这个模板吗？',
+    currentLang.value === 'en' ? 'Warning' : '警告',
+    {
+      confirmButtonText: currentLang.value === 'en' ? 'Delete' : '删除',
+      cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    const index = templates.value.findIndex(t => t.id === template.id)
+    if (index !== -1) {
+      templates.value.splice(index, 1)
+      saveTemplates()
+      ElMessageBox.alert(
+        currentLang.value === 'en' ? 'Template deleted successfully' : '模板删除成功',
+        currentLang.value === 'en' ? 'Success' : '成功',
+        { type: 'success' }
+      )
+    }
+  }).catch(() => {
+    // 用户取消操作
+  })
+}
+
+// 在组件挂载时加载模板
+onMounted(() => {
+  loadTemplates()
+})
 
 // 切换语言函数
 const toggleLanguage = () => {
@@ -479,5 +655,16 @@ h3 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.no-templates {
+  text-align: center;
+  padding: 2rem;
+  color: #909399;
 }
 </style> 
