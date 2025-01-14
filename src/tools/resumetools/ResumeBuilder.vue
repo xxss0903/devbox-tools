@@ -2,9 +2,6 @@
   <div class="resume-builder">
     <div class="resume-form">
       <div class="header">
-        <div class="header-left">
-          <h2>Resume Builder</h2>
-        </div>
         <div class="header-actions">
           <el-button type="primary" @click="showPreview">
             {{ currentLang === 'en' ? 'Preview' : '预览' }}
@@ -219,7 +216,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } fro
 import { ElMessageBox } from 'element-plus'
 import type { ResumeData, SavedTemplate } from '@/types/resume'
 import { languageTexts } from './resumeLan'
-import { seniorFrontendTemplate } from './resumeTemplateData'
+import { seniorFrontendTemplate, frontendDevTemplate } from './resumeTemplateData'
 
 // 组件状态
 const currentLang = ref<'en' | 'zh'>('en')
@@ -402,7 +399,8 @@ const generateWord = async () => {
             }),
             new Paragraph({
               text: resumeData.skills.join(', ')
-            })
+            }),
+            ...resumeData.customSections.map((section) => new Paragraph({ text: section.content }))
           ]
         }
       ]
@@ -441,32 +439,6 @@ const loadTemplates = () => {
   const savedTemplates = localStorage.getItem('resumeTemplates')
   if (savedTemplates) {
     templates.value = JSON.parse(savedTemplates)
-  }
-
-  // 检查是否已存在默认模板
-  const hasDefaultTemplate = templates.value.some((t) => t.id === seniorFrontendTemplate.id)
-  if (!hasDefaultTemplate) {
-    // 添加中文版本的模板
-    const zhTemplate: SavedTemplate = {
-      ...JSON.parse(JSON.stringify(seniorFrontendTemplate)),
-      id: 'senior-frontend-template-zh',
-      name: '资深前端工程师模板',
-      data: {
-        ...seniorFrontendTemplate.data,
-        fullName: '陈明',
-        title: '资深前端工程师',
-        email: 'chen.ming@example.com',
-        experience: seniorFrontendTemplate.data.experience.map((exp) => ({
-          ...exp,
-          position: exp.position
-            .replace('高级前端工程师 / 技术负责人', '高级前端工程师 / 技术负责人')
-            .replace('前端开发工程师', '前端开发工程师')
-        }))
-      }
-    }
-
-    templates.value.push(seniorFrontendTemplate, zhTemplate)
-    saveTemplates()
   }
 }
 
