@@ -399,7 +399,12 @@ const generatePDF = async () => {
       filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: {
+        mode: ['avoid-all', 'css', 'legacy'],
+        before: '.page-break',
+        avoid: ['.no-break', 'tr', 'td']
+      }
     }
 
     await html2pdf().set(opt).from(element).save()
