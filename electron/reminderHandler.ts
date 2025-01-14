@@ -7,6 +7,12 @@ let reminderWindow: BrowserWindow | null = null
 
 export function createReminderWindow(message: string) {
   console.log('createReminderWindow', message)
+  // 如果已经存在，则关闭
+  if (reminderWindow) {
+    reminderWindow.close()
+    reminderWindow = null
+  }
+
   reminderWindow = new BrowserWindow({
     width: 340,
     height: 380,

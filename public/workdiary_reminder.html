@@ -59,10 +59,14 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script>
-      document.addEventListener('DOMContentLoaded', (event) => {
+      document.addEventListener('DOMContentLoaded', async (event) => {
         const quill = new Quill('#editor', {
           theme: 'snow'
         })
+
+        // 获取当天的日志内容
+        const content = await window.electronAPI.getDiaryEntryByDate(moment().format('YYYY-MM-DD'))
+        quill.root.innerHTML = content
 
         window.saveWorkDiary = function () {
           const content = quill.root.innerHTML
