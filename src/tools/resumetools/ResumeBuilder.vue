@@ -135,10 +135,6 @@
       </div>
     </div>
 
-    <div class="resume-preview">
-      <resume-template :data="resumeData" :lang="currentLang"></resume-template>
-    </div>
-
     <!-- 模板管理对话框 -->
     <el-dialog v-model="showTemplateDialog" :title="t.manageTemplates" width="60%">
       <el-table v-if="templates.length > 0" :data="templates" style="width: 100%">
@@ -389,15 +385,23 @@ const removeEducation = (index: number) => {
 
 const generatePDF = async () => {
   const element = document.querySelector('.resume-template')
-  const opt = {
-    margin: 0,
-    filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }
+  if (!element) return
+
+  // 保存原始 padding
+  const originalPadding = element.style.padding
 
   try {
+    // 临时设置 padding 为 0
+    element.style.padding = '0'
+
+    const opt = {
+      margin: 10,
+      filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }
+
     await html2pdf().set(opt).from(element).save()
   } catch (error) {
     console.error('Error generating PDF:', error)
@@ -406,6 +410,9 @@ const generatePDF = async () => {
       currentLang.value === 'en' ? 'Error' : '错误',
       { type: 'error' }
     )
+  } finally {
+    // 恢复原始 padding
+    element.style.padding = originalPadding
   }
 }
 
@@ -765,6 +772,14 @@ const generateImage = async () => {
 // 在组件挂载时加载模板
 onMounted(() => {
   loadTemplates()
+  // 默认加载第一个模板
+  if (templates.value.length > 0) {
+    const defaultTemplate = templates.value[0]
+    Object.assign(resumeData, JSON.parse(JSON.stringify(defaultTemplate.data)))
+  } else {
+    // 如果没有模板，直接加载默认的高级前端工程师模板
+    Object.assign(resumeData, JSON.parse(JSON.stringify(seniorFrontendTemplate.data)))
+  }
 })
 
 // 切换语言函数
@@ -940,23 +955,11 @@ const showPreview = () => {
 .preview-container {
   padding: 0;
   width: 210mm;
-  min-height: 297mm;
-  margin: 2rem auto;
+  height: 297mm;
+  margin: 0 auto;
   background: white;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   position: relative;
-}
-
-.preview-container :deep(.resume-content) {
-  width: 210mm;
-  min-height: 297mm;
-  padding: 20mm;
-  background: white;
-  box-sizing: border-box;
-  position: relative;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  page-break-after: always;
 }
 
 .preview-container :deep(.resume-content:last-child) {

@@ -113,9 +113,7 @@ const t = computed(() => languageTexts[props.lang])
 
 <style scoped>
 .resume-template {
-  padding: 2rem;
-  width: 794px;
-  height: 1123px;
+  padding: 10mm;
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   font-family: 'Arial', sans-serif;
