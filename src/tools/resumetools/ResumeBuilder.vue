@@ -2,8 +2,19 @@
   <div class="resume-builder">
     <div class="resume-form">
       <div class="header">
-        <h2>Resume Builder</h2>
-        <div class="header-buttons">
+        <div class="header-left">
+          <h2>Resume Builder</h2>
+        </div>
+        <div class="header-actions">
+          <el-button type="primary" @click="showPreview">
+            {{ currentLang === 'en' ? 'Preview' : '预览' }}
+          </el-button>
+          <el-button type="primary" @click="generatePDF">{{ t.generatePDF }}</el-button>
+          <el-button type="primary" @click="generateWord">{{ t.generateWord }}</el-button>
+          <el-button type="primary" @click="generateImage">{{ t.generateImage }}</el-button>
+          <el-button type="success" @click="saveAsTemplate">{{ t.saveAsTemplate }}</el-button>
+          <el-button @click="resetForm">{{ t.reset }}</el-button>
+          <el-divider direction="vertical" />
           <el-button @click="toggleLanguage">
             {{ currentLang === 'en' ? '切换到中文' : 'Switch to English' }}
           </el-button>
@@ -17,16 +28,32 @@
         <h3>{{ t.personalInfo }}</h3>
         <el-form :model="resumeData" label-width="120px">
           <el-form-item :label="t.fullName">
-            <el-input v-model="resumeData.fullName" :placeholder="currentLang === 'en' ? 'e.g. John Doe' : '例如：张三'"></el-input>
+            <el-input
+              v-model="resumeData.fullName"
+              :placeholder="currentLang === 'en' ? 'e.g. John Doe' : '例如：张三'"
+            ></el-input>
           </el-form-item>
           <el-form-item :label="t.title">
-            <el-input v-model="resumeData.title" :placeholder="currentLang === 'en' ? 'e.g. Software Engineer' : '例如：软件工程师'"></el-input>
+            <el-input
+              v-model="resumeData.title"
+              :placeholder="currentLang === 'en' ? 'e.g. Software Engineer' : '例如：软件工程师'"
+            ></el-input>
           </el-form-item>
           <el-form-item :label="t.email">
-            <el-input v-model="resumeData.email" :placeholder="currentLang === 'en' ? 'e.g. john@example.com' : '例如：zhangsan@example.com'"></el-input>
+            <el-input
+              v-model="resumeData.email"
+              :placeholder="
+                currentLang === 'en' ? 'e.g. john@example.com' : '例如：zhangsan@example.com'
+              "
+            ></el-input>
           </el-form-item>
           <el-form-item :label="t.phone">
-            <el-input v-model="resumeData.phone" :placeholder="currentLang === 'en' ? 'e.g. +1 234 567 8900' : '例如：+86 123 4567 8900'"></el-input>
+            <el-input
+              v-model="resumeData.phone"
+              :placeholder="
+                currentLang === 'en' ? 'e.g. +1 234 567 8900' : '例如：+86 123 4567 8900'
+              "
+            ></el-input>
           </el-form-item>
         </el-form>
       </div>
@@ -39,7 +66,9 @@
               type="textarea"
               v-model="resumeData.summary"
               :rows="4"
-              :placeholder="currentLang === 'en' ? 'Brief professional summary...' : '简短的专业总结...'"
+              :placeholder="
+                currentLang === 'en' ? 'Brief professional summary...' : '简短的专业总结...'
+              "
             ></el-input>
           </el-form-item>
         </el-form>
@@ -59,11 +88,7 @@
               <el-input v-model="exp.duration"></el-input>
             </el-form-item>
             <el-form-item :label="t.description">
-              <el-input
-                type="textarea"
-                v-model="exp.description"
-                :rows="3"
-              ></el-input>
+              <el-input type="textarea" v-model="exp.description" :rows="3"></el-input>
             </el-form-item>
           </el-form>
           <el-button type="danger" @click="removeExperience(index)">{{ t.remove }}</el-button>
@@ -102,25 +127,11 @@
               default-first-option
               :placeholder="currentLang === 'en' ? 'Add skills' : '添加技能'"
             >
-              <el-option
-                v-for="skill in skillOptions"
-                :key="skill"
-                :label="skill"
-                :value="skill"
-              >
+              <el-option v-for="skill in skillOptions" :key="skill" :label="skill" :value="skill">
               </el-option>
             </el-select>
           </el-form-item>
         </el-form>
-      </div>
-
-      <div class="actions">
-        <el-button type="primary" @click="showPreview">{{ currentLang === 'en' ? 'Preview' : '预览' }}</el-button>
-        <el-button type="primary" @click="generatePDF">{{ t.generatePDF }}</el-button>
-        <el-button type="primary" @click="generateWord">{{ t.generateWord }}</el-button>
-        <el-button type="primary" @click="generateImage">{{ t.generateImage }}</el-button>
-        <el-button type="success" @click="saveAsTemplate">{{ t.saveAsTemplate }}</el-button>
-        <el-button @click="resetForm">{{ t.reset }}</el-button>
       </div>
     </div>
 
@@ -129,11 +140,7 @@
     </div>
 
     <!-- 模板管理对话框 -->
-    <el-dialog
-      v-model="showTemplateDialog"
-      :title="t.manageTemplates"
-      width="60%"
-    >
+    <el-dialog v-model="showTemplateDialog" :title="t.manageTemplates" width="60%">
       <el-table v-if="templates.length > 0" :data="templates" style="width: 100%">
         <el-table-column :label="t.templateName" prop="name" />
         <el-table-column :label="t.createTime" width="200">
@@ -176,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import ResumeTemplate from './ResumeTemplate.vue'
 import html2pdf from 'html2pdf.js'
 import html2canvas from 'html2canvas'
@@ -341,7 +348,7 @@ const skillOptions = [
   'Java',
   'SQL',
   'Git',
-  'Agile',
+  'Agile'
 ]
 
 const resumeData = reactive<ResumeData>({
@@ -352,7 +359,7 @@ const resumeData = reactive<ResumeData>({
   summary: '',
   experience: [],
   education: [],
-  skills: [],
+  skills: []
 })
 
 const addExperience = () => {
@@ -360,7 +367,7 @@ const addExperience = () => {
     company: '',
     position: '',
     duration: '',
-    description: '',
+    description: ''
   })
 }
 
@@ -372,7 +379,7 @@ const addEducation = () => {
   resumeData.education.push({
     school: '',
     degree: '',
-    year: '',
+    year: ''
   })
 }
 
@@ -381,19 +388,24 @@ const removeEducation = (index: number) => {
 }
 
 const generatePDF = async () => {
-  const element = document.querySelector('.resume-preview')
+  const element = document.querySelector('.resume-template')
   const opt = {
-    margin: 1,
+    margin: 0,
     filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }
 
   try {
     await html2pdf().set(opt).from(element).save()
   } catch (error) {
     console.error('Error generating PDF:', error)
+    ElMessageBox.alert(
+      currentLang.value === 'en' ? 'Failed to generate PDF' : '生成PDF失败',
+      currentLang.value === 'en' ? 'Error' : '错误',
+      { type: 'error' }
+    )
   }
 }
 
@@ -401,87 +413,92 @@ const generateWord = async () => {
   try {
     // 创建文档
     const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          // 个人信息
-          new Paragraph({
-            text: resumeData.fullName,
-            heading: HeadingLevel.HEADING_1,
-            alignment: AlignmentType.CENTER,
-          }),
-          new Paragraph({
-            text: resumeData.title,
-            alignment: AlignmentType.CENTER,
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: '📧 ' + resumeData.email }),
-              new TextRun({ text: '\n📱 ' + resumeData.phone }),
-            ],
-            alignment: AlignmentType.CENTER,
-          }),
-
-          // 专业总结
-          new Paragraph({
-            text: t.value.professionalSummary,
-            heading: HeadingLevel.HEADING_2,
-            spacing: { before: 400 },
-          }),
-          new Paragraph({
-            text: resumeData.summary,
-          }),
-
-          // 工作经验
-          new Paragraph({
-            text: t.value.workExperience,
-            heading: HeadingLevel.HEADING_2,
-            spacing: { before: 400 },
-          }),
-          ...resumeData.experience.map(exp => [
+      sections: [
+        {
+          properties: {},
+          children: [
+            // 个人信息
+            new Paragraph({
+              text: resumeData.fullName,
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER
+            }),
+            new Paragraph({
+              text: resumeData.title,
+              alignment: AlignmentType.CENTER
+            }),
             new Paragraph({
               children: [
-                new TextRun({ text: exp.position, bold: true }),
-                new TextRun({ text: currentLang.value === 'en' ? ' at ' : ' @ ' }),
-                new TextRun({ text: exp.company, bold: true }),
-                new TextRun({ text: ' | ' + exp.duration }),
+                new TextRun({ text: '📧 ' + resumeData.email }),
+                new TextRun({ text: '\n📱 ' + resumeData.phone })
               ],
-              spacing: { before: 200 },
+              alignment: AlignmentType.CENTER
+            }),
+
+            // 专业总结
+            new Paragraph({
+              text: t.value.professionalSummary,
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400 }
             }),
             new Paragraph({
-              text: exp.description,
+              text: resumeData.summary
             }),
-          ]).flat(),
 
-          // 教育经历
-          new Paragraph({
-            text: t.value.education,
-            heading: HeadingLevel.HEADING_2,
-            spacing: { before: 400 },
-          }),
-          ...resumeData.education.map(edu => 
+            // 工作经验
             new Paragraph({
-              children: [
-                new TextRun({ text: edu.school, bold: true }),
-                new TextRun({ text: ' | ' }),
-                new TextRun({ text: edu.degree }),
-                new TextRun({ text: ' | ' + edu.year }),
-              ],
-              spacing: { before: 200 },
+              text: t.value.workExperience,
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400 }
             }),
-          ),
+            ...resumeData.experience
+              .map((exp) => [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: exp.position, bold: true }),
+                    new TextRun({ text: currentLang.value === 'en' ? ' at ' : ' @ ' }),
+                    new TextRun({ text: exp.company, bold: true }),
+                    new TextRun({ text: ' | ' + exp.duration })
+                  ],
+                  spacing: { before: 200 }
+                }),
+                new Paragraph({
+                  text: exp.description
+                })
+              ])
+              .flat(),
 
-          // 技能
-          new Paragraph({
-            text: t.value.skills,
-            heading: HeadingLevel.HEADING_2,
-            spacing: { before: 400 },
-          }),
-          new Paragraph({
-            text: resumeData.skills.join(', '),
-          }),
-        ],
-      }],
+            // 教育经历
+            new Paragraph({
+              text: t.value.education,
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400 }
+            }),
+            ...resumeData.education.map(
+              (edu) =>
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: edu.school, bold: true }),
+                    new TextRun({ text: ' | ' }),
+                    new TextRun({ text: edu.degree }),
+                    new TextRun({ text: ' | ' + edu.year })
+                  ],
+                  spacing: { before: 200 }
+                })
+            ),
+
+            // 技能
+            new Paragraph({
+              text: t.value.skills,
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400 }
+            }),
+            new Paragraph({
+              text: resumeData.skills.join(', ')
+            })
+          ]
+        }
+      ]
     })
 
     // 生成文档
@@ -508,7 +525,7 @@ const resetForm = () => {
     summary: '',
     experience: [],
     education: [],
-    skills: [],
+    skills: []
   })
 }
 
@@ -586,9 +603,9 @@ const loadTemplates = () => {
   if (savedTemplates) {
     templates.value = JSON.parse(savedTemplates)
   }
-  
+
   // 检查是否已存在默认模板
-  const hasDefaultTemplate = templates.value.some(t => t.id === seniorFrontendTemplate.id)
+  const hasDefaultTemplate = templates.value.some((t) => t.id === seniorFrontendTemplate.id)
   if (!hasDefaultTemplate) {
     // 添加中文版本的模板
     const zhTemplate: SavedTemplate = {
@@ -600,7 +617,7 @@ const loadTemplates = () => {
         fullName: '陈明',
         title: '资深前端工程师',
         email: 'chen.ming@example.com',
-        experience: seniorFrontendTemplate.data.experience.map(exp => ({
+        experience: seniorFrontendTemplate.data.experience.map((exp) => ({
           ...exp,
           position: exp.position
             .replace('高级前端工程师 / 技术负责人', '高级前端工程师 / 技术负责人')
@@ -608,7 +625,7 @@ const loadTemplates = () => {
         }))
       }
     }
-    
+
     templates.value.push(seniorFrontendTemplate, zhTemplate)
     saveTemplates()
   }
@@ -627,10 +644,10 @@ const saveAsTemplate = async () => {
       currentLang.value === 'en' ? 'Save as Template' : '保存为模板',
       {
         confirmButtonText: currentLang.value === 'en' ? 'Save' : '保存',
-        cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消',
+        cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消'
       }
     )
-    
+
     if (templateName) {
       const newTemplate: SavedTemplate = {
         id: Date.now().toString(),
@@ -638,7 +655,7 @@ const saveAsTemplate = async () => {
         data: JSON.parse(JSON.stringify(resumeData)), // 深拷贝当前数据
         createTime: Date.now()
       }
-      
+
       templates.value.push(newTemplate)
       saveTemplates()
       ElMessageBox.alert(
@@ -655,64 +672,70 @@ const saveAsTemplate = async () => {
 // 加载模板
 const loadTemplate = (template: SavedTemplate) => {
   ElMessageBox.confirm(
-    currentLang.value === 'en' 
-      ? 'This will overwrite current content. Continue?' 
+    currentLang.value === 'en'
+      ? 'This will overwrite current content. Continue?'
       : '这将覆盖当前内容，是否继续？',
     currentLang.value === 'en' ? 'Warning' : '警告',
     {
       confirmButtonText: currentLang.value === 'en' ? 'Continue' : '继续',
       cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消',
-      type: 'warning',
+      type: 'warning'
     }
-  ).then(() => {
-    Object.assign(resumeData, JSON.parse(JSON.stringify(template.data))) // 深拷贝模板数据
-    showTemplateDialog.value = false
-    ElMessageBox.alert(
-      currentLang.value === 'en' ? 'Template loaded successfully' : '模板加载成功',
-      currentLang.value === 'en' ? 'Success' : '成功',
-      { type: 'success' }
-    )
-  }).catch(() => {
-    // 用户取消操作
-  })
+  )
+    .then(() => {
+      Object.assign(resumeData, JSON.parse(JSON.stringify(template.data))) // 深拷贝模板数据
+      showTemplateDialog.value = false
+    })
+    .catch(() => {
+      // 用户取消操作
+    })
 }
 
 // 删除模板
 const deleteTemplate = (template: SavedTemplate) => {
   ElMessageBox.confirm(
-    currentLang.value === 'en' 
-      ? 'Are you sure to delete this template?' 
-      : '确定要删除这个模板吗？',
+    currentLang.value === 'en' ? 'Are you sure to delete this template?' : '确定要删除这个模板吗？',
     currentLang.value === 'en' ? 'Warning' : '警告',
     {
       confirmButtonText: currentLang.value === 'en' ? 'Delete' : '删除',
       cancelButtonText: currentLang.value === 'en' ? 'Cancel' : '取消',
-      type: 'warning',
+      type: 'warning'
     }
-  ).then(() => {
-    const index = templates.value.findIndex(t => t.id === template.id)
-    if (index !== -1) {
-      templates.value.splice(index, 1)
-      saveTemplates()
-      ElMessageBox.alert(
-        currentLang.value === 'en' ? 'Template deleted successfully' : '模板删除成功',
-        currentLang.value === 'en' ? 'Success' : '成功',
-        { type: 'success' }
-      )
-    }
-  }).catch(() => {
-    // 用户取消操作
-  })
+  )
+    .then(() => {
+      const index = templates.value.findIndex((t) => t.id === template.id)
+      if (index !== -1) {
+        templates.value.splice(index, 1)
+        saveTemplates()
+        ElMessageBox.alert(
+          currentLang.value === 'en' ? 'Template deleted successfully' : '模板删除成功',
+          currentLang.value === 'en' ? 'Success' : '成功',
+          { type: 'success' }
+        )
+      }
+    })
+    .catch(() => {
+      // 用户取消操作
+    })
 }
 
-// 添加生成图片的函数
+// 修改 generateImage 函数
 const generateImage = async () => {
   try {
-    const element = document.querySelector('.resume-preview')
-    if (!element) return
+    // 先打开预览对话框
+    showPreviewDialog.value = true
+
+    // 等待预览对话框内容渲染完成
+    await nextTick()
+
+    // 获取预览对话框中的简历内容
+    const element = document.querySelector('.preview-container')
+    if (!element) {
+      throw new Error('预览内容未找到')
+    }
 
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 1, // 不需要放大，因为预览已经是合适大小
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff'
@@ -726,8 +749,11 @@ const generateImage = async () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+
+    // 下载完成后关闭预览
+    showPreviewDialog.value = false
   } catch (error) {
-    console.error('Error generating image:', error)
+    console.error('生成图片时出错:', error)
     ElMessageBox.alert(
       currentLang.value === 'en' ? 'Failed to generate image' : '生成图片失败',
       currentLang.value === 'en' ? 'Error' : '错误',
@@ -764,6 +790,12 @@ const showPreview = () => {
 .resume-form {
   width: 600px;
   flex-shrink: 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  height: calc(100vh - 4rem);
+  overflow-y: auto;
 }
 
 .resume-preview {
@@ -781,11 +813,9 @@ const showPreview = () => {
 }
 
 .resume-preview :deep(.resume-content) {
-  transform: scale(0.45);
   transform-origin: top center;
   width: 794px;
   height: 1123px;
-  padding: 75px;
   background: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
@@ -845,30 +875,33 @@ const showPreview = () => {
   border-radius: 4px;
 }
 
-.actions {
-  margin-top: 2rem;
-  display: flex;
-  gap: 1rem;
-}
-
-h2 {
-  margin-bottom: 2rem;
-}
-
-h3 {
-  margin-bottom: 1rem;
-}
-
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  padding: 1rem;
+  margin: -1rem -1rem 1rem -1rem;
+  border-bottom: 1px solid #eee;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.header-buttons {
+.header-left {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+}
+
+.header-left h2 {
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .no-templates {
@@ -905,47 +938,42 @@ h3 {
 }
 
 .preview-container {
-  padding: 2rem;
-  width: 794px;
-  height: 1123px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  padding: 0;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 2rem auto;
   background: white;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   position: relative;
 }
 
 .preview-container :deep(.resume-content) {
-  width: 794px;
-  height: 1123px;
-  padding: 75px;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
   background: white;
   box-sizing: border-box;
-  position: absolute;
-  top: 0;
-  left: 0;
-  overflow: hidden;
+  position: relative;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  page-break-after: always;
+}
+
+.preview-container :deep(.resume-content:last-child) {
+  margin-bottom: 0;
+  page-break-after: avoid;
 }
 
 @media print {
   .preview-container {
-    padding: 0;
-    width: 794px;
-    height: 1123px;
     margin: 0;
+    padding: 0;
     box-shadow: none;
   }
 
   .preview-container :deep(.resume-content) {
     margin: 0;
     box-shadow: none;
-    page-break-after: always;
-  }
-
-  .preview-container :deep(.resume-content):last-child {
-    page-break-after: avoid;
   }
 }
 
@@ -953,23 +981,4 @@ h3 {
   size: A4;
   margin: 0;
 }
-
-@media screen {
-  .preview-container :deep(.resume-content):not(:last-child) {
-    margin-bottom: 2rem;
-  }
-}
-
-@media print {
-  .preview-container :deep(.resume-content) {
-    box-shadow: none;
-    margin: 0;
-    padding: 20mm;
-    page-break-after: always;
-  }
-  
-  .preview-container :deep(.resume-content):last-child {
-    page-break-after: avoid;
-  }
-}
-</style> 
+</style>
