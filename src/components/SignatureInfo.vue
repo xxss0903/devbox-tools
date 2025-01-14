@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, onMounted } from 'vue'
 import ToolsContainer from '../widgets/ToolsContainer.vue'
 import { useRouter } from 'vue-router'
 
@@ -202,6 +202,7 @@ const getJksInfo = async () => {
     }
     if (storePass.value) {
       command += ` -storepass ${storePass.value}`
+      await savePassword()
     }
     
     await window.electronAPI.executeADB('chcp 65001')
@@ -245,6 +246,34 @@ const goBack = () => {
   router.push({ name: 'AndroidTools' })
 }
 
+// 加载保存的密码
+const loadSavedPassword = async () => {
+  try {
+    const savedPassword = await window.electronAPI.getJksPassword()
+    if (savedPassword) {
+      storePass.value = savedPassword
+    }
+  } catch (error) {
+    console.error('加载保存的密码失败:', error)
+  }
+}
+
+// 保存密码
+const savePassword = async () => {
+  try {
+    if (storePass.value) {
+      await window.electronAPI.saveJksPassword(storePass.value)
+    }
+  } catch (error) {
+    console.error('保存密码失败:', error)
+  }
+}
+
+// 组件挂载时加载保存的密码
+onMounted(() => {
+  loadSavedPassword()
+})
+
 // 组件卸载时清理定时器
 onUnmounted(() => {
   if (copyTipTimer.value) {
@@ -254,7 +283,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div title="签名信息" @goBack="goBack">
+  <ToolsContainer title="签名信息" @goBack="goBack">
     <div class="signature-info-container">
       <div class="button-container">
         <button @click="getSignatureInfo">获取签名信息</button>
@@ -294,7 +323,9 @@ onUnmounted(() => {
                     v-model="storePass"
                     type="password"
                     placeholder="输入密码"
+                    autocomplete="off"
                   >
+                  <p class="password-hint" v-if="storePass">密码将在成功使用后自动保存</p>
                 </div>
               </div>
               
@@ -369,12 +400,11 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-  </div>
-
   <!-- 添加复制成功提示 -->
   <div v-if="showCopyTip" class="copy-tip">
     复制成功
   </div>
+  </ToolsContainer>
 </template>
 
 <style scoped>
@@ -382,6 +412,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 80%;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 20px;
 }
 
 .button-container {
@@ -394,16 +427,18 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  width: 100%;
 }
 
 .content-container {
   flex: 1;
   padding: 20px;
+  width: 100%;
   .content-layout {
     display: flex;
     gap: 20px;
     align-items: flex-start;
-    width: 90%;
+    width: 100%;
   }
 }
 
@@ -472,6 +507,7 @@ button:hover {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-left: 0;
 }
 
 .jks-section.dragging {
@@ -586,7 +622,8 @@ button:hover {
 
 .results-section {
   flex: 1;
-  min-width: 0; /* 防止flex子项溢出 */
+  min-width: 0;
+  width: 100%;
 }
 
 .results-section .info-display:first-child {
@@ -712,5 +749,12 @@ button:hover {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.8);
   }
+}
+
+.password-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
 }
 </style>

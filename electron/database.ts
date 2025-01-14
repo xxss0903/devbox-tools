@@ -51,7 +51,7 @@ async function initializeTables() {
   `)
 
   /*
-   * 创建剪切板历史表, 用于��储剪切板历史，
+   * 创建剪切板历史表, 用于存储剪切板历史，
    * id为1，
    * 类型存储在type字段，
    * 内容存储在content字段，
@@ -116,6 +116,29 @@ async function initializeTables() {
     `)
     console.log('Inserted default values into screen_block_settings')
   }
+
+  // 添加 key_value 表创建
+  await db?.exec(`
+    CREATE TABLE IF NOT EXISTS key_value (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `)
+}
+
+// 添加 key_value 表的操作函数
+async function saveKeyValue(key: string, value: string) {
+  const db = await getDatabase()
+  await db.run(
+    'INSERT OR REPLACE INTO key_value (key, value) VALUES (?, ?)',
+    [key, value]
+  )
+}
+
+async function getKeyValue(key: string) {
+  const db = await getDatabase()
+  const result = await db.get('SELECT value FROM key_value WHERE key = ?', [key])
+  return result ? result.value : ''
 }
 
 // 添加数据库操作函数
@@ -241,5 +264,7 @@ export {
   getAlarm,
   updateNextBlockTime,
   updateScreenBlockerIsActive,
-  saveAlarmLatest
+  saveAlarmLatest,
+  saveKeyValue,
+  getKeyValue
 }

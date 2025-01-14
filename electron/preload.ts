@@ -126,6 +126,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   npmRegistryGet: () => ipcRenderer.invoke('npm-registry-get'),
   npmRegistrySet: (registry: string) => ipcRenderer.invoke('npm-registry-set', registry),
   openFileDialog: (options: any) => ipcRenderer.invoke('dialog:openFile', options),
+  saveJksPassword: (password: string) => ipcRenderer.invoke('save-jks-password', password),
+  getJksPassword: () => ipcRenderer.invoke('get-jks-password'),
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

@@ -18,10 +18,8 @@ import { startScreenBlockerLoopByMinute } from './screenBlocker'
 import { autoLaunch } from './autoLaunch'
 import { Project } from './models/Project'
 import { promises as fs } from 'fs'
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { saveKeyValue, getKeyValue } from './database'
 
-const execAsync = promisify(exec)
 
 console.log('__dirname:', __dirname)
 console.log('Preload path:', path.join(__dirname, 'preload.js'))
@@ -530,4 +528,22 @@ ipcMain.handle('project:openInEditor', async (event, filePath) => {
 
 ipcMain.handle('dialog:openFile', async (event, options) => {
   return dialog.showOpenDialog(options)
+})
+
+ipcMain.handle('save-jks-password', async (_, password: string) => {
+  try {
+    await saveKeyValue('jksPassword', password)
+  } catch (error) {
+    console.error('保存密码失败:', error)
+    throw error
+  }
+})
+
+ipcMain.handle('get-jks-password', async () => {
+  try {
+    return await getKeyValue('jksPassword')
+  } catch (error) {
+    console.error('获取密码失败:', error)
+    return ''
+  }
 })
