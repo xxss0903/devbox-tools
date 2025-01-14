@@ -133,6 +133,38 @@
           </el-form-item>
         </el-form>
       </div>
+      <div class="form-section">
+        <h3>{{ t.customSections }}</h3>
+
+        <div
+          v-for="(section, index) in resumeData.customSections"
+          :key="section.id"
+          class="custom-section-item"
+        >
+          <el-form :model="section" label-width="120px">
+            <el-form-item :label="t.sectionTitle">
+              <el-input
+                v-model="section.title"
+                :placeholder="currentLang === 'en' ? 'Enter section title' : '输入模块标题'"
+              >
+              </el-input>
+            </el-form-item>
+
+            <el-form-item :label="t.sectionContent">
+              <el-input
+                type="textarea"
+                v-model="section.content"
+                :rows="4"
+                :placeholder="currentLang === 'en' ? 'Enter section content' : '输入模块内容'"
+              >
+              </el-input>
+            </el-form-item>
+          </el-form>
+
+          <el-button type="danger" @click="removeCustomSection(index)">{{ t.remove }}</el-button>
+        </div>
+        <el-button type="primary" @click="addCustomSection">{{ t.addCustomSection }}</el-button>
+      </div>
     </div>
 
     <!-- 模板管理对话框 -->
@@ -247,7 +279,7 @@ const removeEducation = (index: number) => {
 }
 
 const generatePDF = async () => {
-  const element = document.querySelector('.resume-template')
+  const element = document.querySelector('.resume-template') as HTMLDivElement
   if (!element) return
 
   // 保存原始 padding
@@ -536,7 +568,7 @@ const generateImage = async () => {
     await nextTick()
 
     // 获取预览对话框中的简历内容
-    const element = document.querySelector('.preview-container')
+    const element = document.querySelector('.preview-container') as HTMLDivElement
     if (!element) {
       throw new Error('预览内容未找到')
     }
@@ -589,6 +621,22 @@ const toggleLanguage = () => {
 
 const showPreview = () => {
   showPreviewDialog.value = true
+}
+
+// 添加自定义模块的方法
+const addCustomSection = () => {
+  resumeData.customSections.push({
+    id: Date.now().toString(),
+
+    title: '',
+
+    content: ''
+  })
+}
+
+// 删除自定义模块的方法
+const removeCustomSection = (index: number) => {
+  resumeData.customSections.splice(index, 1)
 }
 </script>
 
@@ -780,5 +828,12 @@ const showPreview = () => {
 @page {
   size: A4;
   margin: 0;
+}
+
+.custom-section-item {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 4px;
 }
 </style>

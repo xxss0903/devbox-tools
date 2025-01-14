@@ -34,7 +34,11 @@ export const languageTexts: Record<'en' | 'zh', LanguageText> = {
     load: 'Load',
     delete: 'Delete',
     noTemplates: 'No templates yet',
-    generateImage: 'Save as Image'
+    generateImage: 'Save as Image',
+    customSections: 'Custom Sections',
+    addCustomSection: 'Add Custom Section',
+    sectionTitle: 'Section Title',
+    sectionContent: 'Section Content'
   },
   zh: {
     personalInfo: '个人信息',
@@ -68,6 +72,10 @@ export const languageTexts: Record<'en' | 'zh', LanguageText> = {
     load: '加载',
     delete: '删除',
     noTemplates: '暂无模板',
-    generateImage: '保存为图片'
+    generateImage: '保存为图片',
+    customSections: '自定义模块',
+    addCustomSection: '添加自定义模块',
+    sectionTitle: '模块标题',
+    sectionContent: '模块内容'
   }
 }

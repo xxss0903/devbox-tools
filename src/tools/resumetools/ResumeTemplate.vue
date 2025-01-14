@@ -51,6 +51,13 @@
         </span>
       </div>
     </div>
+    <div class="section" v-if="data.customSections && data.customSections.length">
+      <h3>{{ t.customSections }}</h3>
+      <div class="custom-section-item" v-for="(section, index) in data.customSections" :key="index">
+        <h4>{{ section.title }}</h4>
+        <p>{{ section.content }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -79,6 +86,7 @@ interface ResumeData {
   experience: Experience[]
   education: Education[]
   skills: string[]
+  customSections: CustomSection[]
 }
 
 interface LanguageText {
@@ -86,6 +94,15 @@ interface LanguageText {
   workExperience: string
   education: string
   skills: string
+  customSections: string
+  addCustomSection: string
+  sectionTitle: string
+  sectionContent: string
+}
+
+interface CustomSection {
+  title: string
+  content: string
 }
 
 const languageTexts: Record<'en' | 'zh', LanguageText> = {
@@ -93,13 +110,21 @@ const languageTexts: Record<'en' | 'zh', LanguageText> = {
     professionalSummary: 'Professional Summary',
     workExperience: 'Work Experience',
     education: 'Education',
-    skills: 'Skills'
+    skills: 'Skills',
+    customSections: 'Custom Sections',
+    addCustomSection: 'Add Custom Section',
+    sectionTitle: 'Section Title',
+    sectionContent: 'Section Content'
   },
   zh: {
     professionalSummary: '专业总结',
     workExperience: '工作经验',
     education: '教育经历',
-    skills: '技能'
+    skills: '技能',
+    customSections: '自定义模块',
+    addCustomSection: '添加自定义模块',
+    sectionTitle: '模块标题',
+    sectionContent: '模块内容'
   }
 }
 
