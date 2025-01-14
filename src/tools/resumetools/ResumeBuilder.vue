@@ -115,8 +115,10 @@
       </div>
 
       <div class="actions">
+        <el-button type="primary" @click="showPreview">{{ currentLang === 'en' ? 'Preview' : '预览' }}</el-button>
         <el-button type="primary" @click="generatePDF">{{ t.generatePDF }}</el-button>
         <el-button type="primary" @click="generateWord">{{ t.generateWord }}</el-button>
+        <el-button type="primary" @click="generateImage">{{ t.generateImage }}</el-button>
         <el-button type="success" @click="saveAsTemplate">{{ t.saveAsTemplate }}</el-button>
         <el-button @click="resetForm">{{ t.reset }}</el-button>
       </div>
@@ -154,6 +156,22 @@
         {{ t.noTemplates }}
       </div>
     </el-dialog>
+
+    <!-- 添加预览弹窗 -->
+    <el-dialog
+      v-model="showPreviewDialog"
+      :title="currentLang === 'en' ? 'Resume Preview' : '简历预览'"
+      width="90%"
+      :fullscreen="true"
+      :show-close="true"
+      :close-on-click-modal="false"
+      :close-on-press-escape="true"
+      class="preview-dialog"
+    >
+      <div class="preview-container">
+        <resume-template :data="resumeData" :lang="currentLang"></resume-template>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -161,6 +179,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import ResumeTemplate from './ResumeTemplate.vue'
 import html2pdf from 'html2pdf.js'
+import html2canvas from 'html2canvas'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
 import { ElMessageBox } from 'element-plus'
 
@@ -230,6 +249,7 @@ interface LanguageText {
   load: string
   delete: string
   noTemplates: string
+  generateImage: string
 }
 
 // 语言文本定义
@@ -265,7 +285,8 @@ const languageTexts: Record<'en' | 'zh', LanguageText> = {
     actions: 'Actions',
     load: 'Load',
     delete: 'Delete',
-    noTemplates: 'No templates yet'
+    noTemplates: 'No templates yet',
+    generateImage: 'Save as Image'
   },
   zh: {
     personalInfo: '个人信息',
@@ -298,7 +319,8 @@ const languageTexts: Record<'en' | 'zh', LanguageText> = {
     actions: '操作',
     load: '加载',
     delete: '删除',
-    noTemplates: '暂无模板'
+    noTemplates: '暂无模板',
+    generateImage: '保存为图片'
   }
 }
 
@@ -307,6 +329,7 @@ const currentLang = ref<'en' | 'zh'>('en')
 const t = computed(() => languageTexts[currentLang.value])
 const templates = ref<SavedTemplate[]>([])
 const showTemplateDialog = ref(false)
+const showPreviewDialog = ref(false)
 
 const skillOptions = [
   'JavaScript',
@@ -682,6 +705,37 @@ const deleteTemplate = (template: SavedTemplate) => {
   })
 }
 
+// 添加生成图片的函数
+const generateImage = async () => {
+  try {
+    const element = document.querySelector('.resume-preview')
+    if (!element) return
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    })
+
+    // 将canvas转换为图片并下载
+    const url = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${resumeData.fullName.replace(/\s+/g, '_')}_resume${currentLang.value === 'zh' ? '_中文' : ''}.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Error generating image:', error)
+    ElMessageBox.alert(
+      currentLang.value === 'en' ? 'Failed to generate image' : '生成图片失败',
+      currentLang.value === 'en' ? 'Error' : '错误',
+      { type: 'error' }
+    )
+  }
+}
+
 // 在组件挂载时加载模板
 onMounted(() => {
   loadTemplates()
@@ -691,6 +745,10 @@ onMounted(() => {
 const toggleLanguage = () => {
   currentLang.value = currentLang.value === 'en' ? 'zh' : 'en'
 }
+
+const showPreview = () => {
+  showPreviewDialog.value = true
+}
 </script>
 
 <style scoped>
@@ -698,21 +756,78 @@ const toggleLanguage = () => {
   display: flex;
   gap: 2rem;
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
+  min-height: calc(100vh - 4rem);
 }
 
 .resume-form {
-  flex: 1;
-  max-width: 600px;
+  width: 600px;
+  flex-shrink: 0;
 }
 
 .resume-preview {
   flex: 1;
   position: sticky;
   top: 2rem;
-  max-height: calc(100vh - 4rem);
+  height: calc(100vh - 4rem);
   overflow-y: auto;
+  padding: 1rem;
+  background: #f0f2f5;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.resume-preview :deep(.resume-content) {
+  transform: scale(0.45);
+  transform-origin: top center;
+  width: 794px;
+  height: 1123px;
+  padding: 75px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 1600px) {
+  .resume-preview :deep(.resume-content) {
+    transform: scale(0.4);
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  .resume-preview :deep(.resume-content) {
+    transform: scale(0.35);
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .resume-builder {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .resume-form {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .resume-preview {
+    width: 100%;
+    position: relative;
+    top: 0;
+    margin-top: 2rem;
+    height: auto;
+    min-height: 297mm;
+  }
+
+  .resume-preview :deep(.resume-content) {
+    transform: scale(0.3);
+  }
 }
 
 .form-section {
@@ -760,5 +875,101 @@ h3 {
   text-align: center;
   padding: 2rem;
   color: #909399;
+}
+
+.preview-dialog {
+  :deep(.el-dialog__body) {
+    padding: 2rem;
+    height: calc(100vh - 100px);
+    overflow: auto;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  :deep(.el-dialog__header) {
+    padding: 12px 20px;
+    margin: 0;
+    border-bottom: 1px solid #dcdfe6;
+    background: white;
+  }
+
+  :deep(.el-dialog) {
+    margin: 0 !important;
+    height: 100vh;
+    max-width: 100vw;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.preview-container {
+  padding: 2rem;
+  width: 794px;
+  height: 1123px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.preview-container :deep(.resume-content) {
+  width: 794px;
+  height: 1123px;
+  padding: 75px;
+  background: white;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+@media print {
+  .preview-container {
+    padding: 0;
+    width: 794px;
+    height: 1123px;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .preview-container :deep(.resume-content) {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+
+  .preview-container :deep(.resume-content):last-child {
+    page-break-after: avoid;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media screen {
+  .preview-container :deep(.resume-content):not(:last-child) {
+    margin-bottom: 2rem;
+  }
+}
+
+@media print {
+  .preview-container :deep(.resume-content) {
+    box-shadow: none;
+    margin: 0;
+    padding: 20mm;
+    page-break-after: always;
+  }
+  
+  .preview-container :deep(.resume-content):last-child {
+    page-break-after: avoid;
+  }
 }
 </style> 
