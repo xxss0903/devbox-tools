@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import ImageTools from './tools/imagetools/ImageTools.vue'
 import ImageCompressor from './tools/imagetools/ImageCompressor.vue'
 import PngToIco from './tools/imagetools/PngToIco.vue'
@@ -29,6 +30,7 @@ import ChatAI from './tools/aitools/ChatAI.vue'
 import AIModelManager from './tools/aitools/AIModelManager.vue'
 import JsonFormatter from './tools/commontools/JsonFormatter.vue'
 import NpmRegistry from './tools/commontools/NpmRegistry.vue'
+import ResumeBuilder from './tools/resumetools/ResumeBuilder.vue'
 
 const routes = [
   {
@@ -285,16 +287,26 @@ const routes = [
     }
   },
   {
+    path: '/resume-builder',
+    name: 'ResumeBuilder',
+    component: ResumeBuilder,
+    meta: {
+      title: '简历生成器',
+      searchable: true,
+      keywords: ['resume', 'builder', '简历', '生成器']
+    }
+  },
+  {
     path: '/tools/project/:id',
     name: 'ProjectDetail',
     component: () => import('@/tools/projecttools/ProjectDetail.vue'),
-    props: (route) => ({
+    props: (route: RouteLocationNormalized) => ({
       id: route.params.id,
       title: route.query.title,
       from: route.query.from
     }),
     meta: {
-      title: (route) => `项目：${route.query.title || '详情'}`,
+      title: (route: RouteLocationNormalized) => `项目：${route.query.title || '详情'}`,
       icon: 'Folder',
       newTab: true
     }

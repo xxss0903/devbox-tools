@@ -111,6 +111,11 @@ export const defaultCommonTools =  [
     title: 'NPM镜像源',
     value: 'NpmRegistry',
     url: 'https://img.icons8.com/?size=100&id=gKR3Qk27h5Tc&format=png&color=000000'
+  },
+  {
+    title: '简历生成器',
+    value: 'ResumeBuilder',
+    url: 'https://img.icons8.com/?size=100&id=12313&format=png&color=000000'
   }
 ]
 

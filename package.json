@@ -26,6 +26,7 @@
     "electron-screenshots": "^0.5.27",
     "element-plus": "^2.x.x",
     "fabric": "^5.2.0",
+    "html2pdf.js": "^0.10.2",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "marked": "^14.1.3",
