@@ -16,12 +16,12 @@
     </div>
 
     <div class="section" v-if="data.summary">
-      <h3>Professional Summary</h3>
+      <h3>{{ t.professionalSummary }}</h3>
       <p>{{ data.summary }}</p>
     </div>
 
     <div class="section" v-if="data.experience && data.experience.length">
-      <h3>Work Experience</h3>
+      <h3>{{ t.workExperience }}</h3>
       <div class="experience-item" v-for="(exp, index) in data.experience" :key="index">
         <div class="experience-header">
           <h4>{{ exp.position }}</h4>
@@ -33,7 +33,7 @@
     </div>
 
     <div class="section" v-if="data.education && data.education.length">
-      <h3>Education</h3>
+      <h3>{{ t.education }}</h3>
       <div class="education-item" v-for="(edu, index) in data.education" :key="index">
         <h4>{{ edu.school }}</h4>
         <div class="education-details">
@@ -44,7 +44,7 @@
     </div>
 
     <div class="section" v-if="data.skills && data.skills.length">
-      <h3>Skills</h3>
+      <h3>{{ t.skills }}</h3>
       <div class="skills-container">
         <span class="skill-tag" v-for="skill in data.skills" :key="skill">
           {{ skill }}
@@ -55,6 +55,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface Experience {
   company: string
   position: string
@@ -79,9 +81,34 @@ interface ResumeData {
   skills: string[]
 }
 
-defineProps<{
+interface LanguageText {
+  professionalSummary: string
+  workExperience: string
+  education: string
+  skills: string
+}
+
+const languageTexts: Record<'en' | 'zh', LanguageText> = {
+  en: {
+    professionalSummary: 'Professional Summary',
+    workExperience: 'Work Experience',
+    education: 'Education',
+    skills: 'Skills'
+  },
+  zh: {
+    professionalSummary: '专业总结',
+    workExperience: '工作经验',
+    education: '教育经历',
+    skills: '技能'
+  }
+}
+
+const props = defineProps<{
   data: ResumeData
+  lang: 'en' | 'zh'
 }>()
+
+const t = computed(() => languageTexts[props.lang])
 </script>
 
 <style scoped>
