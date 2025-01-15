@@ -55,13 +55,19 @@
           <el-form-item :label="t.github">
             <el-input
               v-model="resumeData.github"
-              :placeholder="currentLang === 'en' ? 'e.g. github.com/johndoe' : '例如：github.com/zhangsan'"
+              :placeholder="
+                currentLang === 'en' ? 'e.g. github.com/johndoe' : '例如：github.com/zhangsan'
+              "
             ></el-input>
           </el-form-item>
           <el-form-item :label="t.linkedin">
             <el-input
               v-model="resumeData.linkedin"
-              :placeholder="currentLang === 'en' ? 'e.g. linkedin.com/in/johndoe' : '例如：linkedin.com/in/zhangsan'"
+              :placeholder="
+                currentLang === 'en'
+                  ? 'e.g. linkedin.com/in/johndoe'
+                  : '例如：linkedin.com/in/zhangsan'
+              "
             ></el-input>
           </el-form-item>
         </el-form>
@@ -307,19 +313,17 @@ const generatePDF = async () => {
       margin: 0,
       filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
+      html2canvas: {
         scale: 2,
         useCORS: true,
         logging: false
       },
-      jsPDF: { 
+      jsPDF: {
         unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait',
-        putOnlyUsedFonts: true,
-        compress: true
+        format: [210, 530],
+        orientation: 'portrait'
       },
-      pagebreak: { mode : ' avoid-all ' } 
+      pagebreak: { mode: ' avoid-all ' }
     }
 
     await html2pdf().set(opt).from(element).save()
