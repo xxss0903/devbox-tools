@@ -40,6 +40,10 @@ export interface LanguageText {
   delete: string
   noTemplates: string
   saveAsTemplate: string
+  translateToEnglish: string
+  translating: string
+  translationCompleted: string
+  translationFailed: string
 }
 
 export const languageTexts: Record<'en' | 'zh', LanguageText> = {
@@ -81,7 +85,11 @@ export const languageTexts: Record<'en' | 'zh', LanguageText> = {
     load: 'Load',
     delete: 'Delete',
     noTemplates: 'No templates yet',
-    saveAsTemplate: 'Save as Template'
+    saveAsTemplate: 'Save as Template',
+    translateToEnglish: 'Translate to English',
+    translating: 'Translating...',
+    translationCompleted: 'Translation completed',
+    translationFailed: 'Translation failed'
   },
   zh: {
     personalInfo: '个人信息',
@@ -121,6 +129,10 @@ export const languageTexts: Record<'en' | 'zh', LanguageText> = {
     load: '加载',
     delete: '删除',
     noTemplates: '暂无模板',
-    saveAsTemplate: '保存为模板'
+    saveAsTemplate: '保存为模板',
+    translateToEnglish: '翻译为英文',
+    translating: '正在翻译...',
+    translationCompleted: '翻译完成',
+    translationFailed: '翻译失败'
   }
 }

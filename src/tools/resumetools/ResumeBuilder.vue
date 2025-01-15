@@ -18,6 +18,10 @@
           <el-button @click="showTemplateDialog = true">
             {{ t.manageTemplates }}
           </el-button>
+          <el-divider direction="vertical" />
+          <el-button type="primary" @click="translateResume">
+            {{ currentLang === 'en' ? 'Translate to English' : '翻译为英文' }}
+          </el-button>
         </div>
       </div>
 
@@ -240,7 +244,7 @@ import ResumeTemplate from './ResumeTemplate.vue'
 import html2pdf from 'html2pdf.js'
 import html2canvas from 'html2canvas'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElLoading, ElMessage } from 'element-plus'
 import type { ResumeData, SavedTemplate } from '@/types/resume'
 import { languageTexts } from './resumeLan'
 import { seniorFrontendTemplate, frontendDevTemplate } from './resumeTemplateData'
@@ -725,6 +729,97 @@ const importTemplates = () => {
   }
 
   input.click()
+}
+
+// 添加翻译方法
+const translateResume = async () => {
+  // 显示加载提示
+  const loading = ElLoading.service({
+    lock: true,
+    text: currentLang.value === 'en' ? 'Translating...' : '正在翻译...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+  try {
+    // 定义翻译函数
+    const translateText = async (text: string) => {
+      if (!text || !text.trim()) return text
+
+      try {
+        const response = await fetch('http://localhost:11434/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'deepseek-coder:33b',
+            prompt: `Translate the following Chinese text to professional English, keep professional terms unchanged: "${text}"`
+          })
+        })
+
+        const data = await response.json()
+        return data.response.trim()
+      } catch (error) {
+        console.error('Translation error:', error)
+        return text
+      }
+    }
+
+    // 翻译个人信息
+    const translatedData = {
+      fullName: await translateText(resumeData.fullName),
+      title: await translateText(resumeData.title),
+      email: resumeData.email, // 邮箱不翻译
+      phone: resumeData.phone, // 电话不翻译
+      github: resumeData.github, // GitHub 不翻译
+      linkedin: resumeData.linkedin, // LinkedIn 不翻译
+      summary: await translateText(resumeData.summary),
+
+      // 翻译工作经验
+      experience: await Promise.all(
+        resumeData.experience.map(async (exp) => ({
+          company: await translateText(exp.company),
+          position: await translateText(exp.position),
+          duration: exp.duration, // 日期不翻译
+          description: await translateText(exp.description)
+        }))
+      ),
+
+      // 翻译教育经历
+      education: await Promise.all(
+        resumeData.education.map(async (edu) => ({
+          school: await translateText(edu.school),
+          degree: await translateText(edu.degree),
+          year: edu.year // 年份不翻译
+        }))
+      ),
+
+      // 技能保持不变
+      skills: resumeData.skills,
+
+      // 翻译自定义模块
+      customSections: await Promise.all(
+        resumeData.customSections.map(async (section) => ({
+          id: section.id,
+          title: await translateText(section.title),
+          content: await translateText(section.content)
+        }))
+      )
+    }
+
+    // 更新简历数据
+    Object.assign(resumeData, translatedData)
+
+    // 切换到英文界面
+    currentLang.value = 'en'
+
+    // 显示成功提示
+    ElMessage.success(currentLang.value === 'en' ? 'Translation completed' : '翻译完成')
+  } catch (error) {
+    console.error('Translation error:', error)
+    ElMessage.error(currentLang.value === 'en' ? 'Translation failed' : '翻译失败')
+  } finally {
+    loading?.close()
+  }
 }
 </script>
 
