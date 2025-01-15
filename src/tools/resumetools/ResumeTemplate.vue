@@ -5,22 +5,33 @@
         <h1>{{ data.fullName }}</h1>
         <h2>{{ data.title }}</h2>
         <div class="contact-info">
-          <span v-if="data.email">
-            <i class="el-icon-message"></i>
-            {{ data.email }}
-          </span>
-          <span v-if="data.phone">
-            <i class="el-icon-phone"></i>
-            {{ data.phone }}
-          </span>
-          <span v-if="data.github">
-            <i class="el-icon-link"></i>
-            {{ data.github }}
-          </span>
-          <span v-if="data.linkedin">
-            <i class="el-icon-connection"></i>
-            {{ data.linkedin }}
-          </span>
+          <a v-if="data.email" :href="formatEmailUrl(data.email)" class="contact-link">
+            <i class="fas fa-envelope"></i> {{ data.email }}
+          </a>
+          <span class="contact-separator" v-if="data.email && data.phone">|</span>
+          <span v-if="data.phone"> <i class="fas fa-phone"></i> {{ data.phone }} </span>
+          <span class="contact-separator" v-if="(data.email || data.phone) && data.github">|</span>
+          <a
+            v-if="data.github"
+            :href="formatGithubUrl(data.github)"
+            target="_blank"
+            class="contact-link"
+          >
+            <i class="fab fa-github"></i> {{ data.github }}
+          </a>
+          <span
+            class="contact-separator"
+            v-if="(data.email || data.phone || data.github) && data.linkedin"
+            >|</span
+          >
+          <a
+            v-if="data.linkedin"
+            :href="formatLinkedinUrl(data.linkedin)"
+            target="_blank"
+            class="contact-link"
+          >
+            <i class="fab fa-linkedin"></i> {{ data.linkedin }}
+          </a>
         </div>
       </div>
 
@@ -42,7 +53,10 @@
         </div>
         <div class="description">
           <template v-if="exp.description.includes('•')">
-            <p v-for="(point, idx) in exp.description.split('•').filter(p => p.trim())" :key="idx">
+            <p
+              v-for="(point, idx) in exp.description.split('•').filter((p) => p.trim())"
+              :key="idx"
+            >
               • {{ point.trim() }}
             </p>
           </template>
@@ -76,7 +90,10 @@
         <h4>{{ section.title }}</h4>
         <div class="section-content">
           <template v-if="section.content.includes('•')">
-            <p v-for="(point, idx) in section.content.split('•').filter(p => p.trim())" :key="idx">
+            <p
+              v-for="(point, idx) in section.content.split('•').filter((p) => p.trim())"
+              :key="idx"
+            >
               • {{ point.trim() }}
             </p>
           </template>
@@ -162,6 +179,24 @@ const props = defineProps<{
 }>()
 
 const t = computed(() => languageTexts[props.lang])
+
+const formatGithubUrl = (github: string) => {
+  if (!github) return ''
+  return github.startsWith('http')
+    ? github
+    : `https://github.com/${github.replace('github.com/', '')}`
+}
+
+const formatLinkedinUrl = (linkedin: string) => {
+  if (!linkedin) return ''
+  return linkedin.startsWith('http')
+    ? linkedin
+    : `https://www.linkedin.com/in/${linkedin.replace('linkedin.com/in/', '')}`
+}
+
+const formatEmailUrl = (email: string) => {
+  return `mailto:${email}`
+}
 </script>
 
 <style scoped>
@@ -206,21 +241,25 @@ const t = computed(() => languageTexts[props.lang])
 .contact-info {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  color: #34495e;
-  flex-wrap: wrap;
-  padding: 0.5rem;
-}
-
-.contact-info span {
-  display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
 }
 
-.contact-info i {
-  font-size: 1rem;
-  color: #3498db;
+.contact-link {
+  color: #2c3e50;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.contact-link:hover {
+  color: #409eff;
+}
+
+.contact-separator {
+  color: #909399;
+  margin: 0 0.5rem;
 }
 
 .section {
