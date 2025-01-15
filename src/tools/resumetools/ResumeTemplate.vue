@@ -33,10 +33,19 @@
       <div class="experience-item" v-for="(exp, index) in data.experience" :key="index">
         <div class="experience-header">
           <h4>{{ exp.position }}</h4>
-          <span class="company">{{ exp.company }}</span>
-          <span class="duration">{{ exp.duration }}</span>
+          <div class="company-info">
+            <span class="company">{{ exp.company }}</span>
+            <span class="duration">{{ exp.duration }}</span>
+          </div>
         </div>
-        <p class="description">{{ exp.description }}</p>
+        <div class="description">
+          <template v-if="exp.description.includes('•')">
+            <p v-for="(point, idx) in exp.description.split('•').filter(p => p.trim())" :key="idx">
+              • {{ point.trim() }}
+            </p>
+          </template>
+          <p v-else>{{ exp.description }}</p>
+        </div>
       </div>
     </div>
 
@@ -63,7 +72,14 @@
       <h3>{{ t.customSections }}</h3>
       <div class="custom-section-item" v-for="(section, index) in data.customSections" :key="index">
         <h4>{{ section.title }}</h4>
-        <p>{{ section.content }}</p>
+        <div class="section-content">
+          <template v-if="section.content.includes('•')">
+            <p v-for="(point, idx) in section.content.split('•').filter(p => p.trim())" :key="idx">
+              • {{ point.trim() }}
+            </p>
+          </template>
+          <p v-else>{{ section.content }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -121,7 +137,7 @@ const languageTexts: Record<'en' | 'zh', LanguageText> = {
     workExperience: 'Work Experience',
     education: 'Education',
     skills: 'Skills',
-    customSections: 'Custom Sections',
+    customSections: '',
     addCustomSection: 'Add Custom Section',
     sectionTitle: 'Section Title',
     sectionContent: 'Section Content'
@@ -131,7 +147,7 @@ const languageTexts: Record<'en' | 'zh', LanguageText> = {
     workExperience: '工作经验',
     education: '教育经历',
     skills: '技能',
-    customSections: '自定义模块',
+    customSections: '',
     addCustomSection: '添加自定义模块',
     sectionTitle: '模块标题',
     sectionContent: '模块内容'
@@ -208,12 +224,21 @@ const t = computed(() => languageTexts[props.lang])
 }
 
 .experience-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  line-height: 1.6;
 }
 
 .experience-header h4 {
-  margin: 0;
+  margin: 0 0 0.3rem 0;
   color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.company-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  line-height: 1.6;
 }
 
 .company {
@@ -223,13 +248,17 @@ const t = computed(() => languageTexts[props.lang])
 
 .duration {
   color: #7f8c8d;
-  margin-left: 1rem;
 }
 
 .description {
   color: #34495e;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+.description p {
   margin: 0.5rem 0;
+  padding-left: 1rem;
+  text-align: left;
 }
 
 .education-details {
@@ -250,6 +279,27 @@ const t = computed(() => languageTexts[props.lang])
   padding: 0.3rem 0.8rem;
   border-radius: 15px;
   font-size: 0.9rem;
+}
+
+.custom-section-item {
+  margin-bottom: 1.5rem;
+}
+
+.custom-section-item h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.custom-section-item .section-content {
+  color: #34495e;
+  line-height: 1.6;
+}
+
+.custom-section-item .section-content p {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  text-align: left;
 }
 
 @media print {
