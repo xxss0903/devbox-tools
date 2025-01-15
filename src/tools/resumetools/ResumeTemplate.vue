@@ -1,31 +1,33 @@
 <template>
   <div class="resume-template">
-    <div class="header">
-      <h1>{{ data.fullName }}</h1>
-      <h2>{{ data.title }}</h2>
-      <div class="contact-info">
-        <span v-if="data.email">
-          <i class="el-icon-message"></i>
-          {{ data.email }}
-        </span>
-        <span v-if="data.phone">
-          <i class="el-icon-phone"></i>
-          {{ data.phone }}
-        </span>
-        <span v-if="data.github">
-          <i class="el-icon-link"></i>
-          {{ data.github }}
-        </span>
-        <span v-if="data.linkedin">
-          <i class="el-icon-connection"></i>
-          {{ data.linkedin }}
-        </span>
+    <div class="top-content">
+      <div class="header">
+        <h1>{{ data.fullName }}</h1>
+        <h2>{{ data.title }}</h2>
+        <div class="contact-info">
+          <span v-if="data.email">
+            <i class="el-icon-message"></i>
+            {{ data.email }}
+          </span>
+          <span v-if="data.phone">
+            <i class="el-icon-phone"></i>
+            {{ data.phone }}
+          </span>
+          <span v-if="data.github">
+            <i class="el-icon-link"></i>
+            {{ data.github }}
+          </span>
+          <span v-if="data.linkedin">
+            <i class="el-icon-connection"></i>
+            {{ data.linkedin }}
+          </span>
+        </div>
       </div>
-    </div>
 
-    <div class="section" v-if="data.summary">
-      <h3>{{ t.professionalSummary }}</h3>
-      <p>{{ data.summary }}</p>
+      <div class="section summary-section" v-if="data.summary">
+        <h3>{{ t.professionalSummary }}</h3>
+        <p>{{ data.summary }}</p>
+      </div>
     </div>
 
     <div class="section" v-if="data.experience && data.experience.length">
@@ -164,14 +166,28 @@ const t = computed(() => languageTexts[props.lang])
 
 <style scoped>
 .resume-template {
-  padding: 10mm;
+  width: 210mm;
+  min-height: 297mm;
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   font-family: 'Arial', sans-serif;
+  padding: 20mm;
+  margin: 0 auto;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.top-content {
+  page-break-inside: avoid;
+  page-break-after: auto;
 }
 
 .header {
   text-align: center;
+  margin-bottom: 2rem;
+}
+
+.summary-section {
   margin-bottom: 2rem;
 }
 
@@ -209,6 +225,12 @@ const t = computed(() => languageTexts[props.lang])
 
 .section {
   margin-bottom: 2rem;
+}
+
+.section:first-of-type {
+  page-break-before: avoid;
+  page-break-after: avoid;
+  page-break-inside: avoid;
 }
 
 .section h3 {
@@ -271,6 +293,7 @@ const t = computed(() => languageTexts[props.lang])
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  page-break-inside: avoid;
 }
 
 .skill-tag {
@@ -283,6 +306,7 @@ const t = computed(() => languageTexts[props.lang])
 
 .custom-section-item {
   margin-bottom: 1.5rem;
+  page-break-inside: avoid;
 }
 
 .custom-section-item h4 {
@@ -305,7 +329,10 @@ const t = computed(() => languageTexts[props.lang])
 @media print {
   .resume-template {
     box-shadow: none;
-    padding: 0;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm;
+    margin: 0;
   }
 }
 </style>

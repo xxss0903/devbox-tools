@@ -302,24 +302,24 @@ const generatePDF = async () => {
   const element = document.querySelector('.resume-template') as HTMLDivElement
   if (!element) return
 
-  // 保存原始 padding
-  const originalPadding = element.style.padding
-
   try {
-    // 临时设置 padding 为 0
-    element.style.padding = '0'
-
     const opt = {
-      margin: 10,
+      margin: 0,
       filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: {
-        mode: ['avoid-all', 'css', 'legacy'],
-        before: '.page-break',
-        avoid: ['.no-break', 'tr', 'td']
-      }
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false
+      },
+      jsPDF: { 
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+        putOnlyUsedFonts: true,
+        compress: true
+      },
+      pagebreak: { mode : ' avoid-all ' } 
     }
 
     await html2pdf().set(opt).from(element).save()
@@ -330,9 +330,6 @@ const generatePDF = async () => {
       currentLang.value === 'en' ? 'Error' : '错误',
       { type: 'error' }
     )
-  } finally {
-    // 恢复原始 padding
-    element.style.padding = originalPadding
   }
 }
 
