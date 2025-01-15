@@ -52,6 +52,18 @@
               "
             ></el-input>
           </el-form-item>
+          <el-form-item :label="t.github">
+            <el-input
+              v-model="resumeData.github"
+              :placeholder="currentLang === 'en' ? 'e.g. github.com/johndoe' : '例如：github.com/zhangsan'"
+            ></el-input>
+          </el-form-item>
+          <el-form-item :label="t.linkedin">
+            <el-input
+              v-model="resumeData.linkedin"
+              :placeholder="currentLang === 'en' ? 'e.g. linkedin.com/in/johndoe' : '例如：linkedin.com/in/zhangsan'"
+            ></el-input>
+          </el-form-item>
         </el-form>
       </div>
 
@@ -252,6 +264,8 @@ const resumeData = reactive<ResumeData>({
   title: '',
   email: '',
   phone: '',
+  github: '',
+  linkedin: '',
   summary: '',
   experience: [],
   education: [],

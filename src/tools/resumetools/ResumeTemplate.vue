@@ -12,6 +12,14 @@
           <i class="el-icon-phone"></i>
           {{ data.phone }}
         </span>
+        <span v-if="data.github">
+          <i class="el-icon-link"></i>
+          {{ data.github }}
+        </span>
+        <span v-if="data.linkedin">
+          <i class="el-icon-connection"></i>
+          {{ data.linkedin }}
+        </span>
       </div>
     </div>
 
@@ -82,6 +90,8 @@ interface ResumeData {
   title: string
   email: string
   phone: string
+  github?: string
+  linkedin?: string
   summary: string
   experience: Experience[]
   education: Education[]
@@ -166,6 +176,19 @@ const t = computed(() => languageTexts[props.lang])
   justify-content: center;
   gap: 1rem;
   color: #34495e;
+  flex-wrap: wrap;
+  padding: 0.5rem;
+}
+
+.contact-info span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.contact-info i {
+  font-size: 1rem;
+  color: #3498db;
 }
 
 .section {

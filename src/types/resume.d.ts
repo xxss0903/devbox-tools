@@ -23,6 +23,8 @@ export interface ResumeData {
   title: string
   email: string
   phone: string
+  github?: string
+  linkedin?: string
   summary: string
   experience: Experience[]
   education: Education[]
