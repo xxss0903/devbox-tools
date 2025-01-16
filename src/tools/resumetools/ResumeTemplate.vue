@@ -1,4 +1,15 @@
 <template>
+  <div class="export-buttons" v-if="showExportButtons">
+      <el-button type="primary" @click="$emit('generate-pdf')">
+        {{ lang === 'en' ? 'Export PDF' : '导出PDF' }}
+      </el-button>
+      <el-button type="primary" @click="$emit('generate-word')">
+        {{ lang === 'en' ? 'Export Word' : '导出Word' }}
+      </el-button>
+      <el-button type="primary" @click="$emit('generate-image')">
+        {{ lang === 'en' ? 'Save as Image' : '保存为图片' }}
+      </el-button>
+    </div>
   <div class="resume-template">
     <div class="top-content">
       <div class="header">
@@ -173,9 +184,18 @@ const languageTexts: Record<'en' | 'zh', LanguageText> = {
   }
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   data: ResumeData
   lang: 'en' | 'zh'
+  showExportButtons?: boolean
+}>(), {
+  showExportButtons: true
+})
+
+defineEmits<{
+  (e: 'generate-pdf'): void
+  (e: 'generate-word'): void
+  (e: 'generate-image'): void
 }>()
 
 const t = computed(() => languageTexts[props.lang])
@@ -373,5 +393,14 @@ const formatEmailUrl = (email: string) => {
     padding: 20mm;
     margin: 0;
   }
+}
+
+.export-buttons {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  display: flex;
+  gap: 0.5rem;
 }
 </style>

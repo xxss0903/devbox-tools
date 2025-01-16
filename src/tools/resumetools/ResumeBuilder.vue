@@ -232,7 +232,13 @@
       class="preview-dialog"
     >
       <div class="preview-container">
-        <resume-template :data="resumeData" :lang="currentLang"></resume-template>
+        <resume-template 
+          :data="resumeData" 
+          :lang="currentLang"
+          @generate-pdf="generatePDF"
+          @generate-word="generateWord"
+          @generate-image="generateImage"
+        ></resume-template>
       </div>
     </el-dialog>
   </div>
@@ -313,6 +319,16 @@ const generatePDF = async () => {
   if (!element) return
 
   try {
+    // 计算实际内容高度（像素）
+    const contentHeight = element.scrollHeight
+    // 将像素转换为毫米 (1px ≈ 0.264583mm)
+    const heightInMm = Math.ceil(contentHeight * 0.3)
+    
+    // 确保最小高度不小于 A4 高度
+    const minHeight = 297 // A4 高度为 297mm
+    const finalHeight = Math.max(heightInMm, minHeight)
+
+    console.log('finalHeight', finalHeight)
     const opt = {
       margin: 0,
       filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
@@ -320,14 +336,13 @@ const generatePDF = async () => {
       html2canvas: {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
       },
       jsPDF: {
         unit: 'mm',
-        format: [210, 530],
+        format: [210, finalHeight], // A4 宽度(210mm)和计算出的高度
         orientation: 'portrait'
-      },
-      pagebreak: { mode: ' avoid-all ' }
+      }
     }
 
     await html2pdf().set(opt).from(element).save()
