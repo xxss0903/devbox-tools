@@ -6,9 +6,7 @@
           <el-button type="primary" @click="showPreview">
             {{ currentLang === 'en' ? 'Preview' : '预览' }}
           </el-button>
-          <el-button type="primary" @click="generatePDF">{{ t.generatePDF }}</el-button>
-          <el-button type="primary" @click="generateWord">{{ t.generateWord }}</el-button>
-          <el-button type="primary" @click="generateImage">{{ t.generateImage }}</el-button>
+          <el-button type="primary" @click="clickGeneratePDF">{{ t.generatePDF }}</el-button>
           <el-button type="success" @click="saveAsTemplate">{{ t.saveAsTemplate }}</el-button>
           <el-button @click="resetForm">{{ t.reset }}</el-button>
           <el-divider direction="vertical" />
@@ -489,6 +487,21 @@ const loadTemplates = () => {
 const saveTemplates = () => {
   localStorage.setItem('resumeTemplates', JSON.stringify(templates.value))
 }
+
+const clickGeneratePDF = () => {
+    // 显示加载提示
+  const loading = ElLoading.service({
+    lock: true,
+    text: currentLang.value === 'en' ? 'Generating PDF...' : '正在生成PDF...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+  showPreviewDialog.value = true
+  setTimeout(() => {
+    generatePDF()
+    loading.close()
+  }, 200)
+}
+
 
 // 保存当前简历为模板
 const saveAsTemplate = async () => {

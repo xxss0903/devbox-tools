@@ -3,12 +3,6 @@
       <el-button type="primary" @click="$emit('generate-pdf')">
         {{ lang === 'en' ? 'Export PDF' : '导出PDF' }}
       </el-button>
-      <el-button type="primary" @click="$emit('generate-word')">
-        {{ lang === 'en' ? 'Export Word' : '导出Word' }}
-      </el-button>
-      <el-button type="primary" @click="$emit('generate-image')">
-        {{ lang === 'en' ? 'Save as Image' : '保存为图片' }}
-      </el-button>
     </div>
   <div class="resume-template">
     <div class="top-content">
