@@ -640,7 +640,15 @@ onMounted(() => {
     // 如果没有模板，直接加载默认的高级前端工程师模板
     Object.assign(resumeData, JSON.parse(JSON.stringify(seniorFrontendTemplate.data)))
   }
+  addChatAIListener() 
 })
+
+// 监听ollama流式响应
+const addChatAIListener = () => {
+  window.electronAPI.onOllamaDone(() => {
+    console.log('ollama done')
+  })  
+}
 
 // 切换语言函数
 const toggleLanguage = () => {
@@ -767,81 +775,106 @@ const translateResume = async () => {
     text: currentLang.value === 'en' ? 'Translating...' : '正在翻译...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
+
   try {
-    // 定义翻译函数
-    const translateText = async (text: string) => {
-      if (!text || !text.trim()) return text
-
-      try {
-        const response = await fetch('http://localhost:11434/api/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'deepseek-coder:33b',
-            prompt: `Translate the following Chinese text to professional English, keep professional terms unchanged: "${text}"`
-          })
-        })
-
-        const data = await response.json()
-        return data.response.trim()
-      } catch (error) {
-        console.error('Translation error:', error)
-        return text
-      }
+    let translatedContent = ''
+    // 构建要翻译的内容
+    const contentToTranslate = {
+      fullName: resumeData.fullName,
+      title: resumeData.title,
+      summary: resumeData.summary,
+      experience: resumeData.experience.map(exp => ({
+        company: exp.company,
+        position: exp.position,
+        description: exp.description,
+        duration: exp.duration
+      })),
+      education: resumeData.education.map(edu => ({
+        school: edu.school,
+        degree: edu.degree,
+        year: edu.year
+      })),
+      customSections: resumeData.customSections.map(section => ({
+        title: section.title,
+        content: section.content
+      }))
     }
 
-    // 翻译个人信息
-    const translatedData = {
-      fullName: await translateText(resumeData.fullName),
-      title: await translateText(resumeData.title),
-      email: resumeData.email, // 邮箱不翻译
-      phone: resumeData.phone, // 电话不翻译
-      github: resumeData.github, // GitHub 不翻译
-      linkedin: resumeData.linkedin, // LinkedIn 不翻译
-      summary: await translateText(resumeData.summary),
+    const prompt = `Please translate the following Chinese resume content to professional English. Keep professional terms, company names, and technical terms unchanged. Here's the content in JSON format:
 
-      // 翻译工作经验
-      experience: await Promise.all(
-        resumeData.experience.map(async (exp) => ({
-          company: await translateText(exp.company),
-          position: await translateText(exp.position),
-          duration: exp.duration, // 日期不翻译
-          description: await translateText(exp.description)
-        }))
-      ),
+${JSON.stringify(contentToTranslate, null, 2)}
 
-      // 翻译教育经历
-      education: await Promise.all(
-        resumeData.education.map(async (edu) => ({
-          school: await translateText(edu.school),
-          degree: await translateText(edu.degree),
-          year: edu.year // 年份不翻译
-        }))
-      ),
+Please respond with the translated content in the same JSON format.`
 
-      // 技能保持不变
-      skills: resumeData.skills,
+    // 监听翻译结果
+    window.electronAPI.onOllamaStream((content: string) => {
+      translatedContent += content
+      console.log('Receiving translation:', content)
+    })
 
-      // 翻译自定义模块
-      customSections: await Promise.all(
-        resumeData.customSections.map(async (section) => ({
-          id: section.id,
-          title: await translateText(section.title),
-          content: await translateText(section.content)
-        }))
-      )
+    // 监听翻译完成
+    const translationComplete = new Promise<void>((resolve) => {
+      window.electronAPI.onOllamaDone(() => {
+        console.log('Translation complete')
+        resolve()
+      })
+    })
+
+    // 发送翻译请求
+    window.electronAPI.chatWithAI(prompt, 'qwen2.5')
+    
+    // 等待翻译完成
+    await translationComplete
+
+    try {
+      console.log('translatedContent', translatedContent)
+      // 尝试解析翻译结果
+      const startIndex = translatedContent.indexOf('{')
+      const endIndex = translatedContent.lastIndexOf('}') + 1
+      const jsonContent = translatedContent.substring(startIndex, endIndex)
+      const translatedData = JSON.parse(jsonContent)
+
+      // 更新简历数据
+      resumeData.fullName = translatedData.fullName || resumeData.fullName
+      resumeData.title = translatedData.title || resumeData.title
+      resumeData.summary = translatedData.summary || resumeData.summary
+
+      // 更新工作经验
+      translatedData.experience?.forEach((exp: any, index: number) => {
+        if (index < resumeData.experience.length) {
+          resumeData.experience[index].company = exp.company || resumeData.experience[index].company
+          resumeData.experience[index].position = exp.position || resumeData.experience[index].position
+          resumeData.experience[index].description = exp.description || resumeData.experience[index].description
+          resumeData.experience[index].duration = exp.duration || resumeData.experience[index].duration
+        }
+      })
+
+      // 更新教育经历
+      translatedData.education?.forEach((edu: any, index: number) => {
+        if (index < resumeData.education.length) {
+          resumeData.education[index].school = edu.school || resumeData.education[index].school
+          resumeData.education[index].degree = edu.degree || resumeData.education[index].degree
+          resumeData.education[index].year = edu.year || resumeData.education[index].year
+        }
+      })
+
+      // 更新自定义模块
+      translatedData.customSections?.forEach((section: any, index: number) => {
+        if (index < resumeData.customSections.length) {
+          resumeData.customSections[index].title = section.title || resumeData.customSections[index].title
+          resumeData.customSections[index].content = section.content || resumeData.customSections[index].content
+        }
+      })
+
+      // 切换到英文界面
+      currentLang.value = 'en'
+
+      // 显示成功提示
+      ElMessage.success('Translation completed')
+    } catch (error) {
+      console.error('Error parsing translation result:', error)
+      ElMessage.error('Failed to parse translation result')
     }
-
-    // 更新简历数据
-    Object.assign(resumeData, translatedData)
-
-    // 切换到英文界面
-    currentLang.value = 'en'
-
-    // 显示成功提示
-    ElMessage.success(currentLang.value === 'en' ? 'Translation completed' : '翻译完成')
   } catch (error) {
     console.error('Translation error:', error)
     ElMessage.error(currentLang.value === 'en' ? 'Translation failed' : '翻译失败')
