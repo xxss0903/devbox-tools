@@ -84,9 +84,17 @@
               v-model="resumeData.summary"
               :rows="4"
               :placeholder="
-                currentLang === 'en' ? 'Brief professional summary...' : '简短的专业总结...'
+                currentLang.value === 'en' 
+                  ? 'Brief professional summary... (Markdown supported)' 
+                  : '简短的专业总结...(支持 Markdown 格式)'
               "
             ></el-input>
+            <div class="markdown-tip">
+              {{ currentLang.value === 'en' 
+                ? 'Markdown formatting is supported (e.g. **bold**, *italic*, - list, etc.)' 
+                : '支持 Markdown 格式（如：**粗体**、*斜体*、- 列表等）' 
+              }}
+            </div>
           </el-form-item>
         </el-form>
       </div>
@@ -105,7 +113,16 @@
               <el-input v-model="exp.duration"></el-input>
             </el-form-item>
             <el-form-item :label="t.description">
-              <el-input type="textarea" v-model="exp.description" :rows="3"></el-input>
+              <el-input 
+                type="textarea" 
+                v-model="exp.description" 
+                :rows="3"
+                :placeholder="
+                  currentLang.value === 'en'
+                    ? 'Job description... (Markdown supported)'
+                    : '工作描述...(支持 Markdown 格式)'
+                "
+              ></el-input>
             </el-form-item>
           </el-form>
           <el-button type="danger" @click="removeExperience(index)">{{ t.remove }}</el-button>
@@ -1086,5 +1103,12 @@ Please respond with the translated content in the same JSON format.`
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
+}
+
+.markdown-tip {
+  font-size: 0.9rem;
+  color: #909399;
+  margin-top: 0.5rem;
+  line-height: 1.4;
 }
 </style>

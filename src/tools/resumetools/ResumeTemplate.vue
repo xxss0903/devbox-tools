@@ -42,7 +42,7 @@
 
       <div class="section summary-section" v-if="data.summary">
         <h3>{{ t.professionalSummary }}</h3>
-        <p>{{ data.summary }}</p>
+        <div class="markdown-content" v-html="renderMarkdown(data.summary)"></div>
       </div>
     </div>
 
@@ -56,17 +56,7 @@
             <span class="duration">{{ exp.duration }}</span>
           </div>
         </div>
-        <div class="description">
-          <template v-if="exp.description.includes('•')">
-            <p
-              v-for="(point, idx) in exp.description.split('•').filter((p) => p.trim())"
-              :key="idx"
-            >
-              • {{ point.trim() }}
-            </p>
-          </template>
-          <p v-else>{{ exp.description }}</p>
-        </div>
+        <div class="markdown-content" v-html="renderMarkdown(exp.description)"></div>
       </div>
     </div>
 
@@ -93,17 +83,7 @@
       <h3>{{ t.customSections }}</h3>
       <div class="custom-section-item" v-for="(section, index) in data.customSections" :key="index">
         <h4>{{ section.title }}</h4>
-        <div class="section-content">
-          <template v-if="section.content.includes('•')">
-            <p
-              v-for="(point, idx) in section.content.split('•').filter((p) => p.trim())"
-              :key="idx"
-            >
-              • {{ point.trim() }}
-            </p>
-          </template>
-          <p v-else>{{ section.content }}</p>
-        </div>
+        <div class="markdown-content" v-html="renderMarkdown(section.content)"></div>
       </div>
     </div>
   </div>
@@ -111,6 +91,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import MarkdownIt from 'markdown-it'
 
 interface Experience {
   company: string
@@ -210,6 +191,17 @@ const formatLinkedinUrl = (linkedin: string) => {
 
 const formatEmailUrl = (email: string) => {
   return `mailto:${email}`
+}
+
+const md = new MarkdownIt({
+  breaks: true,
+  linkify: true
+})
+
+const renderMarkdown = (text: string) => {
+  if (!text) return ''
+  const hasMarkdown = /[#*`\[\]\-\n]/.test(text)
+  return hasMarkdown ? md.render(text) : text
 }
 </script>
 
@@ -396,5 +388,87 @@ const formatEmailUrl = (email: string) => {
   z-index: 1000;
   display: flex;
   gap: 0.5rem;
+}
+
+.markdown-content {
+  color: #34495e;
+  line-height: 1.6;
+}
+
+.markdown-content :deep(h1) {
+  font-size: 1.5rem;
+  margin: 1rem 0;
+}
+
+.markdown-content :deep(h2) {
+  font-size: 1.3rem;
+  margin: 0.8rem 0;
+}
+
+.markdown-content :deep(h3) {
+  font-size: 1.1rem;
+  margin: 0.6rem 0;
+}
+
+.markdown-content :deep(p) {
+  margin: 0.5rem 0;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.markdown-content :deep(li) {
+  margin: 0.3rem 0;
+}
+
+.markdown-content :deep(code) {
+  background-color: #f5f7fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content :deep(pre) {
+  background-color: #f5f7fa;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #3498db;
+  margin: 0.5rem 0;
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
+}
+
+.markdown-content :deep(a) {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.markdown-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.markdown-content :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content :deep(th) {
+  background-color: #f5f7fa;
 }
 </style>
