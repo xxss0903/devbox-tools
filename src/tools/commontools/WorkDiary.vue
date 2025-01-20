@@ -4,6 +4,7 @@
       <button @click="saveDiary" class="save-button">保存</button>
       <button @click="clearDatabase" class="clear-button">清空日志</button>
       <button @click="generateWeeklySummary" class="summary-button">生成周报</button>
+      <button @click="generateYearSummary" class="year-summary-button">年终总结</button>
       <button @click="deleteDiaryEntry" class="delete-button">删除当前日记</button>
       <button @click="setReminder" class="reminder-button">设置提醒</button>
     </div>
@@ -423,6 +424,24 @@ const loadAvailableModels = async () => {
     }
   } catch (error) {
     console.error('获取模型列表失败:', error)
+  }
+}
+
+const generateYearSummary = async () => {
+  try {
+    const currentDate = moment(date.value)
+    const startOfYear = currentDate.startOf('year').format('YYYY-MM-DD')
+    const endOfYear = currentDate.endOf('year').format('YYYY-MM-DD')
+
+    const summary = await window.electronAPI.generateYearSummary(startOfYear, endOfYear)
+
+    // 更新摘要内容并显示模态框
+    summaryContent.value = summary
+    showSummaryModal.value = true
+
+    console.log('生成的年终总结:', summary)
+  } catch (error) {
+    console.error('生成年终总结时出错:', error)
   }
 }
 </script>
@@ -949,5 +968,19 @@ const loadAvailableModels = async () => {
 .model-selector:focus {
   outline: none;
   border-color: #2196F3;
+}
+
+.year-summary-button {
+  padding: 8px 16px;
+  background-color: #ff9800;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.year-summary-button:hover {
+  background-color: #f57c00;
 }
 </style>

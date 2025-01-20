@@ -61,6 +61,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearDatabase: () => ipcRenderer.invoke('clear-database'),
   generateWeeklySummary: (startDate: string, endDate: string) =>
     ipcRenderer.invoke('generate-weekly-summary', startDate, endDate),
+  generateYearSummary: (startDate: string, endDate: string) =>
+    ipcRenderer.invoke('generate-year-summary', startDate, endDate),
   registerScreenshotShortcut: (callback: () => void) =>
     ipcRenderer.on('SCREENSHOT_SHORTCUT', callback),
   unregisterScreenshotShortcut: () => ipcRenderer.removeAllListeners('SCREENSHOT_SHORTCUT'),
