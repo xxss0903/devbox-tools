@@ -124,6 +124,28 @@ async function initializeTables() {
       value TEXT
     )
   `)
+
+  // 删除旧的项目日志表
+  await db?.exec('DROP TABLE IF EXISTS project_logs')
+
+  /*
+   * 创建项目日志表
+   * id: 主键
+   * project_id: 项目ID
+   * date: 日期 (YYYY-MM-DD格式)
+   * content: 日志内容
+   * created_at: 创建时间
+   */
+  await db?.exec(`
+    CREATE TABLE IF NOT EXISTS project_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      content TEXT,
+      created_at INTEGER,
+      UNIQUE(project_id, date)
+    )
+  `)
 }
 
 // 添加 key_value 表的操作函数
@@ -249,6 +271,32 @@ async function getNextBlockTime() {
   return result ? result.next_block_time : null
 }
 
+// 修改项目日志相关的数据库操作函数
+async function saveProjectLog(projectId: string, date: string, content: string) {
+  const db = await getDatabase()
+  const createdAt = Date.now()
+  await db.run(
+    'INSERT OR REPLACE INTO project_logs (project_id, date, content, created_at) VALUES (?, ?, ?, ?)',
+    [projectId, date, content, createdAt]
+  )
+}
+
+async function getProjectLogs(projectId: string) {
+  const db = await getDatabase()
+  return await db.all(
+    'SELECT * FROM project_logs WHERE project_id = ? ORDER BY date DESC, created_at DESC',
+    [projectId]
+  )
+}
+
+async function getProjectLogByDate(projectId: string, date: string) {
+  const db = await getDatabase()
+  return await db.get(
+    'SELECT * FROM project_logs WHERE project_id = ? AND date = ?',
+    [projectId, date]
+  )
+}
+
 // 导出所有数据库操作函数
 export {
   getDatabase,
@@ -266,5 +314,8 @@ export {
   updateScreenBlockerIsActive,
   saveAlarmLatest,
   saveKeyValue,
-  getKeyValue
+  getKeyValue,
+  saveProjectLog,
+  getProjectLogs,
+  getProjectLogByDate
 }

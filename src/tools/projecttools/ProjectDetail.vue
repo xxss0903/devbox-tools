@@ -108,11 +108,50 @@
         </template>
       </el-tree>
     </div>
+
+    <!-- 项目日志部分 -->
+    <div class="project-logs">
+      <h3>项目日志</h3>
+      
+      <div class="log-header">
+        <VDatePicker
+          v-model="selectedDate"
+          :attributes="logAttributes"
+          is-expanded
+          :columns="1"
+          :model-config="{ type: 'number', mask: 'YYYY-MM-DD' }"
+        />
+      </div>
+
+      <!-- 添加日志表单 -->
+      <div class="add-log-form">
+        <el-input
+          v-model="newLogContent"
+          type="textarea"
+          :rows="4"
+          :placeholder="currentLog ? '编辑日志内容...' : '添加新日志...'"
+        />
+        <el-button type="primary" @click="saveProjectLog" :loading="isAddingLog">
+          {{ currentLog ? '更新日志' : '添加日志' }}
+        </el-button>
+      </div>
+
+      <!-- 日志列表 -->
+      <div class="log-list">
+        <div v-for="log in projectLogs" :key="log.id" class="log-item">
+          <div class="log-header">
+            <div class="log-date">{{ formatDate(log.date) }}</div>
+            <div class="log-time">{{ formatTime(log.created_at) }}</div>
+          </div>
+          <div class="log-content">{{ log.content }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Folder,
@@ -126,6 +165,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import moment from 'moment'
+import 'v-calendar/style.css'
 
 interface Props {
   id: string
@@ -158,6 +198,14 @@ interface ProjectStats {
   totalSize: number
 }
 
+interface ProjectLog {
+  id: number
+  project_id: string
+  date: string
+  content: string
+  created_at: number
+}
+
 const project = ref<Project | null>(null)
 const stats = ref<ProjectStats>({
   fileCount: 0,
@@ -167,6 +215,11 @@ const stats = ref<ProjectStats>({
 const fileTreeData = ref<FileTreeNode[]>([])
 const searchFile = ref('')
 const fileTree = ref()
+const selectedDate = ref(Date.now())
+const currentLog = ref<ProjectLog | null>(null)
+const projectLogs = ref<ProjectLog[]>([])
+const isAddingLog = ref(false)
+const newLogContent = ref('')
 
 // 格式化日期
 const formatDate = (date?: string) => {
@@ -271,8 +324,65 @@ const goBack = () => {
   //   }
 }
 
+// 日志日历属性
+const logAttributes = computed(() => {
+  return projectLogs.value.map((log) => ({
+    dot: {
+      color: 'green',
+      class: 'has-entry'
+    },
+    dates: new Date(log.date)
+  }))
+})
+
+// 加载项目日志
+const loadProjectLogs = async () => {
+  if (!project.value?.id) return
+  projectLogs.value = await window.electronAPI.getProjectLogs(project.value.id)
+}
+
+// 加载指定日期的日志
+const loadLogByDate = async () => {
+  if (!project.value?.id) return
+  const date = moment(selectedDate.value).format('YYYY-MM-DD')
+  const log = await window.electronAPI.getProjectLogByDate(project.value.id, date)
+  currentLog.value = log
+  newLogContent.value = log ? log.content : ''
+}
+
+// 保存项目日志
+const saveProjectLog = async () => {
+  if (!newLogContent.value.trim() || !project.value?.id) return
+  
+  isAddingLog.value = true
+  try {
+    const date = moment(selectedDate.value).format('YYYY-MM-DD')
+    await window.electronAPI.saveProjectLog(project.value.id, date, newLogContent.value)
+    await loadProjectLogs()
+    await loadLogByDate()
+    ElMessage.success(currentLog.value ? '日志已更新' : '日志已添加')
+  } catch (error) {
+    console.error('保存项目日志失败:', error)
+    ElMessage.error('保存失败')
+  } finally {
+    isAddingLog.value = false
+  }
+}
+
+// 监听日期变化
+watch(selectedDate, () => {
+  loadLogByDate()
+})
+
+// 格式化时间
+const formatTime = (timestamp: number) => {
+  return moment(timestamp).format('YYYY-MM-DD HH:mm:ss')
+}
+
 onMounted(() => {
   loadProjectInfo()
+  loadProjectLogs()
+  loadLogByDate()
 })
 </script>
 
@@ -396,5 +506,73 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.project-logs {
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+}
+
+.log-header {
+  margin-bottom: 20px;
+}
+
+.add-log-form {
+  margin-bottom: 20px;
+  
+  .el-button {
+    margin-top: 10px;
+  }
+}
+
+.log-list {
+  max-height: 500px;
+  overflow-y: auto;
+  
+  .log-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      
+      .log-date {
+        font-weight: bold;
+        color: var(--el-color-primary);
+      }
+      
+      .log-time {
+        font-size: 12px;
+        color: #999;
+      }
+    }
+    
+    .log-content {
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+  }
+}
+
+:deep(.vc-container) {
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+}
+
+:deep(.has-entry) {
+  background-color: var(--el-color-success);
 }
 </style>
