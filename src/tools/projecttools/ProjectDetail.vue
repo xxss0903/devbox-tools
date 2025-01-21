@@ -93,7 +93,7 @@
           </el-tag>
         </div>
         <div class="update-time">
-          最后更新：{{ latestProgress.date ? formatDate(latestProgress.date) : '暂无更新' }}
+          最后更新：{{ latestProgress.date ? latestProgress.date : '暂无更新' }}
         </div>
       </div>
 
@@ -229,6 +229,7 @@ import { ElMessage } from 'element-plus'
 import moment from 'moment'
 import 'v-calendar/style.css'
 import * as echarts from 'echarts'
+import type { ProjectLog, ProjectProgress, ProgressHistory } from '@/types/electron'
 
 interface Props {
   id: string
@@ -259,26 +260,6 @@ interface ProjectStats {
   fileCount: number
   folderCount: number
   totalSize: number
-}
-
-interface ProjectLog {
-  id: number
-  project_id: string
-  date: string
-  content: string
-  created_at: number
-}
-
-interface ProjectProgress {
-  progress: number
-  status: string
-  date: string | null
-}
-
-interface ProgressHistory {
-  date: string
-  progress: number
-  status: string
 }
 
 const project = ref<Project | null>(null)
@@ -422,9 +403,19 @@ const logAttributes = computed(() => {
 
 // 加载项目日志
 const loadProjectLogs = async () => {
+  console.log('loadProjectLogs', project.value)
   if (!project.value?.id) return
-  projectLogs.value = await window.electronAPI.getProjectLogs(project.value.id)
-  console.log('Project logs:', projectLogs.value)
+  try {
+    // 获取所有日志并按日期降序排序
+    const logs = await window.electronAPI.getProjectLogs(project.value.id)
+    projectLogs.value = logs.sort((a: ProjectLog, b: ProjectLog) => 
+      moment(b.date).valueOf() - moment(a.date).valueOf()
+    )
+    console.log('Project logs:', projectLogs.value)
+  } catch (error) {
+    console.error('Error loading project logs:', error)
+    ElMessage.error('加载项目日志失败')
+  }
 }
 
 // 获取项目最新进度
@@ -550,7 +541,19 @@ const getStatusText = (status: string) => {
   }
 }
 
-// 修改保存项目日志方法
+// 修改加载指定日期的日志方法
+const loadLogByDate = async () => {
+  if (!project.value?.id) return
+  const date = moment(selectedDate.value).format('YYYY-MM-DD')
+  // 从已加载的日志中查找当前日期的日志
+  const log = projectLogs.value.find(log => log.date === date)
+  currentLog.value = log || null
+  newLogContent.value = log ? log.content : ''
+  newProgress.value = log ? log.progress : 0
+  newStatus.value = log ? log.status : 'planning'
+}
+
+// 保存项目日志
 const saveProjectLog = async () => {
   if (!newLogContent.value.trim() || !project.value?.id) return
   
@@ -564,28 +567,24 @@ const saveProjectLog = async () => {
       newProgress.value,
       newStatus.value
     )
+    // 重新加载所有日志
     await loadProjectLogs()
     await loadLogByDate()
     await loadLatestProgress()
     await loadProgressHistory()
     ElMessage.success(currentLog.value ? '日志已更新' : '日志已添加')
+    // 清空表单
+    if (!currentLog.value) {
+      newLogContent.value = ''
+      newProgress.value = 0
+      newStatus.value = 'planning'
+    }
   } catch (error) {
     console.error('保存项目日志失败:', error)
     ElMessage.error('保存失败')
   } finally {
     isAddingLog.value = false
   }
-}
-
-// 加载指定日期的日志时，同时加载进度信息
-const loadLogByDate = async () => {
-  if (!project.value?.id) return
-  const date = moment(selectedDate.value).format('YYYY-MM-DD')
-  const log = await window.electronAPI.getProjectLogByDate(project.value.id, date)
-  currentLog.value = log
-  newLogContent.value = log ? log.content : ''
-  newProgress.value = log ? log.progress : 0
-  newStatus.value = log ? log.status : 'planning'
 }
 
 // 监听日期变化
@@ -605,10 +604,9 @@ const handleResize = () => {
   }
 }
 
-onMounted(() => {
-  loadProjectInfo()
+onMounted(async () => {
+  await loadProjectInfo()
   loadProjectLogs()
-  loadLogByDate()
   loadLatestProgress()
   loadProgressHistory()
   window.addEventListener('resize', handleResize)

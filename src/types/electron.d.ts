@@ -36,6 +36,38 @@ export interface IElectronAPI {
     totalSize: number
   }>
   getProjectFileTree: (path: string) => Promise<FileTreeNode[]>
+  getProjectLogs: (projectId: string) => Promise<ProjectLog[]>
+  getProjectLatestProgress: (projectId: string) => Promise<ProjectProgress>
+  getProjectProgressHistory: (projectId: string) => Promise<ProgressHistory[]>
+  saveProjectLog: (
+    projectId: string,
+    date: string,
+    content: string,
+    progress: number,
+    status: string
+  ) => Promise<void>
+}
+
+export interface ProjectLog {
+  id: number
+  project_id: string
+  date: string
+  content: string
+  created_at: number
+  progress: number
+  status: string
+}
+
+export interface ProjectProgress {
+  progress: number
+  status: string
+  date: string | null
+}
+
+export interface ProgressHistory {
+  date: string
+  progress: number
+  status: string
 }
 
 declare global {
