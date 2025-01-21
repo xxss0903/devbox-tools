@@ -44,101 +44,21 @@
         </el-descriptions-item>
       </el-descriptions>
     </div>
-
-    <!-- 项目统计信息 -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <el-icon><Files /></el-icon>
+ <!-- 项目日志部分 -->
+ <div class="project-logs">
+      <div class="section-header" @click="isDatePickerVisible = !isDatePickerVisible">
+        <div class="header-left">
+          <h3>项目日志</h3>
+          <el-icon class="toggle-icon" :class="{ 'is-rotate': isDatePickerVisible }">
+            <ArrowRight />
+          </el-icon>
         </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ stats.fileCount }}</span>
-          <span class="stat-label">文件数量</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <el-icon><Folder /></el-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ stats.folderCount }}</span>
-          <span class="stat-label">文件夹数量</span>
+        <div class="selected-date">
+          当前日期：{{ moment(selectedDate).format('YYYY-MM-DD') }}
         </div>
       </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <el-icon><Document /></el-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ formatSize(stats.totalSize) }}</span>
-          <span class="stat-label">项目大小</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 项目进度卡片 -->
-    <div class="progress-card">
-      <h3>项目进度</h3>
-      <div class="progress-info">
-        <el-progress
-          :percentage="latestProgress.progress"
-          :status="getProgressStatus(latestProgress.status)"
-        />
-        <div class="status-info">
-          <span class="status-label">当前状态：</span>
-          <el-tag :type="getStatusType(latestProgress.status)">
-            {{ getStatusText(latestProgress.status) }}
-          </el-tag>
-        </div>
-        <div class="update-time">
-          最后更新：{{ latestProgress.date ? latestProgress.date : '暂无更新' }}
-        </div>
-      </div>
-
-      <!-- 进度历史图表 -->
-      <div class="progress-chart">
-        <div ref="progressChartRef" style="width: 100%; height: 300px"></div>
-      </div>
-    </div>
-
-    <!-- 文件树结构 -->
-    <div class="file-tree-container">
-      <div class="section-header">
-        <h3>项目结构</h3>
-        <el-input
-          v-model="searchFile"
-          placeholder="搜索文件..."
-          :prefix-icon="Search"
-          class="search-input"
-          clearable
-        />
-      </div>
-      <el-tree
-        ref="fileTree"
-        :data="fileTreeData"
-        :props="{ label: 'name' }"
-        :filter-node-method="filterNode"
-        node-key="path"
-      >
-        <template #default="{ node }">
-          <div class="custom-tree-node">
-            <el-icon>
-              <Folder v-if="node.data.isDirectory" />
-              <Document v-else />
-            </el-icon>
-            <span>{{ node.label }}</span>
-          </div>
-        </template>
-      </el-tree>
-    </div>
-
-    <!-- 项目日志部分 -->
-    <div class="project-logs">
-      <h3>项目日志</h3>
       
-      <div class="log-header">
+      <div class="log-header" v-show="isDatePickerVisible">
         <VDatePicker
           v-model="selectedDate"
           :attributes="logAttributes"
@@ -209,6 +129,105 @@
         </div>
       </div>
     </div>
+    <!-- 项目统计信息 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <el-icon><Files /></el-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.fileCount }}</span>
+          <span class="stat-label">文件数量</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <el-icon><Folder /></el-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.folderCount }}</span>
+          <span class="stat-label">文件夹数量</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <el-icon><Document /></el-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ formatSize(stats.totalSize) }}</span>
+          <span class="stat-label">项目大小</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 项目进度卡片 -->
+    <div class="progress-card">
+      <h3>项目进度</h3>
+      <div class="progress-info">
+        <el-progress
+          :percentage="latestProgress.progress"
+          :status="getProgressStatus(latestProgress.status)"
+        />
+        <div class="status-info">
+          <span class="status-label">当前状态：</span>
+          <el-tag :type="getStatusType(latestProgress.status)">
+            {{ getStatusText(latestProgress.status) }}
+          </el-tag>
+        </div>
+        <div class="update-time">
+          最后更新：{{ latestProgress.date ? latestProgress.date : '暂无更新' }}
+        </div>
+      </div>
+
+      <!-- 进度历史图表 -->
+      <div class="progress-chart">
+        <div ref="progressChartRef" style="width: 100%; height: 300px"></div>
+      </div>
+    </div>
+
+    <!-- 文件树结构 -->
+    <div class="file-tree-container">
+      <div class="section-header" @click="isFileTreeVisible = !isFileTreeVisible">
+        <div class="header-left">
+          <h3>项目结构</h3>
+          <el-icon class="toggle-icon" :class="{ 'is-rotate': isFileTreeVisible }">
+            <ArrowRight />
+          </el-icon>
+        </div>
+        <el-input
+          v-if="isFileTreeVisible"
+          v-model="searchFile"
+          placeholder="搜索文件..."
+          :prefix-icon="Search"
+          class="search-input"
+          clearable
+          @click.stop
+        />
+      </div>
+      <div v-show="isFileTreeVisible" class="file-tree-content">
+        <el-tree
+          ref="fileTree"
+          :data="fileTreeData"
+          :props="{ label: 'name' }"
+          :filter-node-method="filterNode"
+          node-key="path"
+        >
+          <template #default="{ node }">
+            <div class="custom-tree-node">
+              <el-icon>
+                <Folder v-if="node.data.isDirectory" />
+                <Document v-else />
+              </el-icon>
+              <span>{{ node.label }}</span>
+            </div>
+          </template>
+        </el-tree>
+      </div>
+    </div>
+
+   
   </div>
 </template>
 
@@ -223,7 +242,8 @@ import {
   Star,
   Search,
   Files,
-  Back
+  Back,
+  ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import moment from 'moment'
@@ -286,6 +306,8 @@ const latestProgress = ref<ProjectProgress>({
 const progressHistory = ref<ProgressHistory[]>([])
 const progressChartRef = ref<HTMLElement | null>(null)
 let progressChart: echarts.ECharts | null = null
+const isFileTreeVisible = ref(false)
+const isDatePickerVisible = ref(false)
 
 // 格式化日期
 const formatDate = (date?: string) => {
@@ -726,11 +748,38 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
 }
 
-.section-header h3 {
+.section-header:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-left h3 {
   margin: 0;
+}
+
+.toggle-icon {
+  transition: transform 0.3s;
+}
+
+.toggle-icon.is-rotate {
+  transform: rotate(90deg);
+}
+
+.file-tree-content {
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .search-input {
@@ -749,13 +798,19 @@ onUnmounted(() => {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
-  display: grid;
-  grid-template-columns: 300px 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
+.selected-date {
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
 .log-header {
-  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .add-log-form {
