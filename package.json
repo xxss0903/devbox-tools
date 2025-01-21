@@ -38,6 +38,7 @@
     "pinia": "^2.1.7",
     "quill": "^2.0.2",
     "sequelize": "^6.32.1",
+    "simple-git": "^3.27.0",
     "sqlite": "^4.1.2",
     "sqlite3": "^5.1.6",
     "tui-image-editor": "^3.15.3",
