@@ -24,6 +24,7 @@
     "crypto-js": "^4.2.0",
     "docx": "^9.1.1",
     "drawstamputils": "^0.1.1",
+    "echarts": "^5.6.0",
     "electron-screenshots": "^0.5.27",
     "element-plus": "^2.x.x",
     "fabric": "^5.2.0",

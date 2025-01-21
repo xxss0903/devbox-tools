@@ -78,6 +78,31 @@
       </div>
     </div>
 
+    <!-- 项目进度卡片 -->
+    <div class="progress-card">
+      <h3>项目进度</h3>
+      <div class="progress-info">
+        <el-progress
+          :percentage="latestProgress.progress"
+          :status="getProgressStatus(latestProgress.status)"
+        />
+        <div class="status-info">
+          <span class="status-label">当前状态：</span>
+          <el-tag :type="getStatusType(latestProgress.status)">
+            {{ getStatusText(latestProgress.status) }}
+          </el-tag>
+        </div>
+        <div class="update-time">
+          最后更新：{{ latestProgress.date ? formatDate(latestProgress.date) : '暂无更新' }}
+        </div>
+      </div>
+
+      <!-- 进度历史图表 -->
+      <div class="progress-chart">
+        <div ref="progressChartRef" style="width: 100%; height: 300px"></div>
+      </div>
+    </div>
+
     <!-- 文件树结构 -->
     <div class="file-tree-container">
       <div class="section-header">
@@ -131,16 +156,53 @@
           :rows="4"
           :placeholder="currentLog ? '编辑日志内容...' : '添加新日志...'"
         />
-        <el-button type="primary" @click="saveProjectLog" :loading="isAddingLog">
-          {{ currentLog ? '更新日志' : '添加日志' }}
-        </el-button>
+        <div class="form-footer">
+          <div class="progress-input">
+            <span class="progress-label">进度：</span>
+            <el-slider
+              v-model="newProgress"
+              :step="5"
+              :marks="{
+                0: '0%',
+                25: '25%',
+                50: '50%',
+                75: '75%',
+                100: '100%'
+              }"
+            />
+          </div>
+          <div class="status-select">
+            <span class="status-label">状态：</span>
+            <el-select v-model="newStatus" placeholder="选择状态">
+              <el-option label="规划中" value="planning" />
+              <el-option label="开发中" value="developing" />
+              <el-option label="测试中" value="testing" />
+              <el-option label="已完成" value="completed" />
+            </el-select>
+          </div>
+          <el-button type="primary" @click="saveProjectLog" :loading="isAddingLog">
+            {{ currentLog ? '更新日志' : '添加日志' }}
+          </el-button>
+        </div>
       </div>
 
       <!-- 日志列表 -->
       <div class="log-list">
         <div v-for="log in projectLogs" :key="log.id" class="log-item">
           <div class="log-header">
-            <div class="log-date">{{ formatDate(log.date) }}</div>
+            <div class="log-date">{{ log.date }}</div>
+            <div class="log-progress">
+              <el-progress
+                :percentage="log.progress"
+                :status="getProgressStatus(log.status)"
+                :stroke-width="10"
+              />
+            </div>
+            <div class="log-status">
+              <el-tag :type="getStatusType(log.status)" size="small">
+                {{ getStatusText(log.status) }}
+              </el-tag>
+            </div>
             <div class="log-time">{{ formatTime(log.created_at) }}</div>
           </div>
           <div class="log-content">{{ log.content }}</div>
@@ -151,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Folder,
@@ -166,6 +228,7 @@ import {
 import { ElMessage } from 'element-plus'
 import moment from 'moment'
 import 'v-calendar/style.css'
+import * as echarts from 'echarts'
 
 interface Props {
   id: string
@@ -206,6 +269,18 @@ interface ProjectLog {
   created_at: number
 }
 
+interface ProjectProgress {
+  progress: number
+  status: string
+  date: string | null
+}
+
+interface ProgressHistory {
+  date: string
+  progress: number
+  status: string
+}
+
 const project = ref<Project | null>(null)
 const stats = ref<ProjectStats>({
   fileCount: 0,
@@ -220,6 +295,16 @@ const currentLog = ref<ProjectLog | null>(null)
 const projectLogs = ref<ProjectLog[]>([])
 const isAddingLog = ref(false)
 const newLogContent = ref('')
+const newProgress = ref(0)
+const newStatus = ref('planning')
+const latestProgress = ref<ProjectProgress>({
+  progress: 0,
+  status: 'planning',
+  date: null
+})
+const progressHistory = ref<ProgressHistory[]>([])
+const progressChartRef = ref<HTMLElement | null>(null)
+let progressChart: echarts.ECharts | null = null
 
 // 格式化日期
 const formatDate = (date?: string) => {
@@ -339,27 +424,150 @@ const logAttributes = computed(() => {
 const loadProjectLogs = async () => {
   if (!project.value?.id) return
   projectLogs.value = await window.electronAPI.getProjectLogs(project.value.id)
+  console.log('Project logs:', projectLogs.value)
 }
 
-// 加载指定日期的日志
-const loadLogByDate = async () => {
+// 获取项目最新进度
+const loadLatestProgress = async () => {
   if (!project.value?.id) return
-  const date = moment(selectedDate.value).format('YYYY-MM-DD')
-  const log = await window.electronAPI.getProjectLogByDate(project.value.id, date)
-  currentLog.value = log
-  newLogContent.value = log ? log.content : ''
+  latestProgress.value = await window.electronAPI.getProjectLatestProgress(project.value.id)
 }
 
-// 保存项目日志
+// 获取项目进度历史
+const loadProgressHistory = async () => {
+  if (!project.value?.id) return
+  progressHistory.value = await window.electronAPI.getProjectProgressHistory(project.value.id)
+  updateProgressChart()
+}
+
+// 更新进度图表
+const updateProgressChart = () => {
+  if (!progressChartRef.value) return
+
+  if (!progressChart) {
+    progressChart = echarts.init(progressChartRef.value)
+  }
+
+  const option = {
+    title: {
+      text: '项目进度历史',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const data = params[0].data
+        return `日期：${data.date}<br/>进度：${data.progress}%<br/>状态：${getStatusText(data.status)}`
+      }
+    },
+    xAxis: {
+      type: 'time',
+      boundaryGap: false
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      name: '进度 (%)'
+    },
+    series: [
+      {
+        name: '项目进度',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
+        data: progressHistory.value.map(item => ({
+          value: [item.date, item.progress],
+          date: item.date,
+          progress: item.progress,
+          status: item.status
+        })),
+        itemStyle: {
+          color: '#409EFF'
+        },
+        lineStyle: {
+          width: 3
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            {
+              offset: 0,
+              color: 'rgba(64,158,255,0.3)'
+            },
+            {
+              offset: 1,
+              color: 'rgba(64,158,255,0.1)'
+            }
+          ])
+        }
+      }
+    ]
+  }
+
+  progressChart.setOption(option)
+}
+
+// 获取进度状态样式
+const getProgressStatus = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'success'
+    case 'testing':
+      return 'warning'
+    case 'developing':
+      return ''
+    default:
+      return 'info'
+  }
+}
+
+// 获取状态标签类型
+const getStatusType = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'success'
+    case 'testing':
+      return 'warning'
+    case 'developing':
+      return 'primary'
+    default:
+      return 'info'
+  }
+}
+
+// 获取状态文本
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return '已完成'
+    case 'testing':
+      return '测试中'
+    case 'developing':
+      return '开发中'
+    default:
+      return '规划中'
+  }
+}
+
+// 修改保存项目日志方法
 const saveProjectLog = async () => {
   if (!newLogContent.value.trim() || !project.value?.id) return
   
   isAddingLog.value = true
   try {
     const date = moment(selectedDate.value).format('YYYY-MM-DD')
-    await window.electronAPI.saveProjectLog(project.value.id, date, newLogContent.value)
+    await window.electronAPI.saveProjectLog(
+      project.value.id,
+      date,
+      newLogContent.value,
+      newProgress.value,
+      newStatus.value
+    )
     await loadProjectLogs()
     await loadLogByDate()
+    await loadLatestProgress()
+    await loadProgressHistory()
     ElMessage.success(currentLog.value ? '日志已更新' : '日志已添加')
   } catch (error) {
     console.error('保存项目日志失败:', error)
@@ -367,6 +575,17 @@ const saveProjectLog = async () => {
   } finally {
     isAddingLog.value = false
   }
+}
+
+// 加载指定日期的日志时，同时加载进度信息
+const loadLogByDate = async () => {
+  if (!project.value?.id) return
+  const date = moment(selectedDate.value).format('YYYY-MM-DD')
+  const log = await window.electronAPI.getProjectLogByDate(project.value.id, date)
+  currentLog.value = log
+  newLogContent.value = log ? log.content : ''
+  newProgress.value = log ? log.progress : 0
+  newStatus.value = log ? log.status : 'planning'
 }
 
 // 监听日期变化
@@ -379,10 +598,28 @@ const formatTime = (timestamp: number) => {
   return moment(timestamp).format('YYYY-MM-DD HH:mm:ss')
 }
 
+// 监听窗口大小变化
+const handleResize = () => {
+  if (progressChart) {
+    progressChart.resize()
+  }
+}
+
 onMounted(() => {
   loadProjectInfo()
   loadProjectLogs()
   loadLogByDate()
+  loadLatestProgress()
+  loadProgressHistory()
+  window.addEventListener('resize', handleResize)
+})
+
+// 在组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (progressChart) {
+    progressChart.dispose()
+  }
 })
 </script>
 
@@ -574,5 +811,77 @@ onMounted(() => {
 
 :deep(.has-entry) {
   background-color: var(--el-color-success);
+}
+
+.progress-card {
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--el-border-color);
+  margin-bottom: 20px;
+}
+
+.progress-info {
+  margin: 20px 0;
+}
+
+.status-info {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.update-time {
+  margin-top: 10px;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+.progress-chart {
+  margin-top: 20px;
+  border-top: 1px solid var(--el-border-color);
+  padding-top: 20px;
+}
+
+.form-footer {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.progress-input,
+.status-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-label,
+.status-label {
+  min-width: 60px;
+  color: var(--el-text-color-regular);
+}
+
+:deep(.el-slider) {
+  flex: 1;
+}
+
+.log-progress {
+  flex: 1;
+  margin: 0 15px;
+}
+
+.log-status {
+  margin-right: 15px;
+}
+
+:deep(.el-progress-bar__inner) {
+  transition: all 0.3s ease;
+}
+
+:deep(.el-progress--line) {
+  margin-right: 0;
 }
 </style>

@@ -131,12 +131,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveJksPassword: (password: string) => ipcRenderer.invoke('save-jks-password', password),
   getJksPassword: () => ipcRenderer.invoke('get-jks-password'),
   // 项目日志相关
-  saveProjectLog: (projectId: string, date: string, content: string) => 
-    ipcRenderer.invoke('save-project-log', projectId, date, content),
+  saveProjectLog: (projectId: string, date: string, content: string, progress: number, status: string) => 
+    ipcRenderer.invoke('save-project-log', projectId, date, content, progress, status),
   getProjectLogs: (projectId: string) => 
     ipcRenderer.invoke('get-project-logs', projectId),
   getProjectLogByDate: (projectId: string, date: string) => 
     ipcRenderer.invoke('get-project-log-by-date', projectId, date),
+  getProjectLatestProgress: (projectId: string) =>
+    ipcRenderer.invoke('get-project-latest-progress', projectId),
+  getProjectProgressHistory: (projectId: string) =>
+    ipcRenderer.invoke('get-project-progress-history', projectId),
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

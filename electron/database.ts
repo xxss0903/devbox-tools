@@ -134,6 +134,8 @@ async function initializeTables() {
    * project_id: 项目ID
    * date: 日期 (YYYY-MM-DD格式)
    * content: 日志内容
+   * progress: 项目进度 (0-100)
+   * status: 项目状态 (planning-规划中, developing-开发中, testing-测试中, completed-已完成)
    * created_at: 创建时间
    */
   await db?.exec(`
@@ -142,6 +144,8 @@ async function initializeTables() {
       project_id TEXT NOT NULL,
       date TEXT NOT NULL,
       content TEXT,
+      progress INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'planning',
       created_at INTEGER,
       UNIQUE(project_id, date)
     )
@@ -272,12 +276,20 @@ async function getNextBlockTime() {
 }
 
 // 修改项目日志相关的数据库操作函数
-async function saveProjectLog(projectId: string, date: string, content: string) {
+async function saveProjectLog(
+  projectId: string, 
+  date: string, 
+  content: string, 
+  progress: number = 0,
+  status: string = 'planning'
+) {
   const db = await getDatabase()
   const createdAt = Date.now()
   await db.run(
-    'INSERT OR REPLACE INTO project_logs (project_id, date, content, created_at) VALUES (?, ?, ?, ?)',
-    [projectId, date, content, createdAt]
+    `INSERT OR REPLACE INTO project_logs 
+    (project_id, date, content, progress, status, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?)`,
+    [projectId, date, content, progress, status, createdAt]
   )
 }
 
@@ -294,6 +306,32 @@ async function getProjectLogByDate(projectId: string, date: string) {
   return await db.get(
     'SELECT * FROM project_logs WHERE project_id = ? AND date = ?',
     [projectId, date]
+  )
+}
+
+// 获取项目的最新进度
+async function getProjectLatestProgress(projectId: string) {
+  const db = await getDatabase()
+  const result = await db.get(
+    `SELECT progress, status, date 
+    FROM project_logs 
+    WHERE project_id = ? 
+    ORDER BY date DESC, created_at DESC 
+    LIMIT 1`,
+    [projectId]
+  )
+  return result || { progress: 0, status: 'planning', date: null }
+}
+
+// 获取项目的进度历史
+async function getProjectProgressHistory(projectId: string) {
+  const db = await getDatabase()
+  return await db.all(
+    `SELECT date, progress, status 
+    FROM project_logs 
+    WHERE project_id = ? AND (progress > 0 OR status != 'planning')
+    ORDER BY date ASC`,
+    [projectId]
   )
 }
 
@@ -317,5 +355,7 @@ export {
   getKeyValue,
   saveProjectLog,
   getProjectLogs,
-  getProjectLogByDate
+  getProjectLogByDate,
+  getProjectLatestProgress,
+  getProjectProgressHistory
 }
