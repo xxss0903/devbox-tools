@@ -116,6 +116,11 @@ export const defaultCommonTools =  [
     title: '简历生成器',
     value: 'ResumeBuilder',
     url: 'https://img.icons8.com/?size=100&id=12313&format=png&color=000000'
+  },
+  {
+    title: '汽车数据爬虫',
+    value: 'CarSpider',
+    url: 'https://img.icons8.com/?size=100&id=13644&format=png&color=000000'
   }
 ]
 

@@ -63,6 +63,11 @@ const defaultTools = [
     name: 'NPM镜像源',
     route: 'NpmRegistry',
     image: 'https://img.icons8.com/?size=100&id=12455&format=png&color=000000'
+  },
+  {
+    name: '汽车数据爬虫',
+    route: 'CarSpider',
+    image: 'https://img.icons8.com/?size=100&id=13644&format=png&color=000000'
   }
 ]
 

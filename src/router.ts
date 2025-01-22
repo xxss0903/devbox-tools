@@ -31,6 +31,7 @@ import AIModelManager from './tools/aitools/AIModelManager.vue'
 import JsonFormatter from './tools/commontools/JsonFormatter.vue'
 import NpmRegistry from './tools/commontools/NpmRegistry.vue'
 import ResumeBuilder from './tools/resumetools/ResumeBuilder.vue'
+import CarSpider from './tools/commontools/CarSpider.vue'
 
 const routes = [
   {
@@ -294,6 +295,16 @@ const routes = [
       title: '简历生成器',
       searchable: true,
       keywords: ['resume', 'builder', '简历', '生成器']
+    }
+  },
+  {
+    path: '/car-spider',
+    name: 'CarSpider',
+    component: CarSpider,
+    meta: {
+      title: '汽车数据爬虫',
+      searchable: true,
+      keywords: ['car', 'spider', '汽车', '爬虫', '数据']
     }
   },
   {
