@@ -36,6 +36,16 @@ export interface IElectronAPI {
     totalSize: number
   }>
   getProjectFileTree: (path: string) => Promise<FileTreeNode[]>
+  fetchCarBrands: () => Promise<{
+    success: boolean
+    data?: CarBrand[]
+    message?: string
+  }>
+  fetchCarModels: (params: { brandId: string }) => Promise<{
+    success: boolean
+    data?: CarModel[]
+    message?: string
+  }>
 }
 
 declare global {

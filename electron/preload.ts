@@ -130,6 +130,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFileDialog: (options: any) => ipcRenderer.invoke('dialog:openFile', options),
   saveJksPassword: (password: string) => ipcRenderer.invoke('save-jks-password', password),
   getJksPassword: () => ipcRenderer.invoke('get-jks-password'),
+  fetchCarBrands: () => ipcRenderer.invoke('fetch-car-brands'),
+  fetchCarModels: (brandId: string) => ipcRenderer.invoke('fetch-car-models', brandId),
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

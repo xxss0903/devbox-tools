@@ -4,6 +4,7 @@ import { setupWorkDiaryHandle } from './workDiaryHandle'
 import { setupClipboardManagerHandle } from './clipboardManagerHandle'
 import { setupOpenExeHandle } from './openExeHandle'
 import { setupOllamaChatHandle } from './chatWithOllama'
+import { setupSpiderHandle } from './spiderHandle'
 
 export function setupIPCHandle(win: BrowserWindow) {
   // 打开exe的接口工具
@@ -16,4 +17,7 @@ export function setupIPCHandle(win: BrowserWindow) {
   setupClipboardManagerHandle(win)
   // AI 分析
   setupOllamaChatHandle(win)
+  // 汽车爬虫
+  setupSpiderHandle(win)
 }
+
