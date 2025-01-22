@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain } from "electron"
 import { HTTPRequest } from "puppeteer"
 import puppeteer from "puppeteer"
+import axios from 'axios'
 
 // 汽车爬虫
 export function setupSpiderHandle(win: BrowserWindow) {
@@ -111,28 +112,19 @@ ipcMain.handle('fetch-car-brands', async () => {
   // 获取车型款式
   ipcMain.handle('fetch-car-specs', async (_, { seriesId }) => {
     try {
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      })
-      const page = await browser.newPage()
-      
-      // 设置请求拦截
-      await page.setRequestInterception(true)
-      page.on('request', (request: HTTPRequest) => {
-        if (['image', 'stylesheet', 'font'].includes(request.resourceType())) {
-          request.abort()
-        } else {
-          request.continue()
+      const response = await axios.get(`https://car-web-api.autohome.com.cn/car/param/getParamConf`, {
+        params: {
+          mode: 1,
+          site: 1,
+          seriesid: seriesId
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Referer': 'https://car.autohome.com.cn'
         }
       })
 
-      // 访问车型款式API
-      const response = await page.goto(`https://car-web-api.autohome.com.cn/car/param/getParamConf?mode=1&site=1&seriesid=${seriesId}`, {
-        waitUntil: 'networkidle0'
-      })
-
-      const data = await response?.json()
+      const data = response.data
       if (!data || data.returncode !== 0) {
         throw new Error(data?.message || '获取数据失败')
       }
@@ -152,7 +144,6 @@ ipcMain.handle('fetch-car-brands', async () => {
         }))
       }))
 
-      await browser.close()
       return { 
         success: true, 
         data: {

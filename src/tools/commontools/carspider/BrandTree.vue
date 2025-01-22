@@ -6,6 +6,7 @@ import type { TreeNodeData } from 'element-plus/es/components/tree/src/tree.type
 import type { TreeProps } from 'element-plus/es/components/tree/src/tree.type'
 import type { CarBrand, TreeNode } from './types'
 import type { TreeComponentProps } from 'element-plus'
+import axios from 'axios'
 
 const props = defineProps<{
   modelValue: string
@@ -140,17 +141,52 @@ const handleNodeClick = async (data: any, node: Node) => {
   // 如果点击的是车系
   if ('state' in data) {
     try {
-        console.log("fetchCarSpecs car id", data.id)
-      const result = await window.electronAPI.fetchCarSpecs(data.id)
+      console.log("fetchCarSpecs car id", data.id)
+      const response = await axios.get(`https://car-web-api.autohome.com.cn/car/param/getParamConf`, {
+        params: {
+          mode: 1,
+          site: 1,
+          seriesid: data.id
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Referer': 'https://car.autohome.com.cn'
+        }
+      })
+
+      const result = response.data
       console.log("fetchCarSpecs result", result)
-      if (result.success) {
+      
+      if (result && result.returncode === 0) {
+        // 提取年款信息
+        const yearVersions = result.result.conditionlist.find((item: any) => item.typevalue === 'year')?.list || []
+        
+        // 提取参数配置信息
+        const paramGroups = result.result.titlelist.map((group: any) => ({
+          groupName: group.groupname,
+          itemType: group.itemtype,
+          items: group.items.map((item: any) => ({
+            id: item.itemid,
+            name: item.itemname,
+            baikeUrl: item.baikeurl || '',
+            baikeId: item.baikeid
+          }))
+        }))
+
         emit('selectSeries', {
           id: data.id,
           name: data.name,
-          specs: result.data
+          specs: {
+            yearVersions: yearVersions.map((year: any) => ({
+              id: year.yearid,
+              name: year.name,
+              year: year.id
+            })),
+            paramGroups
+          }
         })
       } else {
-        console.error('获取车型款式失败:', result.message)
+        console.error('获取车型款式失败:', result?.message || '未知错误')
       }
     } catch (error) {
       console.error('获取车型款式出错:', error)

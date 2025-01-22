@@ -22,6 +22,7 @@
     "@types/puppeteer": "^5.4.7",
     "@vueup/vue-quill": "^1.2.0",
     "auto-launch": "^5.0.5",
+    "axios": "^1.7.9",
     "crypto-js": "^4.2.0",
     "docx": "^9.1.1",
     "drawstamputils": "^0.1.1",
