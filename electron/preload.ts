@@ -132,6 +132,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getJksPassword: () => ipcRenderer.invoke('get-jks-password'),
   fetchCarBrands: () => ipcRenderer.invoke('fetch-car-brands'),
   fetchCarModels: (brandId: string) => ipcRenderer.invoke('fetch-car-models', brandId),
+  fetchCarSpecs: (seriesId: string) => ipcRenderer.invoke('fetch-car-specs', seriesId),
 })
 
 contextBridge.exposeInMainWorld('projectAPI', {

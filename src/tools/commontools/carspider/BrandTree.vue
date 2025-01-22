@@ -14,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'select', brand: CarBrand): void
+  (e: 'selectSeries', series: { id: string; name: string; specs?: any }): void
 }>()
 
 const treeData = ref<TreeNode[]>([])
@@ -99,8 +100,8 @@ const filterNode = (value: string, data: TreeNodeData): boolean => {
 }
 
 // 处理节点点击
-const handleNodeClick = (data: any, node: Node) => {
-    console.log("click node", data, node)
+const handleNodeClick = async (data: any, node: Node) => {
+  console.log("click node", data, node)
   // 如果点击的是品牌
   if ('logo' in data) {
     emit('update:modelValue', data.id)
@@ -133,6 +134,26 @@ const handleNodeClick = (data: any, node: Node) => {
     
     if (data.fctitems) {
       expandChildren(data.fctitems)
+    }
+  }
+  
+  // 如果点击的是车系
+  if ('state' in data) {
+    try {
+        console.log("fetchCarSpecs car id", data.id)
+      const result = await window.electronAPI.fetchCarSpecs(data.id)
+      console.log("fetchCarSpecs result", result)
+      if (result.success) {
+        emit('selectSeries', {
+          id: data.id,
+          name: data.name,
+          specs: result.data
+        })
+      } else {
+        console.error('获取车型款式失败:', result.message)
+      }
+    } catch (error) {
+      console.error('获取车型款式出错:', error)
     }
   }
 }
