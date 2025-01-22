@@ -3,7 +3,9 @@ import { ref, onMounted, watch, h, computed } from 'vue'
 import { ElTree, ElSwitch } from 'element-plus'
 import type Node from 'element-plus/es/components/tree/src/model/node'
 import type { TreeNodeData } from 'element-plus/es/components/tree/src/tree.type'
+import type { TreeProps } from 'element-plus/es/components/tree/src/tree.type'
 import type { CarBrand, TreeNode } from './types'
+import type { TreeComponentProps } from 'element-plus'
 
 const props = defineProps<{
   modelValue: string
@@ -97,7 +99,8 @@ const filterNode = (value: string, data: TreeNodeData): boolean => {
 }
 
 // 处理节点点击
-const handleNodeClick = (data: any) => {
+const handleNodeClick = (data: any, node: Node) => {
+    console.log("click node", data, node)
   // 如果点击的是品牌
   if ('logo' in data) {
     emit('update:modelValue', data.id)
@@ -106,6 +109,31 @@ const handleNodeClick = (data: any) => {
       name: data.name,
       logo: data.logo
     })
+    
+    // 展开当前节点
+    if (!node.expanded) {
+      node.expand()
+    }
+    
+    // 展开所有子节点（厂商和车系）
+    const expandChildren = (children: any[]) => {
+      children.forEach(child => {
+        const childNode = treeRef.value?.getNode(child)
+        if (childNode && !childNode.expanded) {
+          childNode.expand()
+        }
+        if (child.fctitems) {
+          expandChildren(child.fctitems)
+        }
+        if (child.seriesitems) {
+          expandChildren(child.seriesitems)
+        }
+      })
+    }
+    
+    if (data.fctitems) {
+      expandChildren(data.fctitems)
+    }
   }
 }
 
@@ -146,6 +174,17 @@ const renderContent = (_: any, { data }: { data: any }) => {
   return h('span', {}, data.name || '')
 }
 
+// 定义树的配置
+const treeProps = {
+  children(data: any) {
+    if ('branditems' in data) return data.branditems
+    if ('fctitems' in data) return data.fctitems
+    if ('seriesitems' in data) return data.seriesitems
+    return []
+  },
+  label: 'name'
+} as const
+
 onMounted(() => {
   loadBrandData()
 })
@@ -181,10 +220,7 @@ onMounted(() => {
     <el-tree
       ref="treeRef"
       :data="treeData"
-      :props="{
-        children: 'branditems',
-        label: 'name'
-      }"
+      :props="treeProps"
       :filter-node-method="filterNode"
       :render-content="renderContent"
       node-key="id"
