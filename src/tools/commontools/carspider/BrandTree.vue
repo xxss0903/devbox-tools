@@ -2,7 +2,7 @@
 import { ref, onMounted, watch, h, computed } from 'vue'
 import { ElTree, ElSwitch } from 'element-plus'
 import type { TreeNode as ElTreeNode } from 'element-plus/es/components/tree/src/tree.type'
-import type { CarBrand, TreeNode } from './types'
+import type { CarBrand, TreeNode, ParamGroup, YearVersion, BasicInfo, CarSpecs } from './types'
 import type { TreeComponentProps } from 'element-plus'
 import axios from 'axios'
 
@@ -13,7 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'select', brand: CarBrand): void
-  (e: 'selectSeries', series: { id: string; name: string; specs?: any }): void
+  (e: 'selectSeries', series: { id: string; name: string; specs: CarSpecs }): void
 }>()
 
 const treeData = ref<TreeNode[]>([])
@@ -161,30 +161,50 @@ const handleNodeClick = async (data: TreeNodeWithChildren, node: any) => {
       
       if (result && result.returncode === 0) {
         // 提取年款信息
-        const yearVersions = result.result.conditionlist.find((item: any) => item.typevalue === 'year')?.list || []
+        const yearVersions: YearVersion[] = (result.result.conditionlist.find((item: any) => item.typevalue === 'year')?.list || [])
+          .map((year: any) => ({
+            id: year.yearid,
+            name: year.name,
+            year: year.id
+          }))
         
         // 提取参数配置信息
-        const paramGroups = result.result.titlelist.map((group: any) => ({
+        const paramGroups: ParamGroup[] = result.result.titlelist.map((group: any) => ({
           groupName: group.groupname,
           itemType: group.itemtype,
           items: group.items.map((item: any) => ({
             id: item.itemid,
             name: item.itemname,
             baikeUrl: item.baikeurl || '',
-            baikeId: item.baikeid
+            baikeId: item.baikeid,
+            value: item.value || '',
+            sublist: item.sublist || []
           }))
         }))
+
+        // 提取基本参数
+        const basicParams = paramGroups.find(group => group.itemType === '基本参数')
+        const basicInfo: BasicInfo = {
+          price: basicParams?.items.find(item => item.name === '厂商指导价(元)')?.value || '-',
+          manufacturer: basicParams?.items.find(item => item.name === '厂商')?.value || '-',
+          level: basicParams?.items.find(item => item.name === '级别')?.value || '-',
+          engine: basicParams?.items.find(item => item.name === '发动机')?.value || '-',
+          gearbox: basicParams?.items.find(item => item.name === '变速箱')?.value || '-',
+          size: basicParams?.items.find(item => item.name === '长*宽*高(mm)')?.value || '-',
+          structure: basicParams?.items.find(item => item.name === '车身结构')?.value || '-',
+          maxPower: basicParams?.items.find(item => item.name === '最大功率(kW)')?.value || '-',
+          maxTorque: basicParams?.items.find(item => item.name === '最大扭矩(N·m)')?.value || '-',
+          fuelConsumption: basicParams?.items.find(item => item.name === 'WLTC综合油耗(L/100km)')?.value || '-',
+          warranty: basicParams?.items.find(item => item.name === '整车质保')?.value || '-'
+        }
 
         emit('selectSeries', {
           id: data.id,
           name: data.name,
           specs: {
-            yearVersions: yearVersions.map((year: any) => ({
-              id: year.yearid,
-              name: year.name,
-              year: year.id
-            })),
-            paramGroups
+            yearVersions,
+            paramGroups,
+            basicInfo
           }
         })
       } else {
