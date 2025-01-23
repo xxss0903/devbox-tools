@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, h, computed } from 'vue'
 import { ElTree, ElSwitch } from 'element-plus'
-import type Node from 'element-plus/es/components/tree/src/model/node'
-import type { TreeNodeData } from 'element-plus/es/components/tree/src/tree.type'
-import type { TreeProps } from 'element-plus/es/components/tree/src/tree.type'
+import type { TreeNode as ElTreeNode } from 'element-plus/es/components/tree/src/tree.type'
 import type { CarBrand, TreeNode } from './types'
 import type { TreeComponentProps } from 'element-plus'
 import axios from 'axios'
@@ -68,8 +66,25 @@ const statistics = computed(() => {
   }
 })
 
+interface TreeNodeWithChildren {
+  branditems?: TreeNode[]
+  fctitems?: any[]
+  seriesitems?: any[]
+  [key: string]: any
+}
+
+const treeProps = {
+  children(data: TreeNodeWithChildren) {
+    if ('branditems' in data) return data.branditems
+    if ('fctitems' in data) return data.fctitems
+    if ('seriesitems' in data) return data.seriesitems
+    return []
+  },
+  label: 'name'
+} as const
+
 // 树节点过滤
-const filterNode = (value: string, data: TreeNodeData): boolean => {
+const filterNode = (value: string, data: TreeNodeWithChildren): boolean => {
   if (!value && !showOnlyNewEnergy.value) return true
   
   const searchText = value.toLowerCase()
@@ -101,8 +116,7 @@ const filterNode = (value: string, data: TreeNodeData): boolean => {
 }
 
 // 处理节点点击
-const handleNodeClick = async (data: any, node: Node) => {
-  console.log("click node", data, node)
+const handleNodeClick = async (data: TreeNodeWithChildren, node: any) => {
   // 如果点击的是品牌
   if ('logo' in data) {
     emit('update:modelValue', data.id)
@@ -112,29 +126,19 @@ const handleNodeClick = async (data: any, node: Node) => {
       logo: data.logo
     })
     
-    // 展开当前节点
-    if (!node.expanded) {
-      node.expand()
-    }
-    
-    // 展开所有子节点（厂商和车系）
-    const expandChildren = (children: any[]) => {
-      children.forEach(child => {
-        const childNode = treeRef.value?.getNode(child)
-        if (childNode && !childNode.expanded) {
-          childNode.expand()
-        }
-        if (child.fctitems) {
-          expandChildren(child.fctitems)
-        }
-        if (child.seriesitems) {
-          expandChildren(child.seriesitems)
-        }
-      })
-    }
-    
-    if (data.fctitems) {
-      expandChildren(data.fctitems)
+    // 展开当前节点和所有子节点
+    const currentNode = treeRef.value?.getNode(data)
+    if (currentNode && !currentNode.expanded) {
+      currentNode.expand()
+      // 展开所有子节点
+      if (data.fctitems) {
+        data.fctitems.forEach(factory => {
+          const factoryNode = treeRef.value?.getNode(factory)
+          if (factoryNode) {
+            factoryNode.expand()
+          }
+        })
+      }
     }
   }
   
@@ -149,8 +153,6 @@ const handleNodeClick = async (data: any, node: Node) => {
           seriesid: data.id
         },
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Referer': 'https://car.autohome.com.cn'
         }
       })
 
@@ -230,17 +232,6 @@ const renderContent = (_: any, { data }: { data: any }) => {
   
   return h('span', {}, data.name || '')
 }
-
-// 定义树的配置
-const treeProps = {
-  children(data: any) {
-    if ('branditems' in data) return data.branditems
-    if ('fctitems' in data) return data.fctitems
-    if ('seriesitems' in data) return data.seriesitems
-    return []
-  },
-  label: 'name'
-} as const
 
 onMounted(() => {
   loadBrandData()
