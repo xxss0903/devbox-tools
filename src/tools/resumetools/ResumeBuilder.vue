@@ -313,6 +313,23 @@ const generatePDF = async () => {
   if (!element) return
 
   try {
+    // 获取预览内容的实际高度（以像素为单位）
+    const contentHeight = element.scrollHeight
+    const contentWidth = element.scrollWidth
+
+    // 将像素转换为毫米（1像素约等于0.264583毫米）
+    const pxToMm = 0.264583
+    const heightInMm = Math.ceil(contentHeight * pxToMm)
+    const widthInMm = Math.ceil(contentWidth * pxToMm)
+
+    // 确保宽度为 A4 标准宽度 (210mm)
+    const standardA4Width = 210
+    const scaleFactor = standardA4Width / widthInMm
+    const finalHeight = Math.ceil(heightInMm * scaleFactor)
+
+    console.log('pdf element ', element)
+    console.log('finalHeight', finalHeight, 'standardA4Width', standardA4Width)
+    // 设置 PDF 选项
     const opt = {
       margin: 0,
       filename: `${resumeData.fullName.replace(/\s+/g, '_')}_resume.pdf`,
@@ -324,10 +341,10 @@ const generatePDF = async () => {
       },
       jsPDF: {
         unit: 'mm',
-        format: [210, 530],
+        format: [standardA4Width, finalHeight], // 使用计算出的高度
         orientation: 'portrait'
       },
-      pagebreak: { mode: ' avoid-all ' }
+      pagebreak: { mode: 'avoid-all' }
     }
 
     await html2pdf().set(opt).from(element).save()

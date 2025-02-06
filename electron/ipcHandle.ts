@@ -9,7 +9,7 @@ export function setupIPCHandle(win: BrowserWindow) {
   // 打开exe的接口工具
   setupOpenExeHandle(win)
   // 屏幕遮挡
-  setupScreenBlockerHandle(win)
+  setupScreenBlockerHandle(win)    
   // 工作日记
   setupWorkDiaryHandle(win)
   // 剪切板管理
